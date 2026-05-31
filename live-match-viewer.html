@@ -1,0 +1,799 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1.0">
+  <title>Feature Match — SPKC Chess Club</title>
+
+  <link rel="stylesheet" href="style.css">
+  <style>
+    .board-canvas-wrap { width:100%; max-width:480px; aspect-ratio:1/1; margin:0 auto 16px; border-radius:var(--radius-lg); overflow:hidden; }
+    .move-item { padding:3px 6px; border-radius:4px; cursor:pointer; }
+    .move-item.active { background:var(--primary); color:#fff; }
+    .chat-msg { padding:8px 12px; border-radius:12px; background:var(--surface-soft); margin-bottom:6px; font-size:13px; }
+    .chat-username { font-weight:700; color:var(--primary); font-size:12px; display:block; }
+    .live-dot { width:10px;height:10px;border-radius:50%;background:#22c55e;display:inline-block;animation:live-pulse 1.4s ease-in-out infinite; }
+    html.dark .chat-msg { background:#1a2738; }
+    /* Board control helpers */
+    .board-controls { display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:8px; }
+    .auto-follow-btn { display:inline-flex;align-items:center;gap:6px;padding:7px 14px;border-radius:8px;font-size:12px;font-weight:700;border:1.5px solid var(--line);background:var(--surface-soft);color:var(--muted);cursor:pointer;transition:all 0.18s; }
+    .auto-follow-btn.on { background:#dcfce7;color:#16a34a;border-color:#86efac; }
+    html.dark .auto-follow-btn.on { background:rgba(22,163,74,0.18);color:#4ade80;border-color:#166534; }
+    .auto-follow-dot { width:7px;height:7px;border-radius:50%;background:currentColor; }
+    .auto-follow-btn.on .auto-follow-dot { animation:live-pulse 1.4s ease-in-out infinite; }
+    .nav-buttons { display:flex;gap:8px;margin-top:16px;flex-wrap:wrap;align-items:center; }
+    .move-pos-label { font-size:12px;color:var(--muted);margin-left:4px; }
+    .ledger-section { margin-top:20px; }
+    .ledger-label { font-size:11px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:var(--muted);margin-bottom:8px; }
+    .move-ledger { max-height:200px;overflow-y:auto;font-family:monospace;font-size:13px;display:grid;grid-template-columns:repeat(2,1fr);gap:2px 16px;padding:10px;background:var(--surface-soft);border:1px solid var(--line);border-radius:10px;scrollbar-width:thin; }
+    html.dark .move-ledger { background:rgba(10,20,38,0.5);border-color:var(--line); }
+    .ledger-empty { grid-column:1/-1;text-align:center;color:var(--muted);font-size:12px;padding:16px 0; }
+    .match-players { display:flex;align-items:center;gap:8px;font-size:14px;font-weight:600;flex-wrap:wrap; }
+    .vs-sep { color:var(--muted);font-weight:400;font-size:12px; }
+    .piece-icon { font-size:17px; }
+    .info-badges { display:flex;gap:8px;flex-wrap:wrap;margin-top:8px; }
+    .info-pill { display:inline-flex;align-items:center;gap:5px;font-size:11px;font-weight:700;padding:4px 10px;border-radius:20px; }
+    .pill-round { background:var(--primary);color:#fff; }
+    .pill-format { background:var(--surface-soft);color:var(--muted);border:1px solid var(--line); }
+    html.dark .pill-format { background:rgba(255,255,255,0.07);border-color:var(--line); }
+    .pill-live { background:#dcfce7;color:#16a34a; }
+    html.dark .pill-live { background:rgba(22,163,74,0.18);color:#4ade80; }
+    .pill-done { background:var(--surface-soft);color:var(--muted); }
+    .pill-waiting { background:#fef9ec;color:#b45309; }
+    html.dark .pill-waiting { background:rgba(180,83,9,0.18);color:#fbbf24; }
+    .result-row { font-size:14px;font-weight:700;color:var(--gold);margin-top:8px; }
+    .game-link-row { margin-top:8px; }
+    .game-link-row a { font-size:13px;color:var(--primary);text-decoration:none;font-weight:600; }
+    .game-link-row a:hover { text-decoration:underline; }
+    html.dark .game-link-row a { color:#7aabff; }
+    .chat-messages { max-height:280px;overflow-y:auto;scrollbar-width:thin; }
+    .chat-time { font-size:11px;color:var(--muted);margin-left:4px; }
+    .chat-text { display:block;margin-top:2px;color:var(--text); }
+    html.dark .chat-text { color:#c8d8f0; }
+    .chat-empty { text-align:center;color:var(--muted);font-size:13px;padding:20px 0; }
+    .chat-form { margin-top:12px; }
+    .chat-input { width:100%;padding:9px 12px;border:1.5px solid var(--line);border-radius:8px;font-size:13px;background:var(--surface);color:var(--text);transition:border-color 0.18s;font-family:inherit;resize:none;margin-bottom:8px; }
+    .chat-input:focus { outline:none;border-color:var(--primary); }
+    html.dark .chat-input { background:rgba(20,38,68,0.8);border-color:var(--line);color:#d8e4f4; }
+    .char-count { font-size:11px;color:var(--muted);text-align:right;margin-top:2px;margin-bottom:8px; }
+    .char-count.warn { color:#ef4444; }
+    .send-btn { background:var(--primary);color:#fff;border:none;border-radius:8px;padding:9px 16px;font-size:13px;font-weight:700;cursor:pointer;transition:opacity 0.18s;white-space:nowrap; }
+    .send-btn:hover { opacity:0.85; }
+    .send-btn:disabled { opacity:0.5;cursor:not-allowed; }
+    .chat-error { font-size:12px;color:#ef4444;margin-top:4px; }
+    .toast { position:fixed;bottom:24px;right:24px;background:var(--primary);color:#fff;padding:10px 18px;border-radius:12px;font-size:13px;font-weight:600;box-shadow:0 4px 20px rgba(35,74,145,0.35);z-index:500;opacity:0;transform:translateY(12px);transition:opacity 0.25s,transform 0.25s;pointer-events:none; }
+    .toast.show { opacity:1;transform:translateY(0); }
+  </style>
+</head>
+<body>
+  <a href="#main" class="skip-link">Skip to content</a>
+  <div class="page-shell">
+    <header class="hero">
+      <div class="nav-wrap"><nav class="nav" aria-label="Primary">
+        <a href="index.html"><span class="nav-icon">🏠</span>Home</a>
+        <a href="join.html"><span class="nav-icon">✋</span>Join</a>
+        <a href="tournaments.html"><span class="nav-icon">🏆</span>Tournaments</a>
+        <a href="rules.html"><span class="nav-icon">📋</span>Rules</a>
+        <a href="brilliants.html"><span class="nav-icon">💎</span>Brilliants</a>
+        <a href="matches.html"><span class="nav-icon">⚔️</span>Matches</a>
+        <a href="history.html"><span class="nav-icon">📜</span>History</a>
+        <a href="openings.html"><span class="nav-icon">📖</span>Openings</a>
+        <a href="live-hub.html" class="active"><span class="nav-live-dot"></span>Live</a>
+        <button class="dark-toggle" id="darkToggle" aria-label="Toggle dark mode" title="Toggle dark mode">🌙</button>
+      </nav></div>
+      <div class="hero-layout">
+        <div class="hero-copy">
+          <p class="eyebrow">SPKC Chess Club — Live Commentary</p>
+          <h1>Feature Match</h1>
+          <p class="hero-text">The premier matchup of the night. Watch every move live with spectator chat.</p>
+          <div class="button-row">
+            <a href="live-hub.html" class="button-ghost">← Live Hub</a>
+            <a href="live-arena.html" class="button-ghost">All Boards →</a>
+          </div>
+          <div class="hero-stats">
+            <div class="stat-card">
+              <span class="stat-number" id="viewerStatMoves">—</span>
+              <span class="stat-label">Move count</span>
+            </div>
+            <div class="stat-card">
+              <span class="stat-number" id="viewerStatStatus">—</span>
+              <span class="stat-label">Status</span>
+            </div>
+            <div class="stat-card">
+              <span class="stat-number" id="viewerStatResult">—</span>
+              <span class="stat-label">Result</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <main id="main" class="content-grid">
+
+      <!-- Loading state -->
+      <section class="panel span-12" id="loadingState">
+        <div class="info-box">Loading feature match…</div>
+      </section>
+
+      <!-- Empty state -->
+      <section class="panel span-12" id="emptyState" style="display:none">
+        <div class="info-box">
+          No game found. This board slot has no game data yet. Check back on match night.<br>
+          <a href="live-hub.html" style="color:var(--primary);font-weight:600;margin-top:12px;display:inline-block;">← Back to Live Hub</a>
+        </div>
+      </section>
+
+      <!-- Main viewer layout — shown when game loads -->
+      <section class="panel span-7" id="viewerOuter" style="display:none">
+
+        <!-- Board controls row -->
+        <div class="board-controls">
+          <div class="section-head">
+            Live Board <span style="font-size:13px;color:var(--muted);font-weight:400;margin-left:6px;">Board <strong id="boardSlotLabel">—</strong></span>
+          </div>
+          <button class="auto-follow-btn on" id="autoFollowBtn" title="Toggle auto-follow live position">
+            <span class="auto-follow-dot"></span>
+            <span id="autoFollowLabel">Auto-follow: ON</span>
+          </button>
+        </div>
+
+        <!-- Board canvas -->
+        <div class="board-canvas-wrap" id="bigBoard">
+          <div id="boardCanvas"></div>
+        </div>
+
+        <!-- Move navigation -->
+        <div class="nav-buttons">
+          <button class="button-ghost" id="btnFirst" title="First move">⏮ Start</button>
+          <button class="button-ghost" id="btnPrev" title="Previous move">← Prev</button>
+          <button class="button-ghost" id="btnNext" title="Next move">Next →</button>
+          <button class="button-ghost" id="btnLast" title="Last move">End ⏭</button>
+          <span class="move-pos-label" id="movePosLabel">Move 0</span>
+        </div>
+
+        <!-- Move ledger -->
+        <div class="ledger-section">
+          <div class="ledger-label">Move History</div>
+          <div class="move-ledger" id="moveLedger">
+            <div class="ledger-empty">No moves yet</div>
+          </div>
+        </div>
+
+      </section>
+
+      <!-- Right column: Game info + chat -->
+      <section class="panel span-5" id="viewerRight" style="display:none">
+
+        <!-- Game info -->
+        <div class="badge-card">
+          <div class="kicker">Game Info</div>
+          <div class="match-players" id="matchPlayers">
+            <span class="piece-icon">♙</span>
+            <span id="whiteName">—</span>
+            <span class="vs-sep">vs</span>
+            <span class="piece-icon" style="color:#1a1a1a;">♟</span>
+            <span id="blackName">—</span>
+          </div>
+          <div class="info-badges" id="infoBadges"></div>
+          <div class="result-row" id="resultRow" style="display:none;"></div>
+          <div class="game-link-row" id="gameLinkRow" style="display:none;"></div>
+        </div>
+
+        <!-- Spectator Chat -->
+        <div style="margin-top:20px;">
+          <div class="section-head">Spectator Chat</div>
+
+          <!-- Messages -->
+          <div class="chat-messages" id="chatMessages">
+            <div class="chat-empty" id="chatEmpty">No messages yet. Be the first to say something!</div>
+          </div>
+
+          <!-- Send form -->
+          <div class="chat-form" id="chatForm">
+            <input
+              type="text"
+              id="chatUsername"
+              class="chat-input"
+              placeholder="Your username (max 20 chars)"
+              maxlength="20"
+              autocomplete="username"
+            />
+            <textarea
+              id="chatMessage"
+              class="chat-input"
+              placeholder="Say something… (max 200 chars)"
+              maxlength="200"
+              rows="2"
+              style="resize:none;"
+            ></textarea>
+            <div class="char-count" id="charCount">0 / 200</div>
+            <button class="send-btn" id="sendBtn">Send</button>
+            <div class="chat-error" id="chatError" style="display:none;"></div>
+          </div>
+        </div>
+
+      </section>
+
+    </main>
+  </div>
+
+  <!-- Toast -->
+  <div class="toast" id="toast"></div>
+
+  <script src="lib/supabase.min.js"></script>
+  <script src="lib/chess.min.js"></script>
+
+  <script>
+(function () {
+  'use strict';
+
+  // ── Supabase ──────────────────────────────────────────────────────────
+  const SUPABASE_URL = 'https://qoczwxslhygakivfgxdy.supabase.co';
+  const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFvY3p3eHNsaHlnYWtpdmZneGR5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk2MTAwNzMsImV4cCI6MjA5NTE4NjA3M30.J5I0IR5Ra_JePDzJYHpzstbNRCo667B201iVhjbDZjs';
+  const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+  // ── URL param ─────────────────────────────────────────────────────────
+  const slot = parseInt(new URLSearchParams(location.search).get('slot') || '1');
+
+  // ── State ─────────────────────────────────────────────────────────────
+  let board = null;
+  let currentGame = null;
+  let moves = [];       // array of SAN strings
+  let positions = [];   // array of FENs (index 0 = starting position)
+  let currentMoveIdx = 0; // which position we're viewing (0 = start)
+  let autoFollow = true;
+  let currentSeasonKey = null;
+  let currentRound = null;
+
+  // ── Dark mode ─────────────────────────────────────────────────────────
+    const darkToggle = document.getElementById('darkToggle');
+  function applyDark(on) {
+    document.documentElement.classList.toggle('dark', on);
+    darkToggle.textContent = on ? '☀️' : '🌙';
+  }
+  darkToggle.addEventListener('click', function() {
+    applyDark(!document.documentElement.classList.contains('dark'));
+  });
+// ── Toast ─────────────────────────────────────────────────────────────
+  function showToast(msg, dur = 2800) {
+    const t = document.getElementById('toast');
+    t.textContent = msg;
+    t.classList.add('show');
+    setTimeout(() => t.classList.remove('show'), dur);
+  }
+
+  // ── Format helpers ────────────────────────────────────────────────────
+  const FORMAT_CYCLE = ['bullet', 'blitz', 'rapid'];
+  const FORMAT_ICONS = { bullet: '🔴', blitz: '⚡', rapid: '🕐' };
+  const FORMAT_LABELS = { bullet: 'Bullet', blitz: 'Blitz', rapid: 'Rapid' };
+
+  function getFormat(round) {
+    return FORMAT_CYCLE[(round - 1) % 3];
+  }
+
+  // ── PGN parsing ───────────────────────────────────────────────────────
+  function parsePgnFull(pgn) {
+    const result = { moves: [], positions: [] };
+    result.positions.push('start'); // index 0 = starting pos
+    if (!pgn || pgn.trim() === '') return result;
+    try {
+      const chess = new Chess();
+      chess.loadPgn(pgn);
+      const history = chess.history({ verbose: false });
+      // Replay from start to collect intermediate FENs
+      const replay = new Chess();
+      for (const san of history) {
+        replay.move(san);
+        result.positions.push(replay.fen());
+        result.moves.push(san);
+      }
+    } catch (e) {
+      console.warn('PGN parse error:', e);
+    }
+    return result;
+  }
+
+  // ── Board display (FEN unicode renderer) ────────────────────────────
+  function renderFenBoard(fen) {
+    const fenStr = (fen && fen !== 'start' && fen !== '')
+      ? fen
+      : 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1';
+    const rows = fenStr.split(' ')[0].split('/');
+    const glyphs = { r:'♜', n:'♞', b:'♝', q:'♛', k:'♚', p:'♟', R:'♖', N:'♘', B:'♗', Q:'♕', K:'♔', P:'♙' };
+    let html = '<table style="border-collapse:collapse;width:100%;table-layout:fixed;font-size:clamp(16px,3vw,28px);">';
+    rows.forEach((row, ri) => {
+      html += '<tr>';
+      let ci = 0;
+      for (const ch of row) {
+        const n = parseInt(ch);
+        if (!isNaN(n)) {
+          for (let i = 0; i < n; i++) {
+            const light = (ri + ci) % 2 === 0;
+            html += `<td style="aspect-ratio:1;background:${light?'#f0d9b5':'#b58863'};text-align:center;vertical-align:middle;"></td>`;
+            ci++;
+          }
+        } else {
+          const light = (ri + ci) % 2 === 0;
+          const g = glyphs[ch] || '';
+          const fg = (ch === ch.toUpperCase()) ? '#fff' : '#1a1a1a';
+          html += `<td style="aspect-ratio:1;background:${light?'#f0d9b5':'#b58863'};text-align:center;vertical-align:middle;color:${fg};text-shadow:0 1px 3px rgba(0,0,0,0.55);">${g}</td>`;
+          ci++;
+        }
+      }
+      html += '</tr>';
+    });
+    html += '</table>';
+    return html;
+  }
+
+  function initBoard(fen) {
+    const el = document.getElementById('boardCanvas');
+    if (!el) return;
+    board = fen || 'start';
+    el.innerHTML = renderFenBoard(fen);
+    el.style.display = 'block';
+  }
+
+  function setBoardPosition(fen) {
+    const el = document.getElementById('boardCanvas');
+    if (!el) return;
+    board = fen || 'start';
+    el.innerHTML = renderFenBoard(fen);
+  }
+
+  // ── Move ledger ───────────────────────────────────────────────────────
+  function renderLedger() {
+    const ledger = document.getElementById('moveLedger');
+    if (moves.length === 0) {
+      ledger.innerHTML = '<div class="ledger-empty">No moves yet</div>';
+      return;
+    }
+
+    let html = '';
+    // Pair moves: white (index 0,2,4…) and black (index 1,3,5…)
+    for (let i = 0; i < moves.length; i += 2) {
+      const moveNum = Math.floor(i / 2) + 1;
+      const wIdx = i + 1;  // position index (1-based because 0 = start)
+      const bIdx = i + 2;
+      const wActive = currentMoveIdx === wIdx ? 'active' : '';
+      const bActive = currentMoveIdx === bIdx ? 'active' : '';
+      html += `<span class="move-item ${wActive}" data-idx="${wIdx}">${moveNum}. ${moves[i]}</span>`;
+      if (moves[i + 1] !== undefined) {
+        html += `<span class="move-item ${bActive}" data-idx="${bIdx}">${moves[i + 1]}</span>`;
+      } else {
+        html += `<span></span>`; // empty cell for grid alignment
+      }
+    }
+    ledger.innerHTML = html;
+
+    // Click handlers
+    ledger.querySelectorAll('.move-item').forEach(el => {
+      el.addEventListener('click', () => {
+        const idx = parseInt(el.dataset.idx);
+        goToMove(idx);
+        if (autoFollow) toggleAutoFollow(); // disable auto-follow when user manually navigates
+      });
+    });
+
+    // Auto-scroll to active move
+    const activeEl = ledger.querySelector('.move-item.active');
+    if (activeEl) activeEl.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+  }
+
+  function updateMovePosLabel() {
+    const total = moves.length;
+    const label = currentMoveIdx === 0
+      ? 'Start'
+      : `Move ${currentMoveIdx} / ${total}`;
+    document.getElementById('movePosLabel').textContent = label;
+  }
+
+  function goToMove(idx) {
+    if (idx < 0) idx = 0;
+    if (idx >= positions.length) idx = positions.length - 1;
+    currentMoveIdx = idx;
+    setBoardPosition(positions[idx], true);
+    renderLedger();
+    updateNavButtons();
+    updateMovePosLabel();
+  }
+
+  function updateNavButtons() {
+    document.getElementById('btnFirst').disabled = currentMoveIdx <= 0;
+    document.getElementById('btnPrev').disabled = currentMoveIdx <= 0;
+    document.getElementById('btnNext').disabled = currentMoveIdx >= positions.length - 1;
+    document.getElementById('btnLast').disabled = currentMoveIdx >= positions.length - 1;
+  }
+
+  // Nav button events
+  document.getElementById('btnFirst').addEventListener('click', () => { goToMove(0); setAutoFollow(false); });
+  document.getElementById('btnPrev').addEventListener('click', () => { goToMove(currentMoveIdx - 1); setAutoFollow(false); });
+  document.getElementById('btnNext').addEventListener('click', () => { goToMove(currentMoveIdx + 1); setAutoFollow(false); });
+  document.getElementById('btnLast').addEventListener('click', () => { goToMove(positions.length - 1); });
+
+  // ── Auto-follow ───────────────────────────────────────────────────────
+  function setAutoFollow(val) {
+    autoFollow = val;
+    const btn = document.getElementById('autoFollowBtn');
+    const lbl = document.getElementById('autoFollowLabel');
+    btn.classList.toggle('on', val);
+    lbl.textContent = val ? 'Auto-follow: ON' : 'Auto-follow: OFF';
+  }
+
+  function toggleAutoFollow() {
+    setAutoFollow(!autoFollow);
+  }
+
+  document.getElementById('autoFollowBtn').addEventListener('click', toggleAutoFollow);
+
+  // ── Game info card ────────────────────────────────────────────────────
+  function renderGameInfo(game) {
+    document.getElementById('boardSlotLabel').textContent = game.board_slot;
+    document.getElementById('whiteName').textContent = game.white_name || game.white_username || 'White';
+    document.getElementById('blackName').textContent = game.black_name || game.black_username || 'Black';
+
+    const fmt = getFormat(game.round_number);
+    let statusPill = '';
+    if (game.status === 'live') statusPill = '<span class="info-pill pill-live"><span style="width:6px;height:6px;border-radius:50%;background:currentColor;display:inline-block;animation:pulse 1.4s ease-in-out infinite;"></span>LIVE</span>';
+    else if (game.status === 'done') statusPill = '<span class="info-pill pill-done">✓ DONE</span>';
+    else statusPill = '<span class="info-pill pill-waiting">⏳ WAITING</span>';
+
+    document.getElementById('infoBadges').innerHTML = `
+      <span class="info-pill pill-round">Round ${game.round_number}</span>
+      <span class="info-pill pill-format">${FORMAT_ICONS[fmt]} ${FORMAT_LABELS[fmt]}</span>
+      ${statusPill}
+    `;
+
+    const resultRow = document.getElementById('resultRow');
+    if (game.result && game.status === 'done') {
+      resultRow.textContent = `Result: ${game.result}`;
+      resultRow.style.display = 'block';
+    } else {
+      resultRow.style.display = 'none';
+    }
+
+    const gameLinkRow = document.getElementById('gameLinkRow');
+    if (game.game_link) {
+      gameLinkRow.innerHTML = `<a href="${game.game_link}" target="_blank" rel="noopener">View on Lichess →</a>`;
+      gameLinkRow.style.display = 'block';
+    } else {
+      gameLinkRow.style.display = 'none';
+    }
+  }
+
+  // ── Update game from realtime ─────────────────────────────────────────
+  function applyGameUpdate(game) {
+    currentGame = game;
+    const parsed = parsePgnFull(game.pgn);
+    moves = parsed.moves;
+    positions = parsed.positions;
+
+    renderGameInfo(game);
+
+    if (autoFollow) {
+      currentMoveIdx = positions.length - 1;
+      setBoardPosition(positions[currentMoveIdx], true);
+    }
+
+    renderLedger();
+    updateNavButtons();
+    updateMovePosLabel();
+    showToast('Board updated');
+  }
+
+  // ── Chat helpers ──────────────────────────────────────────────────────
+  function relativeTime(dateStr) {
+    const diff = Date.now() - new Date(dateStr).getTime();
+    const secs = Math.floor(diff / 1000);
+    if (secs < 60) return 'just now';
+    const mins = Math.floor(secs / 60);
+    if (mins < 60) return `${mins}m ago`;
+    const hrs = Math.floor(mins / 60);
+    if (hrs < 24) return `${hrs}h ago`;
+    return `${Math.floor(hrs / 24)}d ago`;
+  }
+
+  function addChatMessage(msg) {
+    const container = document.getElementById('chatMessages');
+    const emptyEl = document.getElementById('chatEmpty');
+    if (emptyEl) emptyEl.remove();
+
+    const div = document.createElement('div');
+    div.className = 'chat-msg';
+    div.innerHTML = `
+      <span class="chat-username">${escHtml(msg.username)}</span>
+      <span class="chat-time">${relativeTime(msg.created_at)}</span>
+      <span class="chat-text">${escHtml(msg.message)}</span>
+    `;
+    container.appendChild(div);
+    container.scrollTop = container.scrollHeight;
+  }
+
+  function escHtml(str) {
+    return String(str)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;');
+  }
+
+  // ── Chat send ─────────────────────────────────────────────────────────
+  const sendBtn = document.getElementById('sendBtn');
+  const chatError = document.getElementById('chatError');
+  const chatMessage = document.getElementById('chatMessage');
+  const charCount = document.getElementById('charCount');
+
+  chatMessage.addEventListener('input', () => {
+    const len = chatMessage.value.length;
+    charCount.textContent = `${len} / 200`;
+    charCount.classList.toggle('warn', len > 180);
+  });
+
+  sendBtn.addEventListener('click', sendChat);
+  chatMessage.addEventListener('keydown', e => {
+    if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) sendChat();
+  });
+
+  async function sendChat() {
+    chatError.style.display = 'none';
+    const username = document.getElementById('chatUsername').value.trim();
+    const message = chatMessage.value.trim();
+
+    if (!username) { showChatError('Please enter a username.'); return; }
+    if (username.length > 20) { showChatError('Username max 20 characters.'); return; }
+    if (!message) { showChatError('Message cannot be empty.'); return; }
+    if (message.length > 200) { showChatError('Message max 200 characters.'); return; }
+    if (!currentSeasonKey || !currentRound) { showChatError('Game not loaded yet.'); return; }
+
+    sendBtn.disabled = true;
+    sendBtn.textContent = 'Sending…';
+    try {
+      const { error } = await sb.from('live_chat').insert({
+        season_key: currentSeasonKey,
+        round_number: currentRound,
+        username,
+        message
+      });
+      if (error) throw error;
+      chatMessage.value = '';
+      charCount.textContent = '0 / 200';
+      // Save username for convenience
+      // username kept in memory only
+    } catch (err) {
+      showChatError('Failed to send message. Try again.');
+      console.error('Chat send error:', err);
+    } finally {
+      sendBtn.disabled = false;
+      sendBtn.textContent = 'Send';
+    }
+  }
+
+  function showChatError(msg) {
+    chatError.textContent = msg;
+    chatError.style.display = 'block';
+    setTimeout(() => { chatError.style.display = 'none'; }, 4000);
+  }
+
+  // ── Load ──────────────────────────────────────────────────────────────
+  async function load() {
+    try {
+      // Restore saved username
+      const savedUser = null; // no persistence
+      if (savedUser) document.getElementById('chatUsername').value = savedUser;
+
+      // 1. Active season
+      const { data: seasons, error: sErr } = await sb
+        .from('season_settings')
+        .select('season_key, season_label')
+        .order('registration_opens_at', { ascending: false })
+        .limit(1);
+      if (sErr) throw sErr;
+
+      const season = seasons && seasons[0];
+      currentSeasonKey = season ? season.season_key : null;
+
+      // 2. Load specific game by slot
+      let game = null;
+      if (currentSeasonKey) {
+        // Try current live round first
+        const { data: liveRows } = await sb
+          .from('live_games')
+          .select('round_number')
+          .eq('season_key', currentSeasonKey)
+          .eq('status', 'live')
+          .order('round_number', { ascending: false })
+          .limit(1);
+
+        let round = null;
+        if (liveRows && liveRows.length > 0) {
+          round = liveRows[0].round_number;
+        } else {
+          const { data: anyRows } = await sb
+            .from('live_games')
+            .select('round_number')
+            .eq('season_key', currentSeasonKey)
+            .order('round_number', { ascending: false })
+            .limit(1);
+          if (anyRows && anyRows.length > 0) round = anyRows[0].round_number;
+        }
+
+        currentRound = round;
+
+        if (round !== null) {
+          const { data: gameRows, error: gErr } = await sb
+            .from('live_games')
+            .select('*')
+            .eq('season_key', currentSeasonKey)
+            .eq('round_number', round)
+            .eq('board_slot', slot)
+            .limit(1);
+          if (gErr) throw gErr;
+          game = gameRows && gameRows[0] ? gameRows[0] : null;
+        }
+      }
+
+      document.getElementById('loadingState').style.display = 'none';
+
+      if (!game) {
+        document.getElementById('emptyState').style.display = 'block';
+        return;
+      }
+
+      currentGame = game;
+      document.title = `Feature Match – Board ${game.board_slot} — SPKC Chess Club`;
+
+      const parsed = parsePgnFull(game.pgn);
+      moves = parsed.moves;
+      positions = parsed.positions;
+      currentMoveIdx = positions.length - 1;
+
+      // Show layout
+      document.getElementById('viewerOuter').style.display = 'block';
+      document.getElementById('viewerRight').style.display = 'block';
+
+      // Init board
+      initBoard(positions[currentMoveIdx]);
+      renderGameInfo(game);
+      renderLedger();
+      updateNavButtons();
+      updateMovePosLabel();
+
+      // Load last 50 chat messages
+      await loadChatHistory(currentSeasonKey, currentRound);
+
+      // Subscribe realtime
+      subscribeGame(currentSeasonKey, currentRound, slot);
+      subscribeChat(currentSeasonKey, currentRound);
+
+    } catch (err) {
+      console.error('Load error:', err);
+      document.getElementById('loadingState').style.display = 'none';
+      document.getElementById('emptyState').style.display = 'block';
+    }
+  }
+
+  // ── Chat history ──────────────────────────────────────────────────────
+  async function loadChatHistory(seasonKey, round) {
+    try {
+      const { data, error } = await sb
+        .from('live_chat')
+        .select('*')
+        .eq('season_key', seasonKey)
+        .eq('round_number', round)
+        .order('created_at', { ascending: true })
+        .limit(50);
+      if (error) throw error;
+      if (data && data.length > 0) {
+        data.forEach(addChatMessage);
+      }
+    } catch (e) {
+      console.warn('Chat history load error:', e);
+    }
+  }
+
+  // ── Realtime subscriptions ────────────────────────────────────────────
+  function subscribeGame(seasonKey, round, boardSlot) {
+    sb.channel(`game-${boardSlot}`)
+      .on('postgres_changes', {
+        event: 'UPDATE',
+        schema: 'public',
+        table: 'live_games'
+      }, payload => {
+        const g = payload.new;
+        if (
+          g.season_key === seasonKey &&
+          g.round_number === round &&
+          g.board_slot === boardSlot
+        ) {
+          applyGameUpdate(g);
+        }
+      })
+      .subscribe();
+  }
+
+  function subscribeChat(seasonKey, round) {
+    sb.channel('chat')
+      .on('postgres_changes', {
+        event: 'INSERT',
+        schema: 'public',
+        table: 'live_chat',
+        filter: `round_number=eq.${round}`
+      }, payload => {
+        addChatMessage(payload.new);
+      })
+      .subscribe();
+  }
+
+  // ── Boot ──────────────────────────────────────────────────────────────
+  load();
+})();
+  </script>
+  <script>
+    /* Nav glider — animate to clicked link, then navigate */
+    (function() {
+      function initGlider() {
+        var nav = document.querySelector('.nav');
+        if (!nav) return;
+        var glider = nav.querySelector('.nav-glider');
+        if (!glider) { glider = document.createElement('div'); glider.className = 'nav-glider'; nav.insertBefore(glider, nav.firstChild); }
+
+        function positionOf(el) {
+          var nr = nav.getBoundingClientRect();
+          var er = el.getBoundingClientRect();
+          return { x: er.left - nr.left - 6, w: er.width };
+        }
+
+        function moveGlider(x, w, instant) {
+          if (instant) {
+            glider.style.transition = 'none';
+            glider.style.width = w + 'px';
+            glider.style.transform = 'translateX(' + x + 'px)';
+            glider.getBoundingClientRect(); /* force reflow */
+            glider.style.transition = '';
+          } else {
+            glider.style.width = w + 'px';
+            glider.style.transform = 'translateX(' + x + 'px)';
+          }
+        }
+
+        var active = nav.querySelector('a.active');
+        if (!active) { glider.style.width = '0'; return; }
+
+        var dest = positionOf(active);
+
+        /* On load: snap to stored position (where user came from), then animate to active */
+        var stored = sessionStorage.getItem('navGlider');
+        if (stored) {
+          try {
+            var prev = JSON.parse(stored);
+            moveGlider(prev.x, prev.w, true);   /* instant snap to origin */
+            requestAnimationFrame(function() {
+              requestAnimationFrame(function() {
+                moveGlider(dest.x, dest.w, false); /* animate to active */
+              });
+            });
+          } catch(e) { moveGlider(dest.x, dest.w, true); }
+        } else {
+          moveGlider(dest.x, dest.w, true);
+        }
+
+        /* On click: slide glider to target, then navigate after animation */
+        nav.querySelectorAll('a').forEach(function(a) {
+          a.addEventListener('click', function(e) {
+            e.preventDefault();
+            var href = a.getAttribute('href');
+            var pos = positionOf(a);
+            sessionStorage.setItem('navGlider', JSON.stringify(pos));
+            moveGlider(pos.x, pos.w, false);
+            setTimeout(function() { window.location.href = href; }, 180);
+          });
+        });
+      }
+      if (document.readyState === 'loading') { document.addEventListener('DOMContentLoaded', initGlider); }
+      else { initGlider(); }
+      window.addEventListener('resize', function() { sessionStorage.removeItem('navGlider'); initGlider(); });
+    })();
+  </script>
+</body>
+</html>

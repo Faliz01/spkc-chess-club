@@ -1,0 +1,587 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1.0">
+  <title>Review Brilliant Claims — SPKC Chess Club</title>
+  <link rel="stylesheet" href="style.css">
+  <style>
+    .btn-approve { background:#16a34a; color:#fff; border:none; padding:9px 18px; border-radius:12px; cursor:pointer; font-weight:700; font-size:14px; }
+    .btn-approve:hover { background:#15803d; }
+    .btn-reject { background:#dc2626; color:#fff; border:none; padding:9px 18px; border-radius:12px; cursor:pointer; font-weight:700; font-size:14px; }
+    .btn-reject:hover { background:#b91c1c; }
+    .btn-delete { background:var(--muted); color:#fff; border:none; padding:9px 14px; border-radius:12px; cursor:pointer; font-weight:600; font-size:14px; }
+    .form-input { width:100%; padding:10px 14px; border:1px solid var(--line); border-radius:12px; font-size:14px; background:var(--surface-soft); color:var(--text); margin-bottom:12px; outline:none; }
+    .form-input:focus { border-color:var(--primary); }
+    /* Claim card helpers needed by JS */
+    .claim-card { border-radius:var(--radius-lg);padding:24px;transition:box-shadow 0.2s; }
+    .claim-card.removing { opacity:0;transform:scale(0.97);transition:all 0.3s ease; }
+    .claim-header { display:flex;align-items:center;gap:12px;margin-bottom:14px;flex-wrap:wrap; }
+    .claim-player { font-weight:700;font-size:16px;color:var(--text); }
+    .claim-username { font-size:13px;color:var(--muted); }
+    .claim-badge { background:var(--surface-soft);color:var(--primary);border-radius:20px;padding:3px 10px;font-size:12px;font-weight:600; }
+    .claim-season-badge { background:#fef3c7;color:#92400e;border-radius:20px;padding:3px 10px;font-size:12px;font-weight:600; }
+    html.dark .claim-season-badge { background:rgba(199,154,37,0.2);color:#fcd34d; }
+    .claim-match { font-size:14px;color:var(--muted);margin-bottom:10px; }
+    .claim-match strong { color:var(--text); }
+    .claim-caption { font-style:italic;font-size:13px;color:var(--muted);border-left:3px solid var(--gold);padding-left:10px;margin-bottom:14px;line-height:1.5; }
+    .claim-screenshot { max-height:180px;border-radius:var(--radius-md);object-fit:cover;margin-bottom:12px;display:block;max-width:100%; }
+    .claim-game-link { display:inline-block;background:var(--surface-soft);color:var(--primary);border:1.5px solid var(--line);border-radius:8px;padding:7px 16px;font-size:13px;font-weight:700;text-decoration:none;margin-bottom:14px;transition:background 0.15s; }
+    .claim-game-link:hover { background:var(--surface); }
+    .claim-timestamp { font-size:11px;color:var(--muted);margin-bottom:14px; }
+    .claim-actions { display:flex;gap:10px;flex-wrap:wrap;margin-top:4px; }
+    .action-feedback { display:inline-block;font-size:12px;font-weight:600;padding:4px 10px;border-radius:6px;margin-left:8px; }
+    .action-feedback.approved { background:#edf8f1;color:#166534; }
+    .action-feedback.rejected { background:#fff1f1;color:#991b1b; }
+    html.dark .action-feedback.approved { background:rgba(22,163,74,0.15);color:#86efac; }
+    html.dark .action-feedback.rejected { background:rgba(239,68,68,0.15);color:#fca5a5; }
+    /* filter pills */
+    .filter-pill { padding:6px 16px;border-radius:24px;border:2px solid var(--line);background:var(--surface-soft);color:var(--muted);font-size:13px;font-weight:600;cursor:pointer;transition:all 0.15s; }
+    .filter-pill:hover { border-color:var(--primary);color:var(--primary); }
+    .filter-pill.active { background:var(--primary);color:#fff;border-color:var(--primary); }
+    .filter-label { font-size:12px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:1px; }
+    /* signout / admin meta */
+    .admin-meta { font-size:13px;color:var(--muted);display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:16px; }
+    .admin-badge { background:var(--primary);color:#fff;border-radius:20px;padding:3px 12px;font-size:12px;font-weight:700; }
+    .signout-btn { background:none;border:1px solid var(--line);border-radius:8px;padding:4px 12px;font-size:12px;font-weight:600;color:var(--muted);cursor:pointer;transition:all 0.15s;margin-left:auto; }
+    .signout-btn:hover { border-color:#dc2626;color:#dc2626; }
+    .refresh-btn { background:none;border:1px solid var(--line);border-radius:8px;padding:5px 12px;font-size:12px;font-weight:600;color:var(--muted);cursor:pointer;transition:all 0.15s; }
+    .refresh-btn:hover { border-color:var(--primary);color:var(--primary); }
+    .claims-topbar { display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;flex-wrap:wrap;gap:8px; }
+    .claims-grid { display:flex;flex-direction:column;gap:20px; }
+    /* Toast */
+    .toast-wrap { position:fixed;bottom:24px;right:24px;z-index:9999;display:flex;flex-direction:column;gap:8px; }
+    .toast { background:var(--text);color:var(--bg);padding:10px 18px;border-radius:10px;font-size:13px;font-weight:600;opacity:0;transform:translateY(8px);transition:all 0.25s;pointer-events:none; }
+    .toast.show { opacity:1;transform:translateY(0); }
+    .toast.success-t { background:#16a34a; }
+    .toast.danger-t { background:#dc2626; }
+  </style>
+</head>
+<body>
+  <a href="#main" class="skip-link">Skip to content</a>
+  <div class="page-shell">
+    <header class="hero">
+      <div class="nav-wrap"><nav class="nav" aria-label="Primary">
+        <a href="index.html"><span class="nav-icon">🏠</span>Home</a>
+        <a href="join.html"><span class="nav-icon">✋</span>Join</a>
+        <a href="tournaments.html"><span class="nav-icon">🏆</span>Tournaments</a>
+        <a href="rules.html"><span class="nav-icon">📋</span>Rules</a>
+        <a href="brilliants.html"><span class="nav-icon">💎</span>Brilliants</a>
+        <a href="matches.html"><span class="nav-icon">⚔️</span>Matches</a>
+        <a href="history.html"><span class="nav-icon">📜</span>History</a>
+        <a href="openings.html"><span class="nav-icon">📖</span>Openings</a>
+        <a href="live-hub.html" class="active"><span class="nav-live-dot"></span>Live</a>
+        <button class="dark-toggle" id="darkToggle" aria-label="Toggle dark mode" title="Toggle dark mode">🌙</button>
+      </nav></div>
+      <div class="hero-layout">
+        <div class="hero-copy">
+          <p class="eyebrow">Admin — Claim Verification Deck</p>
+          <h1>Review Brilliant Claims</h1>
+          <p class="hero-text">Approve or reject submitted brilliant move claims. All actions are logged to the audit trail.</p>
+          <div class="button-row"></div>
+        </div>
+      </div>
+    </header>
+
+    <main id="main" class="content-grid">
+
+      <!-- Login section (shown when not authenticated) -->
+      <section class="panel span-12" id="loginSection">
+        <div class="section-head">Admin Sign In</div>
+        <div class="info-box">
+          <p style="margin-bottom:16px;color:var(--muted);font-size:14px;">This page is restricted to SPKC Chess Club administrators.</p>
+          <label style="display:block;font-size:12px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:6px;" for="emailInput">Email</label>
+          <input type="email" id="emailInput" class="form-input" placeholder="admin@spkc.club" autocomplete="email"/>
+          <label style="display:block;font-size:12px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:6px;" for="passwordInput">Password</label>
+          <input type="password" id="passwordInput" class="form-input" placeholder="••••••••" autocomplete="current-password"/>
+          <button class="button-link" id="signinBtn" style="width:100%;justify-content:center;margin-top:8px;">Sign In</button>
+          <div id="loginError" style="display:none;margin-top:12px;padding:10px 14px;background:#fff1f1;border-radius:12px;font-size:13px;color:#b91c1c;"></div>
+        </div>
+      </section>
+
+      <!-- Admin section (shown when authenticated) -->
+      <section class="panel span-12" id="adminSection" style="display:none">
+        <div class="section-head">
+          Claims Queue
+          <span class="section-badge" id="claimsCount">—</span>
+        </div>
+
+        <!-- Admin meta / logout -->
+        <div class="admin-meta">
+          <span>Logged in as <strong id="adminEmail"></strong></span>
+          <span class="admin-badge">🛡 Admin</span>
+          <button class="signout-btn" id="signoutBtn">Sign Out</button>
+          <button class="refresh-btn" id="refreshBtn">↻ Refresh</button>
+        </div>
+
+        <!-- Season filter -->
+        <div id="claimSeasonFilter" class="meta-row" style="margin-bottom:20px;gap:8px;flex-wrap:wrap;">
+          <span class="filter-label">Season:</span>
+          <button class="filter-pill active" data-season="all">All</button>
+        </div>
+
+        <!-- Claims list -->
+        <div id="claimsRoot">
+          <div class="info-box">Loading claims…</div>
+        </div>
+
+      </section>
+
+    </main>
+  </div>
+
+  <!-- Toast container -->
+  <div class="toast-wrap" id="toastWrap"></div>
+
+  <script src="lib/supabase.min.js"></script>
+  <script>
+const SUPABASE_URL = 'https://qoczwxslhygakivfgxdy.supabase.co';
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFvY3p3eHNsaHlnYWtpdmZneGR5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk2MTAwNzMsImV4cCI6MjA5NTE4NjA3M30.J5I0IR5Ra_JePDzJYHpzstbNRCo667B201iVhjbDZjs';
+const { createClient } = supabase;
+const sb = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+// Dark mode
+  const darkToggle = document.getElementById('darkToggle');
+  function applyDark(on) {
+    document.documentElement.classList.toggle('dark', on);
+    darkToggle.textContent = on ? '☀️' : '🌙';
+  }
+  darkToggle.addEventListener('click', function() {
+    applyDark(!document.documentElement.classList.contains('dark'));
+  });
+function showToast(msg, type = '') {
+  const wrap = document.getElementById('toastWrap');
+  const t = document.createElement('div');
+  t.className = `toast${type ? ' ' + type + '-t' : ''}`;
+  t.textContent = msg;
+  wrap.appendChild(t);
+  requestAnimationFrame(() => { t.classList.add('show'); });
+  setTimeout(() => { t.classList.remove('show'); setTimeout(() => t.remove(), 300); }, 3000);
+}
+
+// Format helpers
+const FORMAT_CYCLE = ['bullet','blitz','rapid'];
+const FORMAT_ICONS = { bullet: '🔴', blitz: '⚡', rapid: '🕐' };
+function getFormat(rn) { return FORMAT_CYCLE[(rn - 1) % 3]; }
+
+function fmtDateTime(iso) {
+  if (!iso) return '';
+  return new Date(iso).toLocaleString('en-HK', {
+    year:'numeric', month:'short', day:'numeric',
+    hour:'2-digit', minute:'2-digit', hour12:true, timeZone:'Asia/Hong_Kong'
+  }) + ' HKT';
+}
+
+function escHtml(str) {
+  if (!str) return '';
+  const d = document.createElement('div');
+  d.textContent = str;
+  return d.innerHTML;
+}
+
+// State
+let currentSession = null;
+let allClaims = [];
+let currentSeason = 'all';
+
+// Auth
+function showLogin() {
+  document.getElementById('loginSection').style.display = '';
+  document.getElementById('adminSection').style.display = 'none';
+}
+
+function showAdmin(session) {
+  currentSession = session;
+  document.getElementById('loginSection').style.display = 'none';
+  document.getElementById('adminSection').style.display = '';
+  document.getElementById('adminEmail').textContent = session.user.email;
+  loadClaims();
+}
+
+// Initial auth check
+async function init() {
+  const { data: { session } } = await sb.auth.getSession();
+  if (session) showAdmin(session);
+  else showLogin();
+
+  sb.auth.onAuthStateChange((event, session) => {
+    if (session) showAdmin(session);
+    else showLogin();
+  });
+}
+
+// Login form
+const signinBtn = document.getElementById('signinBtn');
+const loginError = document.getElementById('loginError');
+
+async function signIn() {
+  const email = document.getElementById('emailInput').value.trim();
+  const password = document.getElementById('passwordInput').value;
+  if (!email || !password) { showLoginError('Please enter email and password.'); return; }
+
+  signinBtn.disabled = true;
+  signinBtn.textContent = 'Signing in…';
+  loginError.style.display = 'none';
+
+  const { error } = await sb.auth.signInWithPassword({ email, password });
+  if (error) {
+    showLoginError(error.message);
+    signinBtn.disabled = false;
+    signinBtn.textContent = 'Sign In';
+  }
+}
+
+function showLoginError(msg) {
+  loginError.textContent = msg;
+  loginError.style.display = 'block';
+}
+
+signinBtn.addEventListener('click', signIn);
+document.getElementById('passwordInput').addEventListener('keydown', e => {
+  if (e.key === 'Enter') signIn();
+});
+
+// Sign out
+document.getElementById('signoutBtn').addEventListener('click', async () => {
+  await sb.auth.signOut();
+  showToast('Signed out');
+});
+
+// Load claims
+async function loadClaims() {
+  document.getElementById('claimsRoot').innerHTML = '<div class="info-box">Loading claims…</div>';
+  document.getElementById('claimsCount').textContent = '…';
+
+  const { data, error } = await sb
+    .from('brilliant_moves')
+    .select('*')
+    .order('created_at', { ascending: false });
+
+  if (error) {
+    document.getElementById('claimsRoot').innerHTML = `<div class="info-box" style="color:#dc2626;">Error: ${escHtml(error.message)}</div>`;
+    return;
+  }
+
+  allClaims = data || [];
+  buildSeasonFilter();
+  renderClaims();
+}
+
+function buildSeasonFilter() {
+  const seasonSet = [...new Set(allClaims.map(m => m.season_key).filter(Boolean))];
+  const sfRow = document.getElementById('claimSeasonFilter');
+  sfRow.innerHTML = '<span class="filter-label">Season:</span>';
+
+  const allBtn = document.createElement('button');
+  allBtn.className = 'filter-pill active';
+  allBtn.dataset.season = 'all';
+  allBtn.textContent = 'All';
+  allBtn.addEventListener('click', () => { currentSeason = 'all'; updateSeasonActive('all'); renderClaims(); });
+  sfRow.appendChild(allBtn);
+
+  seasonSet.forEach(sk => {
+    const btn = document.createElement('button');
+    btn.className = 'filter-pill';
+    btn.dataset.season = sk;
+    btn.textContent = sk;
+    btn.addEventListener('click', () => { currentSeason = sk; updateSeasonActive(sk); renderClaims(); });
+    sfRow.appendChild(btn);
+  });
+}
+
+function updateSeasonActive(active) {
+  document.querySelectorAll('#claimSeasonFilter .filter-pill').forEach(btn => {
+    btn.classList.toggle('active', btn.dataset.season === active);
+  });
+}
+
+function filteredClaims() {
+  return allClaims.filter(c => currentSeason === 'all' || c.season_key === currentSeason);
+}
+
+function renderClaims() {
+  const claims = filteredClaims();
+  const root = document.getElementById('claimsRoot');
+  const countEl = document.getElementById('claimsCount');
+
+  countEl.textContent = `${claims.length} claim${claims.length !== 1 ? 's' : ''}`;
+
+  if (claims.length === 0) {
+    root.innerHTML = `<div class="info-box" style="text-align:center;">
+      <span style="font-size:40px;display:block;margin-bottom:12px;">✨</span>
+      <strong>No brilliant move claims.</strong><br>All clear!
+    </div>`;
+    return;
+  }
+
+  root.innerHTML = '';
+  const grid = document.createElement('div');
+  grid.className = 'claims-grid';
+  claims.forEach(c => {
+    const card = buildClaimCard(c);
+    grid.appendChild(card);
+  });
+  root.appendChild(grid);
+}
+
+function buildClaimCard(claim) {
+  const card = document.createElement('div');
+  card.className = 'standing-card claim-card';
+  card.dataset.id = claim.id;
+
+  // Header
+  const header = document.createElement('div');
+  header.className = 'claim-header';
+
+  const nameGroup = document.createElement('div');
+  nameGroup.innerHTML = `
+    <div class="claim-player">${escHtml(claim.player_name || 'Unknown Player')}</div>
+    ${claim.chess_username ? `<div class="claim-username">@${escHtml(claim.chess_username)}</div>` : ''}
+  `;
+  header.appendChild(nameGroup);
+
+  if (claim.round_number) {
+    const fmt = getFormat(claim.round_number);
+    const rb = document.createElement('span');
+    rb.className = 'claim-badge meta-pill';
+    rb.textContent = `${FORMAT_ICONS[fmt]} Round ${claim.round_number}`;
+    header.appendChild(rb);
+  }
+  if (claim.season_key) {
+    const sb2 = document.createElement('span');
+    sb2.className = 'claim-season-badge meta-pill';
+    sb2.textContent = claim.season_key;
+    header.appendChild(sb2);
+  }
+
+  card.appendChild(header);
+
+  // Match desc
+  if (claim.match_desc) {
+    const md = document.createElement('p');
+    md.className = 'claim-match';
+    md.style.color = 'var(--muted)';
+    md.innerHTML = `<strong>Match:</strong> ${escHtml(claim.match_desc)}`;
+    card.appendChild(md);
+  }
+
+  // Caption
+  if (claim.caption) {
+    const cap = document.createElement('blockquote');
+    cap.className = 'claim-caption';
+    cap.style.borderLeft = '3px solid var(--gold)';
+    cap.style.paddingLeft = '10px';
+    cap.style.marginBottom = '14px';
+    cap.textContent = claim.caption;
+    card.appendChild(cap);
+  }
+
+  // Screenshot
+  if (claim.screenshot_url) {
+    const img = document.createElement('img');
+    img.className = 'claim-screenshot';
+    img.src = claim.screenshot_url;
+    img.alt = 'Brilliant move screenshot';
+    img.loading = 'lazy';
+    card.appendChild(img);
+  }
+
+  // Game link
+  if (claim.game_link) {
+    const a = document.createElement('a');
+    a.href = claim.game_link;
+    a.target = '_blank';
+    a.rel = 'noopener noreferrer';
+    a.className = 'claim-game-link button-ghost';
+    a.textContent = '♟ View game →';
+    card.appendChild(a);
+  }
+
+  // Timestamp
+  if (claim.created_at) {
+    const ts = document.createElement('small');
+    ts.className = 'claim-timestamp';
+    ts.style.color = 'var(--muted)';
+    ts.style.display = 'block';
+    ts.style.marginBottom = '14px';
+    ts.textContent = `Submitted: ${fmtDateTime(claim.created_at)}`;
+    card.appendChild(ts);
+  }
+
+  // Actions
+  const actions = document.createElement('div');
+  actions.className = 'claim-actions';
+
+  const approveBtn = document.createElement('button');
+  approveBtn.className = 'btn-approve';
+  approveBtn.textContent = '✓ Approve (+4 pts)';
+  approveBtn.addEventListener('click', () => handleApprove(claim, approveBtn, rejectBtn, deleteBtn, card));
+
+  const rejectBtn = document.createElement('button');
+  rejectBtn.className = 'btn-reject';
+  rejectBtn.textContent = '✗ Reject';
+  rejectBtn.addEventListener('click', () => handleReject(claim, approveBtn, rejectBtn, deleteBtn, card));
+
+  const deleteBtn = document.createElement('button');
+  deleteBtn.className = 'btn-delete';
+  deleteBtn.textContent = '🗑 Delete';
+  deleteBtn.addEventListener('click', () => handleDelete(claim, card));
+
+  actions.appendChild(approveBtn);
+  actions.appendChild(rejectBtn);
+  actions.appendChild(deleteBtn);
+  card.appendChild(actions);
+
+  return card;
+}
+
+async function logAdminAction(action, claim) {
+  if (!currentSession) return;
+  try {
+    await sb.from('admin_log').insert({
+      action,
+      detail: JSON.stringify({ id: claim.id, player_name: claim.player_name, chess_username: claim.chess_username }),
+      performed_by: currentSession.user.email
+    });
+  } catch(e) { /* log table may not exist yet, silently skip */ }
+}
+
+async function handleApprove(claim, approveBtn, rejectBtn, deleteBtn, card) {
+  setActionsDisabled(approveBtn, rejectBtn, deleteBtn, true);
+  try {
+    const { error } = await sb.from('brilliant_moves').update({ approved: true }).eq('id', claim.id);
+    if (error) throw error;
+    await logAdminAction('brilliant_approved', claim);
+    showFeedback(card, 'approved', '✓ Approved');
+    showToast(`Approved: ${claim.player_name || 'claim'}`, 'success');
+  } catch(e) {
+    setActionsDisabled(approveBtn, rejectBtn, deleteBtn, false);
+    showToast('Approve failed: ' + (e.message || e), 'danger');
+  }
+}
+
+async function handleReject(claim, approveBtn, rejectBtn, deleteBtn, card) {
+  setActionsDisabled(approveBtn, rejectBtn, deleteBtn, true);
+  try {
+    const { error } = await sb.from('brilliant_moves').update({ approved: false }).eq('id', claim.id);
+    if (error) throw error;
+    await logAdminAction('brilliant_rejected', claim);
+    showFeedback(card, 'rejected', '✗ Rejected');
+    showToast(`Rejected: ${claim.player_name || 'claim'}`, 'danger');
+  } catch(e) {
+    setActionsDisabled(approveBtn, rejectBtn, deleteBtn, false);
+    showToast('Reject failed: ' + (e.message || e), 'danger');
+  }
+}
+
+async function handleDelete(claim, card) {
+  if (!confirm(`Delete brilliant move claim by "${claim.player_name || 'Unknown'}"? This cannot be undone.`)) return;
+
+  const { error } = await sb.from('brilliant_moves').delete().eq('id', claim.id);
+  if (error) {
+    showToast('Delete failed: ' + error.message, 'danger');
+    return;
+  }
+
+  // Remove from allClaims
+  allClaims = allClaims.filter(c => c.id !== claim.id);
+  card.classList.add('removing');
+  setTimeout(() => {
+    card.remove();
+    const remaining = filteredClaims().length;
+    document.getElementById('claimsCount').textContent = `${remaining} claim${remaining !== 1 ? 's' : ''}`;
+    if (remaining === 0) renderClaims();
+  }, 180);
+
+  showToast('Claim deleted', 'success');
+}
+
+function setActionsDisabled(approveBtn, rejectBtn, deleteBtn, val) {
+  approveBtn.disabled = val;
+  rejectBtn.disabled = val;
+  deleteBtn.disabled = val;
+}
+
+function showFeedback(card, type, label) {
+  const existing = card.querySelector('.action-feedback');
+  if (existing) existing.remove();
+  const fb = document.createElement('span');
+  fb.className = `action-feedback ${type}`;
+  fb.textContent = label;
+  card.querySelector('.claim-actions').appendChild(fb);
+}
+
+// Refresh button
+document.getElementById('refreshBtn').addEventListener('click', loadClaims);
+
+// Init
+init();
+  </script>
+  <script>
+    /* Nav glider — animate to clicked link, then navigate */
+    (function() {
+      function initGlider() {
+        var nav = document.querySelector('.nav');
+        if (!nav) return;
+        var glider = nav.querySelector('.nav-glider');
+        if (!glider) { glider = document.createElement('div'); glider.className = 'nav-glider'; nav.insertBefore(glider, nav.firstChild); }
+
+        function positionOf(el) {
+          var nr = nav.getBoundingClientRect();
+          var er = el.getBoundingClientRect();
+          return { x: er.left - nr.left - 6, w: er.width };
+        }
+
+        function moveGlider(x, w, instant) {
+          if (instant) {
+            glider.style.transition = 'none';
+            glider.style.width = w + 'px';
+            glider.style.transform = 'translateX(' + x + 'px)';
+            glider.getBoundingClientRect(); /* force reflow */
+            glider.style.transition = '';
+          } else {
+            glider.style.width = w + 'px';
+            glider.style.transform = 'translateX(' + x + 'px)';
+          }
+        }
+
+        var active = nav.querySelector('a.active');
+        if (!active) { glider.style.width = '0'; return; }
+
+        var dest = positionOf(active);
+
+        /* On load: snap to stored position (where user came from), then animate to active */
+        var stored = sessionStorage.getItem('navGlider');
+        if (stored) {
+          try {
+            var prev = JSON.parse(stored);
+            moveGlider(prev.x, prev.w, true);   /* instant snap to origin */
+            requestAnimationFrame(function() {
+              requestAnimationFrame(function() {
+                moveGlider(dest.x, dest.w, false); /* animate to active */
+              });
+            });
+          } catch(e) { moveGlider(dest.x, dest.w, true); }
+        } else {
+          moveGlider(dest.x, dest.w, true);
+        }
+
+        /* On click: slide glider to target, then navigate after animation */
+        nav.querySelectorAll('a').forEach(function(a) {
+          a.addEventListener('click', function(e) {
+            e.preventDefault();
+            var href = a.getAttribute('href');
+            var pos = positionOf(a);
+            sessionStorage.setItem('navGlider', JSON.stringify(pos));
+            moveGlider(pos.x, pos.w, false);
+            setTimeout(function() { window.location.href = href; }, 180);
+          });
+        });
+      }
+      if (document.readyState === 'loading') { document.addEventListener('DOMContentLoaded', initGlider); }
+      else { initGlider(); }
+      window.addEventListener('resize', function() { sessionStorage.removeItem('navGlider'); initGlider(); });
+    })();
+  </script>
+</body>
+</html>

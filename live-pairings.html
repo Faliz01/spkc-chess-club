@@ -1,0 +1,613 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1.0">
+  <title>Live Pairings — SPKC Chess Club</title>
+  <link rel="stylesheet" href="style.css">
+  <style>
+    /* Minimal page-specific additions — classes the JS templates reference */
+    .round-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 8px 18px;
+      border-radius: 999px;
+      border: 1px solid var(--line);
+      background: var(--bg-accent);
+      color: var(--muted);
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.15s, color 0.15s, border-color 0.15s, transform 0.15s;
+      user-select: none;
+    }
+    .round-pill:hover {
+      background: var(--surface);
+      color: var(--primary);
+      border-color: var(--primary-2);
+      transform: translateY(-1px);
+    }
+    .round-pill.active {
+      background: var(--primary);
+      color: #fff;
+      border-color: var(--primary);
+    }
+    html.dark .round-pill { background: #1a2b40; color: var(--muted); border-color: var(--line); }
+    html.dark .round-pill:hover { background: #1e2f48; color: var(--primary); }
+    html.dark .round-pill.active { background: var(--primary); color: #0f1923; border-color: var(--primary); }
+    /* Pairing card classes (JS-referenced) */
+    .pairing-card {
+      background: var(--surface);
+      border: 1px solid var(--line);
+      border-radius: var(--radius-lg);
+      padding: 24px;
+      transition: box-shadow 0.2s, border-color 0.2s, transform 0.2s;
+    }
+    .pairing-card:hover {
+      box-shadow: var(--shadow);
+      border-color: var(--line-strong);
+      transform: translateY(-2px);
+    }
+    .pairing-card.is-live {
+      border-color: rgba(34, 197, 94, 0.45);
+      box-shadow: 0 0 0 2px rgba(34, 197, 94, 0.12), var(--shadow-soft);
+    }
+    .pairing-board-label {
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 1.5px;
+      margin-bottom: 16px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .pairing-board-num {
+      display: inline-block;
+      background: var(--bg-accent);
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      padding: 2px 8px;
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--primary);
+    }
+    .vs-row {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      justify-content: space-between;
+      margin-bottom: 16px;
+    }
+    .player-pill {
+      background: var(--bg-accent);
+      border: 1px solid var(--line);
+      border-radius: 20px;
+      padding: 8px 16px;
+      font-weight: 600;
+      font-size: 0.875rem;
+      color: var(--text);
+      min-width: 0;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      max-width: 140px;
+      flex: 1;
+    }
+    .player-pill.white-pill { border-left: 3px solid var(--gold); }
+    .player-pill.black-pill { border-right: 3px solid var(--muted); text-align: right; }
+    .player-username { font-size: 10px; color: var(--muted); font-weight: 400; display: block; margin-top: 2px; }
+    .vs-divider { font-size: 12px; font-weight: 800; color: var(--muted); flex-shrink: 0; }
+    .pairing-status-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 12px;
+      font-weight: 700;
+      border-radius: 999px;
+      padding: 5px 12px;
+    }
+    .pairing-status-waiting { background: var(--bg-accent); color: var(--muted); border: 1px solid var(--line); }
+    .pairing-status-live { background: rgba(34, 197, 94, 0.12); color: #16a34a; border: 1px solid rgba(34, 197, 94, 0.3); }
+    .pairing-status-white-wins { background: rgba(199, 154, 37, 0.10); color: #a07a14; border: 1px solid rgba(199, 154, 37, 0.25); }
+    .pairing-status-black-wins { background: rgba(35, 74, 145, 0.10); color: var(--primary); border: 1px solid var(--line); }
+    .pairing-status-draw { background: rgba(95, 112, 134, 0.10); color: var(--muted); border: 1px solid var(--line); }
+    .pairing-card-footer {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+    .pairing-view-link {
+      font-size: 12px;
+      color: var(--primary-2);
+      font-weight: 600;
+      text-decoration: none;
+      padding: 4px 8px;
+      border-radius: 6px;
+      transition: background 0.15s;
+    }
+    .pairing-view-link:hover { background: rgba(59, 115, 220, 0.08); }
+    .pairings-live-dot {
+      width: 9px;
+      height: 9px;
+      background: #22c55e;
+      border-radius: 50%;
+      display: inline-block;
+      animation: live-pulse 1.4s ease-in-out infinite;
+    }
+    /* Pairings empty */
+    .pairings-empty {
+      grid-column: 1 / -1;
+      background: var(--surface);
+      border: 1px dashed var(--line-strong);
+      border-radius: var(--radius-xl);
+      padding: 64px 40px;
+      text-align: center;
+    }
+    .pairings-empty-icon { font-size: 64px; margin-bottom: 16px; line-height: 1; }
+    .pairings-empty h3 { font-size: 1.2rem; color: var(--text); margin: 0 0 8px; }
+    .pairings-empty p { color: var(--muted); margin: 0 auto; font-size: 0.9rem; max-width: 360px; }
+    /* Pairings spinner */
+    .pairings-spinner {
+      width: 40px;
+      height: 40px;
+      border: 3px solid var(--line);
+      border-top-color: var(--primary);
+      border-radius: 50%;
+      animation: pair-spin 0.8s linear infinite;
+      margin: 0 auto 16px;
+    }
+    @keyframes pair-spin { to { transform: rotate(360deg); } }
+    html.dark .pairing-card { background: #1a2738; border-color: var(--line); }
+    html.dark .pairing-card.is-live { border-color: rgba(34, 197, 94, 0.4); box-shadow: 0 0 0 2px rgba(34, 197, 94, 0.08); }
+    html.dark .player-pill { background: #1e2f48; border-color: var(--line); }
+    html.dark .pairing-board-num { background: #1e2f48; border-color: var(--line); }
+    html.dark .pairings-empty { background: #1a2738; border-color: var(--line-strong); }
+    html.dark .pairing-status-waiting { background: #1a2b40; border-color: var(--line); }
+    html.dark .pairing-status-white-wins { background: rgba(199, 154, 37, 0.08); border-color: rgba(199, 154, 37, 0.2); }
+    html.dark .pairing-status-black-wins { background: rgba(91, 158, 248, 0.08); border-color: rgba(91, 158, 248, 0.2); }
+  </style>
+</head>
+<body>
+  <a href="#main" class="skip-link">Skip to content</a>
+  <div class="page-shell">
+    <header class="hero">
+      <div class="nav-wrap"><nav class="nav" aria-label="Primary">
+        <a href="index.html"><span class="nav-icon">🏠</span>Home</a>
+        <a href="join.html"><span class="nav-icon">✋</span>Join</a>
+        <a href="tournaments.html"><span class="nav-icon">🏆</span>Tournaments</a>
+        <a href="rules.html"><span class="nav-icon">📋</span>Rules</a>
+        <a href="brilliants.html"><span class="nav-icon">💎</span>Brilliants</a>
+        <a href="matches.html"><span class="nav-icon">⚔️</span>Matches</a>
+        <a href="history.html"><span class="nav-icon">📜</span>History</a>
+        <a href="openings.html"><span class="nav-icon">📖</span>Openings</a>
+        <a href="live-hub.html" class="active"><span class="nav-live-dot"></span>Live</a>
+        <button class="dark-toggle" id="darkToggle" aria-label="Toggle dark mode" title="Toggle dark mode">🌙</button>
+      </nav></div>
+      <div class="hero-layout">
+        <div class="hero-copy">
+          <p class="eyebrow">SPKC Chess Club — Match Night</p>
+          <h1>Live Pairings</h1>
+          <p class="hero-text">Real-time pairing board. Updated live as games complete.</p>
+          <div class="button-row">
+            <a class="button-ghost" href="live-hub.html">← Live Hub</a>
+            <a class="button-link" href="live-arena.html">All Boards →</a>
+          </div>
+          <div class="hero-stats">
+            <div class="stat-card">
+              <div class="stat-number" id="pairingStatBoards">—</div>
+              <div class="stat-label">Boards</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-number" id="pairingStatLive">—</div>
+              <div class="stat-label">Playing</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-number" id="pairingStatDone">—</div>
+              <div class="stat-label">Completed</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <main id="main" class="content-grid">
+      <!-- Loading state -->
+      <section class="panel span-12" id="pairingsLoading">
+        <div style="text-align:center;padding:40px 0;">
+          <div class="pairings-spinner"></div>
+          <p style="color:var(--muted);margin:0;">Loading pairings…</p>
+        </div>
+      </section>
+
+      <!-- Content (hidden until loaded) -->
+      <div id="pairingsContent" style="display:none;width:100%;display:none;">
+        <!-- Round selector -->
+        <section class="panel span-12">
+          <div class="section-head" style="margin-bottom:16px;">
+            <h2 class="section-title">Round</h2>
+            <span class="section-badge" id="roundCount"></span>
+          </div>
+          <div id="roundSelector" class="meta-row" role="tablist" aria-label="Select round">
+            <!-- Pills injected here -->
+          </div>
+        </section>
+
+        <!-- Pairings grid -->
+        <section class="panel span-12">
+          <div class="section-head" style="margin-bottom:20px;">
+            <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+              <h2 class="section-title" id="pairingsTitle">Round Pairings</h2>
+              <span class="pairings-live-dot" id="pairingsLiveDot" style="display:none;" aria-label="Live updates active" title="Live updates active"></span>
+            </div>
+            <span class="section-badge" id="pairingsFormatBadge">–</span>
+          </div>
+          <div id="pairingsGrid" class="card-grid">
+            <!-- Cards injected here -->
+          </div>
+          <div id="pairingsEmpty" class="info-box" style="display:none;">♜ Pairings not yet set for this round.</div>
+        </section>
+      </div>
+
+      <!-- No season state -->
+      <section class="panel span-12" id="pairingsNoSeason" style="display:none;">
+        <div class="info-box">
+          <div style="font-size:48px;margin-bottom:12px;">♟</div>
+          <p>No season data available yet.</p>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <script src="lib/supabase.min.js"></script>
+  <script>
+    // ── Helpers ─────────────────────────────────────────────────────────────
+    // Dark mode toggle
+    (function() {
+      const btn = document.getElementById('darkToggle');
+      function applyDark(on) {
+        document.documentElement.classList.toggle('dark', on);
+        if (btn) btn.textContent = on ? '☀️' : '🌙';
+      }
+      if (btn) btn.addEventListener('click', function() {
+        applyDark(!document.documentElement.classList.contains('dark'));
+      });
+    })();
+
+    // ── Supabase ─────────────────────────────────────────────────────────────
+    const SUPABASE_URL = 'https://qoczwxslhygakivfgxdy.supabase.co';
+    const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFvY3p3eHNsaHlnYWtpdmZneGR5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk2MTAwNzMsImV4cCI6MjA5NTE4NjA3M30.J5I0IR5Ra_JePDzJYHpzstbNRCo667B201iVhjbDZjs';
+    const { createClient } = supabase;
+    const sb = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+    // ── Format cycle ──────────────────────────────────────────────────────────
+    const BULLET_SVG = `<svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 14 14" fill="none" aria-hidden="true" style="vertical-align:middle;">
+      <ellipse cx="7" cy="7" rx="4" ry="6" fill="#c79a25"/>
+      <rect x="6" y="0.5" width="2" height="3" rx="1" fill="#c79a25"/>
+    </svg>`;
+
+    function getFormatForRound(roundNumber) {
+      const cycle = ['bullet', 'blitz', 'rapid'];
+      return cycle[(roundNumber - 1) % 3];
+    }
+
+    function getFormatInfo(format) {
+      const map = {
+        bullet: { icon: BULLET_SVG, name: 'Bullet',  label: 'Bullet — ultra-fast' },
+        blitz:  { icon: '⚡',        name: 'Blitz',   label: 'Blitz — fast & tactical' },
+        rapid:  { icon: '🕐',        name: 'Rapid',   label: 'Rapid — thoughtful & strategic' }
+      };
+      return map[format] || map.blitz;
+    }
+
+    function escHtml(str) {
+      return String(str || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+    }
+
+    // ── State ─────────────────────────────────────────────────────────────────
+    let currentSeasonKey = null;
+    let currentRound = null;
+    let availableRounds = [];
+    let realtimeChannel = null;
+
+    // ── Status badge ──────────────────────────────────────────────────────────
+    function buildPairingStatus(game) {
+      const { status, result } = game;
+      if (status === 'waiting') {
+        return `<span class="pairing-status-badge pairing-status-waiting">⏳ Waiting</span>`;
+      }
+      if (status === 'live') {
+        return `<span class="pairing-status-badge pairing-status-live"><span class="pairings-live-dot" style="width:7px;height:7px;" aria-hidden="true"></span> ♟ Playing</span>`;
+      }
+      if (status === 'done') {
+        if (result === '1-0') return `<span class="pairing-status-badge pairing-status-white-wins">✓ White wins</span>`;
+        if (result === '0-1') return `<span class="pairing-status-badge pairing-status-black-wins">✓ Black wins</span>`;
+        if (result === '½-½' || result === '1/2-1/2') return `<span class="pairing-status-badge pairing-status-draw">½ Draw</span>`;
+        return `<span class="pairing-status-badge pairing-status-black-wins">✓ Done</span>`;
+      }
+      return '';
+    }
+
+    function buildPairingCard(game) {
+      const statusBadge = buildPairingStatus(game);
+      const isLive = game.status === 'live';
+      const gameLink = (game.status === 'done' && game.game_link)
+        ? `<a href="${escHtml(game.game_link)}" class="pairing-view-link" target="_blank" rel="noopener noreferrer">View game →</a>`
+        : '';
+
+      const whiteName = escHtml(game.white_name || 'TBD');
+      const blackName = escHtml(game.black_name || 'TBD');
+      const whiteUser = game.white_username ? `<span class="player-username">@${escHtml(game.white_username)}</span>` : '';
+      const blackUser = game.black_username ? `<span class="player-username">@${escHtml(game.black_username)}</span>` : '';
+
+      return `
+        <div class="pairing-card${isLive ? ' is-live' : ''}" role="article" aria-label="Board ${game.board_slot}: ${game.white_name || 'TBD'} vs ${game.black_name || 'TBD'}">
+          <div class="pairing-board-label">
+            <span class="pairing-board-num">Board ${game.board_slot}</span>
+          </div>
+          <div class="vs-row">
+            <div class="player-pill white-pill" title="${whiteName}${game.white_username ? ' (@'+escHtml(game.white_username)+')' : ''}">
+              ♔ ${whiteName}
+              ${whiteUser}
+            </div>
+            <span class="vs-divider">vs</span>
+            <div class="player-pill black-pill" title="${blackName}${game.black_username ? ' (@'+escHtml(game.black_username)+')' : ''}">
+              ♚ ${blackName}
+              ${blackUser}
+            </div>
+          </div>
+          <div class="pairing-card-footer">
+            ${statusBadge}
+            ${gameLink}
+          </div>
+        </div>`;
+    }
+
+    function renderPairings(games) {
+      const grid = document.getElementById('pairingsGrid');
+      if (!games || games.length === 0) {
+        grid.innerHTML = `
+          <div class="pairings-empty">
+            <div class="pairings-empty-icon">♜ ♞ ♝</div>
+            <h3>Pairings not yet set</h3>
+            <p>Board assignments will appear here once the round is set up. Check back shortly.</p>
+          </div>`;
+        return;
+      }
+      // Sort by board_slot
+      games.sort((a, b) => a.board_slot - b.board_slot);
+      grid.innerHTML = games.map(buildPairingCard).join('');
+
+      // Show live dot if any game is live
+      const hasLive = games.some(g => g.status === 'live');
+      document.getElementById('pairingsLiveDot').style.display = hasLive ? 'inline-block' : 'none';
+    }
+
+    // ── Load games for a round ────────────────────────────────────────────────
+    async function loadGamesForRound(seasonKey, roundNum) {
+      const format = getFormatForRound(roundNum);
+      const info = getFormatInfo(format);
+
+      // Update header
+      document.getElementById('pairingsTitle').textContent = `Round ${roundNum} Pairings`;
+      document.getElementById('pairingsFormatBadge').innerHTML = `${info.icon} ${info.name}`;
+
+      // Update pill states
+      document.querySelectorAll('.round-pill').forEach(p => {
+        p.classList.toggle('active', parseInt(p.dataset.round, 10) === roundNum);
+        p.setAttribute('aria-selected', parseInt(p.dataset.round, 10) === roundNum ? 'true' : 'false');
+      });
+
+      // Fetch games
+      const { data, error } = await sb
+        .from('live_games')
+        .select('*')
+        .eq('season_key', seasonKey)
+        .eq('round_number', roundNum)
+        .order('board_slot');
+
+      renderPairings(error ? [] : (data || []));
+
+      // Unsubscribe old channel
+      if (realtimeChannel) {
+        realtimeChannel.unsubscribe();
+        realtimeChannel = null;
+      }
+
+      // Subscribe to realtime for this round
+      realtimeChannel = sb.channel(`live-pairings-${seasonKey}-${roundNum}`)
+        .on('postgres_changes', {
+          event: '*',
+          schema: 'public',
+          table: 'live_games',
+          filter: `season_key=eq.${seasonKey}`
+        }, async function() {
+          const { data: fresh } = await sb
+            .from('live_games')
+            .select('*')
+            .eq('season_key', seasonKey)
+            .eq('round_number', roundNum)
+            .order('board_slot');
+          renderPairings(fresh || []);
+        })
+        .subscribe();
+    }
+
+    // ── Build round selector ──────────────────────────────────────────────────
+    function buildRoundSelector(rounds, seasonKey) {
+      const selector = document.getElementById('roundSelector');
+      if (!rounds || rounds.length === 0) {
+        selector.style.display = 'none';
+        return;
+      }
+      selector.innerHTML = rounds.map(r => {
+        const format = getFormatForRound(r);
+        const info = getFormatInfo(format);
+        return `<button class="round-pill" data-round="${r}" role="tab" aria-selected="false" aria-label="Round ${r} — ${info.name}">
+          ${info.icon} R${r}
+        </button>`;
+      }).join('');
+
+      selector.querySelectorAll('.round-pill').forEach(btn => {
+        btn.addEventListener('click', function() {
+          const r = parseInt(this.dataset.round, 10);
+          if (r !== currentRound) {
+            currentRound = r;
+            loadGamesForRound(seasonKey, r);
+          }
+        });
+      });
+    }
+
+    // ── Main init ─────────────────────────────────────────────────────────────
+    async function init() {
+      try {
+        // 1. Get active season (latest with registration_opens_at <= now)
+        const now = new Date().toISOString();
+        const { data: seasons, error: sErr } = await sb
+          .from('season_settings')
+          .select('*')
+          .lte('registration_opens_at', now)
+          .order('registration_opens_at', { ascending: false })
+          .limit(1);
+
+        if (sErr || !seasons || seasons.length === 0) {
+          document.getElementById('pairingsLoading').style.display = 'none';
+          document.getElementById('pairingsNoSeason').style.display = '';
+          return;
+        }
+
+        const season = seasons[0];
+        currentSeasonKey = season.season_key;
+
+        // 2. Get round_tournament_links for this season
+        const { data: links, error: lErr } = await sb
+          .from('round_tournament_links')
+          .select('round_number')
+          .eq('season_key', currentSeasonKey)
+          .order('round_number');
+
+        // Build list of rounds that have links
+        let linkedRounds = (!lErr && links) ? links.map(l => l.round_number) : [];
+
+        // 3. Also check which rounds have live_games data
+        const { data: gameRounds } = await sb
+          .from('live_games')
+          .select('round_number')
+          .eq('season_key', currentSeasonKey);
+
+        const gameRoundSet = new Set((gameRounds || []).map(g => g.round_number));
+        const linkedRoundSet = new Set(linkedRounds);
+
+        // Union of both
+        const allRoundSet = new Set([...linkedRoundSet, ...gameRoundSet]);
+        availableRounds = [...allRoundSet].sort((a, b) => a - b);
+
+        // Fallback: if no rounds found from links or games, use season round_count
+        if (availableRounds.length === 0 && season.round_count) {
+          availableRounds = Array.from({ length: season.round_count }, (_, i) => i + 1);
+        }
+
+        // 4. Determine which round to show initially
+        // Prefer the most recent round that has game data, else the latest linked round, else R1
+        let defaultRound = availableRounds[availableRounds.length - 1] || 1;
+        if (gameRoundSet.size > 0) {
+          const maxGameRound = Math.max(...gameRoundSet);
+          defaultRound = maxGameRound;
+        }
+
+        // 5. Build round pills
+        buildRoundSelector(availableRounds, currentSeasonKey);
+
+        // 6. Show content area
+        document.getElementById('pairingsLoading').style.display = 'none';
+        document.getElementById('pairingsContent').style.display = '';
+
+        // 7. Load default round
+        currentRound = defaultRound;
+        await loadGamesForRound(currentSeasonKey, currentRound);
+
+      } catch(err) {
+        console.error('Pairings init error:', err);
+        document.getElementById('pairingsLoading').innerHTML = `
+          <div style="font-size:40px;margin-bottom:12px;">⚠️</div>
+          <p style="color:var(--muted);">Could not load pairing data. Please refresh or check your connection.</p>
+          <button onclick="location.reload()" class="button-ghost" style="margin-top:16px;">Retry</button>
+        `;
+      }
+    }
+
+    init();
+  </script>
+  <script>
+    /* Nav glider — animate to clicked link, then navigate */
+    (function() {
+      function initGlider() {
+        var nav = document.querySelector('.nav');
+        if (!nav) return;
+        var glider = nav.querySelector('.nav-glider');
+        if (!glider) { glider = document.createElement('div'); glider.className = 'nav-glider'; nav.insertBefore(glider, nav.firstChild); }
+
+        function positionOf(el) {
+          var nr = nav.getBoundingClientRect();
+          var er = el.getBoundingClientRect();
+          return { x: er.left - nr.left - 6, w: er.width };
+        }
+
+        function moveGlider(x, w, instant) {
+          if (instant) {
+            glider.style.transition = 'none';
+            glider.style.width = w + 'px';
+            glider.style.transform = 'translateX(' + x + 'px)';
+            glider.getBoundingClientRect(); /* force reflow */
+            glider.style.transition = '';
+          } else {
+            glider.style.width = w + 'px';
+            glider.style.transform = 'translateX(' + x + 'px)';
+          }
+        }
+
+        var active = nav.querySelector('a.active');
+        if (!active) { glider.style.width = '0'; return; }
+
+        var dest = positionOf(active);
+
+        /* On load: snap to stored position (where user came from), then animate to active */
+        var stored = sessionStorage.getItem('navGlider');
+        if (stored) {
+          try {
+            var prev = JSON.parse(stored);
+            moveGlider(prev.x, prev.w, true);   /* instant snap to origin */
+            requestAnimationFrame(function() {
+              requestAnimationFrame(function() {
+                moveGlider(dest.x, dest.w, false); /* animate to active */
+              });
+            });
+          } catch(e) { moveGlider(dest.x, dest.w, true); }
+        } else {
+          moveGlider(dest.x, dest.w, true);
+        }
+
+        /* On click: slide glider to target, then navigate after animation */
+        nav.querySelectorAll('a').forEach(function(a) {
+          a.addEventListener('click', function(e) {
+            e.preventDefault();
+            var href = a.getAttribute('href');
+            var pos = positionOf(a);
+            sessionStorage.setItem('navGlider', JSON.stringify(pos));
+            moveGlider(pos.x, pos.w, false);
+            setTimeout(function() { window.location.href = href; }, 180);
+          });
+        });
+      }
+      if (document.readyState === 'loading') { document.addEventListener('DOMContentLoaded', initGlider); }
+      else { initGlider(); }
+      window.addEventListener('resize', function() { sessionStorage.removeItem('navGlider'); initGlider(); });
+    })();
+  </script>
+</body>
+</html>

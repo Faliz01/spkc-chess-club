@@ -454,17 +454,18 @@
 
   <div class="page-shell">
     <header class="hero" style="padding-bottom:0;">
-      <nav class="nav" aria-label="Primary">
-        <a href="index.html">Home</a>
-        <a href="join.html">Join</a>
-        <a href="tournaments.html">Tournaments</a>
-        <a href="rules.html">Rules</a>
-        <a href="brilliants.html">Brilliants</a>
-        <a href="matches.html">Matches</a>
-        <a href="history.html">History</a>
-        <a href="openings.html" class="active">Openings</a>
+      <div class="nav-wrap"><nav class="nav" aria-label="Primary">
+        <a href="index.html"><span class="nav-icon">🏠</span>Home</a>
+        <a href="join.html"><span class="nav-icon">✋</span>Join</a>
+        <a href="tournaments.html"><span class="nav-icon">🏆</span>Tournaments</a>
+        <a href="rules.html"><span class="nav-icon">📋</span>Rules</a>
+        <a href="brilliants.html"><span class="nav-icon">💎</span>Brilliants</a>
+        <a href="matches.html"><span class="nav-icon">⚔️</span>Matches</a>
+        <a href="history.html"><span class="nav-icon">📜</span>History</a>
+        <a href="openings.html" class="active"><span class="nav-icon">📖</span>Openings</a>
+        <a href="live-hub.html"><span class="nav-live-dot"></span>Live</a>
         <button class="dark-toggle" id="darkToggle" aria-label="Toggle dark mode">🌙</button>
-      </nav>
+      </nav></div>
 
       <div class="hero-layout" style="padding-bottom:28px;">
         <div class="hero-copy">
@@ -1313,6 +1314,71 @@
       if (e.key === 'Escape')     { _pClose(); }
     });
   </script>
+  <script>
+    /* Nav glider — animate to clicked link, then navigate */
+    (function() {
+      function initGlider() {
+        var nav = document.querySelector('.nav');
+        if (!nav) return;
+        var glider = nav.querySelector('.nav-glider');
+        if (!glider) { glider = document.createElement('div'); glider.className = 'nav-glider'; nav.insertBefore(glider, nav.firstChild); }
 
+        function positionOf(el) {
+          var nr = nav.getBoundingClientRect();
+          var er = el.getBoundingClientRect();
+          return { x: er.left - nr.left - 6, w: er.width };
+        }
+
+        function moveGlider(x, w, instant) {
+          if (instant) {
+            glider.style.transition = 'none';
+            glider.style.width = w + 'px';
+            glider.style.transform = 'translateX(' + x + 'px)';
+            glider.getBoundingClientRect(); /* force reflow */
+            glider.style.transition = '';
+          } else {
+            glider.style.width = w + 'px';
+            glider.style.transform = 'translateX(' + x + 'px)';
+          }
+        }
+
+        var active = nav.querySelector('a.active');
+        if (!active) { glider.style.width = '0'; return; }
+
+        var dest = positionOf(active);
+
+        /* On load: snap to stored position (where user came from), then animate to active */
+        var stored = sessionStorage.getItem('navGlider');
+        if (stored) {
+          try {
+            var prev = JSON.parse(stored);
+            moveGlider(prev.x, prev.w, true);   /* instant snap to origin */
+            requestAnimationFrame(function() {
+              requestAnimationFrame(function() {
+                moveGlider(dest.x, dest.w, false); /* animate to active */
+              });
+            });
+          } catch(e) { moveGlider(dest.x, dest.w, true); }
+        } else {
+          moveGlider(dest.x, dest.w, true);
+        }
+
+        /* On click: slide glider to target, then navigate after animation */
+        nav.querySelectorAll('a').forEach(function(a) {
+          a.addEventListener('click', function(e) {
+            e.preventDefault();
+            var href = a.getAttribute('href');
+            var pos = positionOf(a);
+            sessionStorage.setItem('navGlider', JSON.stringify(pos));
+            moveGlider(pos.x, pos.w, false);
+            setTimeout(function() { window.location.href = href; }, 180);
+          });
+        });
+      }
+      if (document.readyState === 'loading') { document.addEventListener('DOMContentLoaded', initGlider); }
+      else { initGlider(); }
+      window.addEventListener('resize', function() { sessionStorage.removeItem('navGlider'); initGlider(); });
+    })();
+  </script>
 </body>
 </html>

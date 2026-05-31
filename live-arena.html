@@ -1,0 +1,434 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1.0">
+  <title>Live Arena — SPKC Chess Club</title>
+  <link rel="stylesheet" href="style.css">
+  <style>
+    .board-canvas-wrap { width:100%; aspect-ratio:1/1; border-radius:12px; overflow:hidden; margin:12px 0; }
+    .live-dot { width:10px;height:10px;border-radius:50%;background:#22c55e;display:inline-block;animation:live-pulse 1.4s ease-in-out infinite; }
+    /* JS-injected board cell classes */
+    .board-header { display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;gap:8px;flex-wrap:wrap; }
+    .board-slot-label { font-size:12px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:0.06em; }
+    .badge-row { display:flex;align-items:center;gap:6px; }
+    .live-badge { display:inline-flex;align-items:center;gap:5px;background:#dcfce7;color:#16a34a;font-size:11px;font-weight:700;padding:3px 10px;border-radius:20px;letter-spacing:0.04em; }
+    .live-badge .dot { width:6px;height:6px;border-radius:50%;background:#16a34a;animation:live-pulse 1.4s ease-in-out infinite; }
+    html.dark .live-badge { background:rgba(22,163,74,0.18);color:#4ade80; }
+    .done-badge { display:inline-flex;align-items:center;gap:5px;background:var(--bg-accent);color:var(--muted);font-size:11px;font-weight:700;padding:3px 10px;border-radius:20px; }
+    html.dark .done-badge { background:rgba(255,255,255,0.06); }
+    .waiting-badge { display:inline-flex;align-items:center;gap:5px;background:#fef9ec;color:#b45309;font-size:11px;font-weight:700;padding:3px 10px;border-radius:20px; }
+    html.dark .waiting-badge { background:rgba(180,83,9,0.18);color:#fbbf24; }
+    .players-row { display:flex;align-items:center;gap:8px;margin-bottom:14px;font-size:13.5px;font-weight:600;color:var(--text);flex-wrap:wrap; }
+    .piece-icon { font-size:16px;line-height:1; }
+    .vs-sep { color:var(--muted);font-size:11px;font-weight:400; }
+    .board-canvas { width:100% !important;height:100% !important; }
+    .board-footer { display:flex;align-items:center;justify-content:space-between;margin-top:12px;flex-wrap:wrap;gap:8px; }
+    .move-count { font-size:12px;color:var(--muted); }
+    .result-badge { font-size:12px;font-weight:700;padding:3px 10px;border-radius:20px;background:var(--gold);color:#fff; }
+    .view-link { font-size:12px;color:var(--primary);text-decoration:none;font-weight:600;transition:color 0.15s; }
+    .view-link:hover { color:var(--primary-2);text-decoration:underline; }
+    html.dark .view-link { color:#7aabff; }
+    .card-grid { display:grid;grid-template-columns:repeat(2,1fr);gap:24px; }
+    @media(max-width:700px){ .card-grid { grid-template-columns:1fr; } }
+    .toast { position:fixed;bottom:24px;right:24px;background:var(--primary);color:#fff;padding:10px 18px;border-radius:12px;font-size:13px;font-weight:600;box-shadow:0 4px 20px rgba(35,74,145,0.35);z-index:500;opacity:0;transform:translateY(12px);transition:opacity 0.25s,transform 0.25s;pointer-events:none; }
+    .toast.show { opacity:1;transform:translateY(0); }
+  </style>
+</head>
+<body>
+  <a href="#main" class="skip-link">Skip to content</a>
+  <div class="page-shell">
+    <header class="hero">
+      <div class="nav-wrap"><nav class="nav" aria-label="Primary">
+        <a href="index.html"><span class="nav-icon">🏠</span>Home</a>
+        <a href="join.html"><span class="nav-icon">✋</span>Join</a>
+        <a href="tournaments.html"><span class="nav-icon">🏆</span>Tournaments</a>
+        <a href="rules.html"><span class="nav-icon">📋</span>Rules</a>
+        <a href="brilliants.html"><span class="nav-icon">💎</span>Brilliants</a>
+        <a href="matches.html"><span class="nav-icon">⚔️</span>Matches</a>
+        <a href="history.html"><span class="nav-icon">📜</span>History</a>
+        <a href="openings.html"><span class="nav-icon">📖</span>Openings</a>
+        <a href="live-hub.html" class="active"><span class="nav-live-dot"></span>Live</a>
+        <button class="dark-toggle" id="darkToggle" aria-label="Toggle dark mode" title="Toggle dark mode">🌙</button>
+      </nav></div>
+      <div class="hero-layout">
+        <div class="hero-copy">
+          <p class="eyebrow">SPKC Chess Club — Multi-Board View</p>
+          <h1>Live Arena</h1>
+          <p class="hero-text">Watch all active games simultaneously. Boards update in real time as moves are played.</p>
+          <div class="button-row">
+            <a href="live-hub.html" class="button-ghost">← Live Hub</a>
+            <a href="live-match-viewer.html" class="button-link">Feature Match →</a>
+          </div>
+          <div class="hero-stats">
+            <div class="stat-card">
+              <span class="stat-number" id="arenaStatBoards">—</span>
+              <span class="stat-label">Active boards</span>
+            </div>
+            <div class="stat-card">
+              <span class="stat-number" id="arenaStatLive">—</span>
+              <span class="stat-label">Live now</span>
+            </div>
+            <div class="stat-card">
+              <span class="stat-number" id="arenaStatMoves">—</span>
+              <span class="stat-label">Total moves</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <main id="main" class="content-grid">
+
+      <!-- Loading state -->
+      <section class="panel span-12" id="loadingGrid">
+        <div class="info-box">Loading arena…</div>
+      </section>
+
+      <!-- Round header -->
+      <section class="panel span-12" id="roundHeader" style="display:none">
+        <div class="section-head">
+          <span id="roundBadge" class="section-badge"></span>
+          <span id="formatBadge" class="meta-pill"></span>
+          <span id="seasonLabel" style="font-size:13px;color:var(--muted);margin-left:auto;"></span>
+        </div>
+      </section>
+
+      <!-- Arena grid (populated by JS) -->
+      <div id="arenaGrid" class="card-grid" style="display:none"></div>
+
+      <!-- Empty state -->
+      <section class="panel span-12" id="emptyState" style="display:none">
+        <div class="info-box">
+          No active games right now. Check back on match night — boards will appear here automatically.<br>
+          <a href="live-hub.html" style="color:var(--primary);font-weight:600;margin-top:12px;display:inline-block;">← Back to Live Hub</a>
+        </div>
+      </section>
+
+    </main>
+  </div>
+
+  <!-- Toast -->
+  <div class="toast" id="toast"></div>
+
+  <script src="lib/supabase.min.js"></script>
+  <script src="lib/chess.min.js"></script>
+  <script>
+(function () {
+  'use strict';
+
+  // ── Supabase ──────────────────────────────────────────────────────────
+  const SUPABASE_URL = 'https://qoczwxslhygakivfgxdy.supabase.co';
+  const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFvY3p3eHNsaHlnYWtpdmZneGR5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk2MTAwNzMsImV4cCI6MjA5NTE4NjA3M30.J5I0IR5Ra_JePDzJYHpzstbNRCo667B201iVhjbDZjs';
+  const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+  // ── State ─────────────────────────────────────────────────────────────
+  const boards = {}; // slot -> board state (fen string)
+  let currentSeasonKey = null;
+  let currentRound = null;
+
+  // ── Dark mode ─────────────────────────────────────────────────────────
+    const darkToggle = document.getElementById('darkToggle');
+  function applyDark(on) {
+    document.documentElement.classList.toggle('dark', on);
+    darkToggle.textContent = on ? '☀️' : '🌙';
+  }
+  darkToggle.addEventListener('click', function() {
+    applyDark(!document.documentElement.classList.contains('dark'));
+  });
+// ── Toast ─────────────────────────────────────────────────────────────
+  function showToast(msg, dur = 3000) {
+    const t = document.getElementById('toast');
+    t.textContent = msg;
+    t.classList.add('show');
+    setTimeout(() => t.classList.remove('show'), dur);
+  }
+
+  // ── Format helpers ────────────────────────────────────────────────────
+  const FORMAT_CYCLE = ['bullet', 'blitz', 'rapid'];
+  const FORMAT_ICONS = { bullet: '🔴', blitz: '⚡', rapid: '🕐' };
+  const FORMAT_LABELS = { bullet: 'Bullet', blitz: 'Blitz', rapid: 'Rapid' };
+
+  function getFormat(round) {
+    const idx = (round - 1) % 3;
+    return FORMAT_CYCLE[idx];
+  }
+
+  // ── PGN → move count ─────────────────────────────────────────────────
+  function parsePgn(pgn) {
+    if (!pgn || pgn.trim() === '') return { fen: 'start', moveCount: 0 };
+    try {
+      const chess = new Chess();
+      chess.loadPgn(pgn);
+      return { fen: chess.fen(), moveCount: chess.history().length };
+    } catch {
+      return { fen: 'start', moveCount: 0 };
+    }
+  }
+
+  // ── Render badge ─────────────────────────────────────────────────────
+  function statusBadge(status) {
+    if (status === 'live') return '<span class="live-badge"><span class="dot"></span>LIVE</span>';
+    if (status === 'done') return '<span class="done-badge">✓ DONE</span>';
+    return '<span class="waiting-badge">⏳ WAITING</span>';
+  }
+
+  // ── Build board cell HTML ─────────────────────────────────────────────
+  function buildCellHTML(game) {
+    const { fen, moveCount } = parsePgn(game.pgn);
+    const slotLabel = `Board ${game.board_slot}`;
+    const white = game.white_name || game.white_username || 'White';
+    const black = game.black_name || game.black_username || 'Black';
+
+    const resultHTML = game.result && game.status === 'done'
+      ? `<span class="result-badge">${game.result}</span>` : '';
+    const viewLink = game.game_link
+      ? `<a href="${game.game_link}" target="_blank" rel="noopener" class="view-link">View full game →</a>` : '';
+
+    return `
+      <div class="board-header">
+        <span class="board-slot-label">${slotLabel}</span>
+        <div class="badge-row">${statusBadge(game.status)}</div>
+      </div>
+      <div class="players-row">
+        <span class="piece-icon">♙</span>
+        <span>${white}</span>
+        <span class="vs-sep">vs</span>
+        <span class="piece-icon" style="color:#1a1a1a;">♟</span>
+        <span>${black}</span>
+      </div>
+      <div class="board-canvas-wrap" id="wrap-${game.board_slot}">
+        <div class="board-canvas" id="canvas-${game.board_slot}"></div>
+      </div>
+      <div class="board-footer">
+        <span class="move-count">${moveCount} move${moveCount !== 1 ? 's' : ''}</span>
+        <div style="display:flex;gap:8px;align-items:center;">
+          ${resultHTML}
+          ${viewLink}
+        </div>
+      </div>
+    `;
+  }
+
+  // ── Mount a board display into a cell ────────────────────────────────
+  function mountBoard(slot, fen) {
+    const el = document.getElementById(`canvas-${slot}`);
+    if (!el) return;
+    const pos = fen && fen !== '' && fen !== 'start' ? fen : 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1';
+    boards[slot] = pos;
+    // Render a minimal text FEN board placeholder
+    el.style.cssText = 'display:flex;align-items:center;justify-content:center;width:100%;height:100%;background:var(--surface-soft);border-radius:8px;font-size:11px;color:var(--muted);text-align:center;padding:8px;word-break:break-all;font-family:monospace;';
+    el.textContent = pos.split(' ')[0]; // show piece placement only
+  }
+
+  // ── Render the full grid ──────────────────────────────────────────────
+  function renderGrid(games) {
+    const grid = document.getElementById('arenaGrid');
+    grid.innerHTML = '';
+
+    games.forEach(game => {
+      const cell = document.createElement('div');
+      cell.className = 'quick-card';
+      cell.id = `cell-${game.board_slot}`;
+      cell.innerHTML = buildCellHTML(game);
+      grid.appendChild(cell);
+    });
+
+    // Mount boards after DOM is ready
+    requestAnimationFrame(() => {
+      games.forEach(game => {
+        const { fen } = parsePgn(game.pgn);
+        mountBoard(game.board_slot, fen);
+      });
+    });
+  }
+
+  // ── Update a single board on realtime event ───────────────────────────
+  function updateBoard(newGame) {
+    const slot = newGame.board_slot;
+    const cell = document.getElementById(`cell-${slot}`);
+    if (!cell) return; // new game not yet in grid — reload
+
+    // Update inner HTML
+    cell.innerHTML = buildCellHTML(newGame);
+
+    // Re-mount or update board
+    const { fen } = parsePgn(newGame.pgn);
+    requestAnimationFrame(() => mountBoard(slot, fen));
+
+    showToast(`Board ${slot} updated`);
+  }
+
+  // ── Round header ─────────────────────────────────────────────────────
+  function renderRoundHeader(round, seasonLabel) {
+    const fmt = getFormat(round);
+    const header = document.getElementById('roundHeader');
+    document.getElementById('roundBadge').textContent = `Round ${round}`;
+    document.getElementById('formatBadge').textContent = `${FORMAT_ICONS[fmt]} ${FORMAT_LABELS[fmt]}`;
+    document.getElementById('seasonLabel').textContent = seasonLabel || '';
+    header.style.display = 'flex';
+  }
+
+  // ── Main load ─────────────────────────────────────────────────────────
+  async function load() {
+    try {
+      // 1. Active season
+      const { data: seasons, error: sErr } = await sb
+        .from('season_settings')
+        .select('season_key, season_label')
+        .order('registration_opens_at', { ascending: false })
+        .limit(1);
+      if (sErr) throw sErr;
+
+      const season = seasons && seasons[0];
+      currentSeasonKey = season ? season.season_key : null;
+      const seasonLabel = season ? season.season_label : '';
+
+      // 2. Determine current round: prefer live games, then most recent round with rows
+      let round = null;
+
+      if (currentSeasonKey) {
+        const { data: liveRows } = await sb
+          .from('live_games')
+          .select('round_number')
+          .eq('season_key', currentSeasonKey)
+          .eq('status', 'live')
+          .order('round_number', { ascending: false })
+          .limit(1);
+        if (liveRows && liveRows.length > 0) {
+          round = liveRows[0].round_number;
+        } else {
+          const { data: anyRows } = await sb
+            .from('live_games')
+            .select('round_number')
+            .eq('season_key', currentSeasonKey)
+            .order('round_number', { ascending: false })
+            .limit(1);
+          if (anyRows && anyRows.length > 0) round = anyRows[0].round_number;
+        }
+      }
+
+      currentRound = round;
+
+      // 3. Load games for that round
+      let games = [];
+      if (currentSeasonKey && round !== null) {
+        const { data, error: gErr } = await sb
+          .from('live_games')
+          .select('*')
+          .eq('season_key', currentSeasonKey)
+          .eq('round_number', round)
+          .order('board_slot', { ascending: true });
+        if (gErr) throw gErr;
+        games = data || [];
+      }
+
+      // Hide skeletons
+      document.getElementById('loadingGrid').style.display = 'none';
+
+      if (games.length === 0) {
+        document.getElementById('emptyState').style.display = 'block';
+        return;
+      }
+
+      renderRoundHeader(round, seasonLabel);
+      document.getElementById('arenaGrid').style.display = 'grid';
+      renderGrid(games);
+
+      // 4. Realtime subscription
+      subscribeRealtime();
+    } catch (err) {
+      console.error('Load error:', err);
+      document.getElementById('loadingGrid').style.display = 'none';
+      document.getElementById('emptyState').style.display = 'block';
+    }
+  }
+
+  // ── Realtime ──────────────────────────────────────────────────────────
+  function subscribeRealtime() {
+    sb.channel('arena')
+      .on('postgres_changes', {
+        event: 'UPDATE',
+        schema: 'public',
+        table: 'live_games'
+      }, payload => {
+        const g = payload.new;
+        if (g.season_key === currentSeasonKey && g.round_number === currentRound) {
+          updateBoard(g);
+        }
+      })
+      .subscribe();
+  }
+
+  // ── Boot ──────────────────────────────────────────────────────────────
+  load();
+})();
+  </script>
+  <script>
+    /* Nav glider — animate to clicked link, then navigate */
+    (function() {
+      function initGlider() {
+        var nav = document.querySelector('.nav');
+        if (!nav) return;
+        var glider = nav.querySelector('.nav-glider');
+        if (!glider) { glider = document.createElement('div'); glider.className = 'nav-glider'; nav.insertBefore(glider, nav.firstChild); }
+
+        function positionOf(el) {
+          var nr = nav.getBoundingClientRect();
+          var er = el.getBoundingClientRect();
+          return { x: er.left - nr.left - 6, w: er.width };
+        }
+
+        function moveGlider(x, w, instant) {
+          if (instant) {
+            glider.style.transition = 'none';
+            glider.style.width = w + 'px';
+            glider.style.transform = 'translateX(' + x + 'px)';
+            glider.getBoundingClientRect(); /* force reflow */
+            glider.style.transition = '';
+          } else {
+            glider.style.width = w + 'px';
+            glider.style.transform = 'translateX(' + x + 'px)';
+          }
+        }
+
+        var active = nav.querySelector('a.active');
+        if (!active) { glider.style.width = '0'; return; }
+
+        var dest = positionOf(active);
+
+        /* On load: snap to stored position (where user came from), then animate to active */
+        var stored = sessionStorage.getItem('navGlider');
+        if (stored) {
+          try {
+            var prev = JSON.parse(stored);
+            moveGlider(prev.x, prev.w, true);   /* instant snap to origin */
+            requestAnimationFrame(function() {
+              requestAnimationFrame(function() {
+                moveGlider(dest.x, dest.w, false); /* animate to active */
+              });
+            });
+          } catch(e) { moveGlider(dest.x, dest.w, true); }
+        } else {
+          moveGlider(dest.x, dest.w, true);
+        }
+
+        /* On click: slide glider to target, then navigate after animation */
+        nav.querySelectorAll('a').forEach(function(a) {
+          a.addEventListener('click', function(e) {
+            e.preventDefault();
+            var href = a.getAttribute('href');
+            var pos = positionOf(a);
+            sessionStorage.setItem('navGlider', JSON.stringify(pos));
+            moveGlider(pos.x, pos.w, false);
+            setTimeout(function() { window.location.href = href; }, 180);
+          });
+        });
+      }
+      if (document.readyState === 'loading') { document.addEventListener('DOMContentLoaded', initGlider); }
+      else { initGlider(); }
+      window.addEventListener('resize', function() { sessionStorage.removeItem('navGlider'); initGlider(); });
+    })();
+  </script>
+</body>
+</html>

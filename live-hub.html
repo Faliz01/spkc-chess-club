@@ -1,0 +1,745 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1.0">
+  <title>Live Hub — SPKC Chess Club</title>
+  <link rel="stylesheet" href="style.css">
+  <style>
+    /* Minimal page-specific additions */
+    .live-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background: #22c55e;
+      display: inline-block;
+      animation: live-pulse 1.4s ease-in-out infinite;
+      flex-shrink: 0;
+    }
+    .hub-live-dot {
+      width: 10px;
+      height: 10px;
+      background: #22c55e;
+      border-radius: 50%;
+      display: inline-block;
+      animation: live-pulse 1.4s ease-in-out infinite;
+      flex-shrink: 0;
+    }
+    @keyframes hub-pulse {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.5; transform: scale(0.85); }
+    }
+    /* Countdown block layout */
+    .hub-cd-clock {
+      display: flex;
+      justify-content: center;
+      align-items: flex-end;
+      gap: 4px;
+      flex-wrap: wrap;
+    }
+    .hub-cd-unit {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      min-width: 80px;
+    }
+    .hub-cd-sep {
+      font-size: 60px;
+      font-weight: 800;
+      color: var(--line-strong);
+      line-height: 1;
+      padding-bottom: 18px;
+      user-select: none;
+    }
+    .hub-coming-up-card {
+      background: var(--surface-soft);
+      border: 1px solid var(--line);
+      border-radius: var(--radius-lg);
+      padding: 24px 28px;
+      margin-top: 28px;
+      display: flex;
+      align-items: center;
+      gap: 20px;
+      flex-wrap: wrap;
+    }
+    .hub-coming-up-icon { font-size: 40px; flex-shrink: 0; }
+    .hub-coming-up-info { flex: 1; min-width: 200px; }
+    .hub-coming-up-info strong { display: block; font-size: 1rem; color: var(--text); margin-bottom: 4px; }
+    .hub-coming-up-info span { font-size: 0.875rem; color: var(--muted); }
+    .hub-coming-up-format {
+      font-size: 0.8rem;
+      color: var(--primary);
+      background: rgba(35, 74, 145, 0.08);
+      border-radius: 8px;
+      padding: 4px 10px;
+      font-weight: 600;
+    }
+    /* Status badges */
+    .status-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      font-size: 11px;
+      font-weight: 700;
+      border-radius: 999px;
+      padding: 4px 10px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    .status-waiting {
+      background: var(--bg-accent);
+      color: var(--muted);
+      border: 1px solid var(--line);
+    }
+    .status-live {
+      background: rgba(34, 197, 94, 0.12);
+      color: #16a34a;
+      border: 1px solid rgba(34, 197, 94, 0.3);
+    }
+    .status-done {
+      background: rgba(35, 74, 145, 0.10);
+      color: var(--primary);
+      border: 1px solid var(--line);
+    }
+    /* Game card custom classes (JS-referenced) */
+    .hub-game-card {
+      background: var(--surface);
+      border: 1px solid var(--line);
+      border-radius: var(--radius-lg);
+      padding: 20px;
+      cursor: pointer;
+      transition: transform 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease;
+      text-decoration: none;
+      display: block;
+      color: var(--text);
+    }
+    .hub-game-card:hover {
+      transform: translateY(-3px);
+      box-shadow: var(--shadow);
+      border-color: var(--primary-2);
+      text-decoration: none;
+    }
+    .hub-board-label {
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      margin-bottom: 10px;
+    }
+    .hub-matchup {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 14px;
+    }
+    .hub-player-name {
+      flex: 1;
+      font-weight: 700;
+      font-size: 0.95rem;
+      color: var(--text);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .hub-player-name.white-player::before { content: "♔ "; color: var(--gold); }
+    .hub-player-name.black-player::before { content: "♚ "; color: var(--muted); }
+    .hub-vs { font-size: 12px; color: var(--muted); font-weight: 700; flex-shrink: 0; }
+    .hub-card-footer { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+    .hub-view-link { font-size: 12px; color: var(--primary-2); font-weight: 600; }
+    /* Hub layout */
+    .hub-layout { display: grid; grid-template-columns: 1fr 260px; gap: 24px; align-items: start; }
+    @media (max-width: 800px) { .hub-layout { grid-template-columns: 1fr; } }
+    /* Hub spinner */
+    .hub-spinner {
+      width: 40px;
+      height: 40px;
+      border: 3px solid var(--line);
+      border-top-color: var(--primary);
+      border-radius: 50%;
+      animation: hub-spin 0.8s linear infinite;
+      margin: 0 auto 16px;
+    }
+    @keyframes hub-spin { to { transform: rotate(360deg); } }
+    html.dark .hub-coming-up-card { background: #1a2738; border-color: var(--line); }
+    html.dark .hub-coming-up-format { background: rgba(91, 158, 248, 0.12); color: var(--primary); }
+    html.dark .hub-game-card { background: #1a2738; border-color: var(--line); }
+    html.dark .hub-game-card:hover { border-color: var(--primary); }
+    html.dark .status-waiting { background: #1a2b40; border-color: var(--line); }
+    html.dark .status-live { background: rgba(34, 197, 94, 0.1); border-color: rgba(34, 197, 94, 0.25); }
+    html.dark .status-done { background: rgba(91, 158, 248, 0.1); border-color: rgba(91, 158, 248, 0.2); }
+  </style>
+</head>
+<body>
+  <a href="#main" class="skip-link">Skip to content</a>
+  <div class="page-shell">
+    <header class="hero">
+      <div class="nav-wrap"><nav class="nav" aria-label="Primary">
+        <a href="index.html"><span class="nav-icon">🏠</span>Home</a>
+        <a href="join.html"><span class="nav-icon">✋</span>Join</a>
+        <a href="tournaments.html"><span class="nav-icon">🏆</span>Tournaments</a>
+        <a href="rules.html"><span class="nav-icon">📋</span>Rules</a>
+        <a href="brilliants.html"><span class="nav-icon">💎</span>Brilliants</a>
+        <a href="matches.html"><span class="nav-icon">⚔️</span>Matches</a>
+        <a href="history.html"><span class="nav-icon">📜</span>History</a>
+        <a href="openings.html"><span class="nav-icon">📖</span>Openings</a>
+        <a href="live-hub.html" class="active"><span class="nav-live-dot"></span>Live</a>
+        <button class="dark-toggle" id="darkToggle" aria-label="Toggle dark mode" title="Toggle dark mode">🌙</button>
+      </nav></div>
+      <div class="hero-layout">
+        <div class="hero-copy">
+          <p class="eyebrow">SPKC Chess Club — Match Night</p>
+          <h1>Live Hub</h1>
+          <p class="hero-text">Match-day central — live boards, standings, and real-time round updates.</p>
+          <div class="button-row">
+            <a class="button-link" href="tournaments.html">Season Standings →</a>
+          </div>
+          <div class="hero-stats">
+            <div class="stat-card">
+              <div class="stat-number" id="hubStatBoards">—</div>
+              <div class="stat-label">Active boards</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-number" id="hubStatLive">—</div>
+              <div class="stat-label">In progress</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-number" id="hubStatDone">—</div>
+              <div class="stat-label">Completed</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <main id="main" class="content-grid">
+      <!-- Loading state -->
+      <section class="panel span-12" id="hubLoading">
+        <div style="text-align:center;padding:40px 0;">
+          <div class="hub-spinner"></div>
+          <p style="color:var(--muted);margin:0;">Loading round data…</p>
+        </div>
+      </section>
+
+      <!-- Mode 1: Countdown (hidden until ready) -->
+      <section class="panel span-12" id="hubCountdown" style="display:none">
+        <div style="text-align:center;padding:8px 0 16px;">
+          <div class="section-badge" id="cdRoundLabel" style="margin:0 auto 20px;width:fit-content;">Next Round</div>
+          <h2 class="section-title" id="cdHeading" style="font-size:clamp(1.1rem,3vw,1.5rem);font-weight:700;margin:0 0 28px;">Loading…</h2>
+          <div class="hub-cd-clock" aria-live="polite" aria-label="Countdown clock">
+            <div class="hub-cd-unit">
+              <span class="countdown-time" id="cdDays">00</span>
+              <span class="countdown-label">Days</span>
+            </div>
+            <div class="hub-cd-sep" aria-hidden="true">:</div>
+            <div class="hub-cd-unit">
+              <span class="countdown-time" id="cdHours">00</span>
+              <span class="countdown-label">Hrs</span>
+            </div>
+            <div class="hub-cd-sep" aria-hidden="true">:</div>
+            <div class="hub-cd-unit">
+              <span class="countdown-time" id="cdMins">00</span>
+              <span class="countdown-label">Min</span>
+            </div>
+            <div class="hub-cd-sep" aria-hidden="true">:</div>
+            <div class="hub-cd-unit">
+              <span class="countdown-time" id="cdSecs">00</span>
+              <span class="countdown-label">Sec</span>
+            </div>
+          </div>
+          <div class="hub-coming-up-card" id="cdComingUp" style="margin-top:28px;">
+            <div class="hub-coming-up-icon" id="cdFormatIcon">♟</div>
+            <div class="hub-coming-up-info">
+              <strong id="cdFormatName">–</strong>
+              <span id="cdDateHKT">–</span>
+            </div>
+            <span class="hub-coming-up-format" id="cdFormatDesc">–</span>
+          </div>
+        </div>
+      </section>
+
+      <!-- Mode 1b: No live session -->
+      <section class="panel span-12" id="hubComplete" style="display:none">
+        <div style="text-align:center;padding:40px 0;">
+          <div style="font-size:56px;margin-bottom:16px;">♟</div>
+          <h2 style="color:var(--text);font-size:1.6rem;margin:0 0 12px;">No live session right now</h2>
+          <p style="color:var(--muted);margin:0 0 8px;font-size:1rem;">Check back on match night — boards appear here automatically when a round is in progress.</p>
+          <div style="display:flex;gap:12px;justify-content:center;flex-wrap:wrap;">
+            <a class="button-link" href="tournaments.html">Season Standings →</a>
+          </div>
+        </div>
+      </section>
+
+      <!-- Mode 2: Live Dashboard (hidden until active round detected) -->
+      <section class="panel span-12" id="hubLive" style="display:none">
+        <div class="section-head" style="margin-bottom:28px;">
+          <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
+            <span class="hub-live-dot" aria-hidden="true"></span>
+            <h2 class="section-title" id="liveRoundTitle" style="margin:0;">Round in Progress</h2>
+          </div>
+          <span class="section-badge" id="liveFormatBadge">–</span>
+        </div>
+        <div class="hub-layout">
+          <div>
+            <div id="hubGamesGrid" class="card-grid">
+              <!-- Game cards injected here -->
+            </div>
+            <div id="hubNoGames" class="info-box" style="display:none;">
+              <div style="font-size:48px;margin-bottom:12px;">♟</div>
+              <p>No game data yet — boards will appear as games are created.</p>
+            </div>
+          </div>
+          <aside>
+            <div class="panel" style="margin-bottom:16px;">
+              <h3 class="section-title" style="font-size:0.85rem;color:var(--muted);text-transform:uppercase;letter-spacing:1px;margin:0 0 14px;">Quick Links</h3>
+              <div class="meta-row" style="flex-direction:column;gap:8px;">
+                <a href="live-arena.html" class="meta-pill" style="justify-content:space-between;padding:10px 14px;">
+                  <span>Open Arena</span><span>→</span>
+                </a>
+                <a href="live-pairings.html" class="meta-pill" style="justify-content:space-between;padding:10px 14px;">
+                  <span>See Pairings</span><span>→</span>
+                </a>
+                <a href="live-match-viewer.html" class="meta-pill" style="justify-content:space-between;padding:10px 14px;">
+                  <span>Feature Match</span><span>→</span>
+                </a>
+              </div>
+            </div>
+            <div class="panel" id="liveStatsCard">
+              <h3 class="section-title" style="font-size:0.85rem;color:var(--muted);text-transform:uppercase;letter-spacing:1px;margin:0 0 14px;">Session Stats</h3>
+              <div style="font-size:0.85rem;color:var(--muted);">
+                <div style="display:flex;justify-content:space-between;margin-bottom:8px;">
+                  <span>Boards</span>
+                  <strong id="statBoards" style="color:var(--text);">–</strong>
+                </div>
+                <div style="display:flex;justify-content:space-between;margin-bottom:8px;">
+                  <span>In progress</span>
+                  <strong id="statLive" style="color:#16a34a;">–</strong>
+                </div>
+                <div style="display:flex;justify-content:space-between;">
+                  <span>Completed</span>
+                  <strong id="statDone" style="color:var(--primary);">–</strong>
+                </div>
+              </div>
+            </div>
+          </aside>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <script src="lib/supabase.min.js"></script>
+  <script>
+    // ── Helpers ─────────────────────────────────────────────────────────────
+    // Dark mode toggle
+    (function() {
+      const btn = document.getElementById('darkToggle');
+      function applyDark(on) {
+        document.documentElement.classList.toggle('dark', on);
+        if (btn) btn.textContent = on ? '☀️' : '🌙';
+      }
+      if (btn) btn.addEventListener('click', function() {
+        applyDark(!document.documentElement.classList.contains('dark'));
+      });
+    })();
+
+    // ── Supabase ─────────────────────────────────────────────────────────────
+    const SUPABASE_URL = 'https://qoczwxslhygakivfgxdy.supabase.co';
+    const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFvY3p3eHNsaHlnYWtpdmZneGR5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk2MTAwNzMsImV4cCI6MjA5NTE4NjA3M30.J5I0IR5Ra_JePDzJYHpzstbNRCo667B201iVhjbDZjs';
+    const { createClient } = supabase;
+    const sb = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+    // ── Format Cycle ──────────────────────────────────────────────────────────
+    // R1=bullet, R2=blitz, R3=rapid, repeating
+    const BULLET_SVG = `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true" style="vertical-align:middle;">
+      <ellipse cx="7" cy="7" rx="4" ry="6" fill="#c79a25" />
+      <rect x="6" y="0.5" width="2" height="3" rx="1" fill="#c79a25" />
+    </svg>`;
+
+    function getFormatForRound(roundNumber) {
+      const cycle = ['bullet', 'blitz', 'rapid'];
+      const idx = (roundNumber - 1) % 3;
+      return cycle[idx];
+    }
+
+    function getFormatInfo(format) {
+      const map = {
+        bullet: { icon: BULLET_SVG, name: 'Bullet', desc: 'Ultra-fast time control', emoji: '🔴' },
+        blitz:  { icon: '⚡',        name: 'Blitz',  desc: 'Fast and tactical',       emoji: '⚡' },
+        rapid:  { icon: '🕐',        name: 'Rapid',  desc: 'Thoughtful & strategic',  emoji: '🕐' }
+      };
+      return map[format] || map.blitz;
+    }
+
+    function pad2(n) { return String(n).padStart(2, '0'); }
+
+    // ── Date helpers ──────────────────────────────────────────────────────────
+    function toHKT(dateStr) {
+      const d = new Date(dateStr);
+      return d.toLocaleString('en-HK', {
+        timeZone: 'Asia/Hong_Kong',
+        weekday: 'short', year: 'numeric', month: 'short', day: 'numeric',
+        hour: '2-digit', minute: '2-digit', hour12: true
+      }) + ' HKT';
+    }
+
+    // ── Show/hide helpers ──────────────────────────────────────────────────────
+    function showEl(id) { document.getElementById(id).style.display = ''; }
+    function hideEl(id) { document.getElementById(id).style.display = 'none'; }
+
+    // ── Countdown ─────────────────────────────────────────────────────────────
+    let cdInterval = null;
+    function startCountdown(targetDate, roundNum) {
+      const format = getFormatForRound(roundNum);
+      const info = getFormatInfo(format);
+
+      const lbl = document.getElementById('cdRoundLabel');
+      const heading = document.getElementById('cdHeading');
+      const formatIcon = document.getElementById('cdFormatIcon');
+      const formatName = document.getElementById('cdFormatName');
+      const formatDesc = document.getElementById('cdFormatDesc');
+      const dateHKT = document.getElementById('cdDateHKT');
+
+      lbl.innerHTML = `${info.icon} Round ${roundNum}`;
+      heading.textContent = `Next Round — R${roundNum} · ${info.name}`;
+      formatIcon.innerHTML = info.icon;
+      formatName.textContent = `R${roundNum} · ${info.name}`;
+      dateHKT.textContent = toHKT(targetDate);
+      formatDesc.textContent = info.desc;
+
+      function tick() {
+        const now = Date.now();
+        const diff = new Date(targetDate).getTime() - now;
+        if (diff <= 0) {
+          clearInterval(cdInterval);
+          // Reload to switch to live mode
+          setTimeout(() => location.reload(), 1000);
+          return;
+        }
+        const d = Math.floor(diff / 86400000);
+        const h = Math.floor((diff % 86400000) / 3600000);
+        const m = Math.floor((diff % 3600000) / 60000);
+        const s = Math.floor((diff % 60000) / 1000);
+        document.getElementById('cdDays').textContent = pad2(d);
+        document.getElementById('cdHours').textContent = pad2(h);
+        document.getElementById('cdMins').textContent = pad2(m);
+        document.getElementById('cdSecs').textContent = pad2(s);
+      }
+      tick();
+      cdInterval = setInterval(tick, 1000);
+
+      hideEl('hubLoading');
+      showEl('hubCountdown');
+    }
+
+    // ── Game Cards ────────────────────────────────────────────────────────────
+    let gamesData = {};
+
+    function buildStatusBadge(status, result) {
+      if (status === 'waiting') {
+        return `<span class="status-badge status-waiting">⏳ Waiting</span>`;
+      }
+      if (status === 'live') {
+        return `<span class="status-badge status-live"><span class="hub-live-dot" aria-hidden="true"></span> Live</span>`;
+      }
+      if (status === 'done') {
+        let label = '✓ Done';
+        if (result === '1-0') label = '♔ White wins';
+        else if (result === '0-1') label = '♚ Black wins';
+        else if (result === '½-½') label = '½ Draw';
+        return `<span class="status-badge status-done">${label}</span>`;
+      }
+      return '';
+    }
+
+    function buildGameCard(game) {
+      const statusBadge = buildStatusBadge(game.status, game.result);
+      const href = `live-match-viewer.html?slot=${game.board_slot}`;
+      return `
+        <a href="${href}" class="hub-game-card" aria-label="Board ${game.board_slot}: ${game.white_name || '?'} vs ${game.black_name || '?'}">
+          <div class="hub-board-label">Board ${game.board_slot}</div>
+          <div class="hub-matchup">
+            <span class="hub-player-name white-player">${escHtml(game.white_name || 'TBD')}</span>
+            <span class="hub-vs">vs</span>
+            <span class="hub-player-name black-player">${escHtml(game.black_name || 'TBD')}</span>
+          </div>
+          <div class="hub-card-footer">
+            ${statusBadge}
+            <span class="hub-view-link">View →</span>
+          </div>
+        </a>`;
+    }
+
+    function escHtml(str) {
+      return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+    }
+
+    function renderGames(games) {
+      const grid = document.getElementById('hubGamesGrid');
+      const noGames = document.getElementById('hubNoGames');
+      if (!games || games.length === 0) {
+        grid.innerHTML = '';
+        noGames.style.display = '';
+      } else {
+        noGames.style.display = 'none';
+        grid.innerHTML = games.map(buildGameCard).join('');
+        // Stats — sidebar + hero
+        const total = games.length;
+        const live  = games.filter(g => g.status === 'live').length;
+        const done  = games.filter(g => g.status === 'done').length;
+        document.getElementById('statBoards').textContent = total;
+        document.getElementById('statLive').textContent = live;
+        document.getElementById('statDone').textContent = done;
+        // hero stat cards
+        document.getElementById('hubStatBoards').textContent = total;
+        document.getElementById('hubStatLive').textContent = live;
+        document.getElementById('hubStatDone').textContent = done;
+      }
+    }
+
+    // ── Live mode setup ───────────────────────────────────────────────────────
+    function setupLiveMode(roundNum, seasonKey) {
+      const format = getFormatForRound(roundNum);
+      const info = getFormatInfo(format);
+
+      document.getElementById('liveRoundTitle').textContent = `Round ${roundNum} — In Progress`;
+      document.getElementById('liveFormatBadge').innerHTML = `${info.icon} ${info.name}`;
+
+      hideEl('hubLoading');
+      showEl('hubLive');
+
+      // Fetch initial games
+      sb.from('live_games')
+        .select('*')
+        .eq('season_key', seasonKey)
+        .eq('round_number', roundNum)
+        .order('board_slot')
+        .then(({ data, error }) => {
+          if (!error && data) renderGames(data);
+        });
+
+      // Subscribe to realtime
+      sb.channel('live-hub')
+        .on('postgres_changes', {
+          event: '*',
+          schema: 'public',
+          table: 'live_games',
+          filter: `season_key=eq.${seasonKey}`
+        }, function(payload) {
+          // Re-fetch all games on any change
+          sb.from('live_games')
+            .select('*')
+            .eq('season_key', seasonKey)
+            .eq('round_number', roundNum)
+            .order('board_slot')
+            .then(({ data, error }) => {
+              if (!error && data) renderGames(data);
+            });
+        })
+        .subscribe();
+    }
+
+    // ── Main init ─────────────────────────────────────────────────────────────
+    async function init() {
+      try {
+        // 1. Get latest season
+        const { data: seasons, error: sErr } = await sb
+          .from('season_settings')
+          .select('*')
+          .order('registration_opens_at', { ascending: false })
+          .limit(5);
+
+        if (sErr || !seasons || seasons.length === 0) {
+          throw new Error('Could not load season data');
+        }
+
+        // Pick latest season whose registration_opens_at <= now
+        const now = new Date();
+        let activeSeason = null;
+        for (const s of seasons) {
+          if (new Date(s.registration_opens_at) <= now) {
+            activeSeason = s;
+            break;
+          }
+        }
+        if (!activeSeason) activeSeason = seasons[seasons.length - 1];
+        const seasonKey = activeSeason.season_key;
+
+        // 2. Fetch season dates from storage
+        let roundDates = {};
+        try {
+          const { data: signedData } = await sb.storage
+            .from('private_uploads')
+            .createSignedUrl('latest/season-dates.json', 10800);
+
+          if (signedData && signedData.signedUrl) {
+            const resp = await fetch(signedData.signedUrl);
+            if (resp.ok) {
+              roundDates = await resp.json();
+            }
+          }
+        } catch(e) {
+          console.warn('Could not fetch season-dates.json:', e);
+        }
+
+        // 3. Determine active round state
+        const ACTIVE_WINDOW_BEFORE = 30 * 60 * 1000;   // 30 min before
+        const ACTIVE_WINDOW_AFTER  = 3 * 60 * 60 * 1000; // 3 hr after
+
+        let activeRoundNum = null;
+        let nextRoundNum = null;
+        let nextRoundDate = null;
+
+        const roundEntries = Object.entries(roundDates)
+          .map(([key, val]) => ({ key, num: parseInt(key.replace('R', ''), 10), date: new Date(val) }))
+          .sort((a, b) => a.num - b.num);
+
+        for (const r of roundEntries) {
+          const diff = now.getTime() - r.date.getTime();
+          if (diff >= -ACTIVE_WINDOW_BEFORE && diff <= ACTIVE_WINDOW_AFTER) {
+            activeRoundNum = r.num;
+            break;
+          }
+        }
+
+        if (activeRoundNum === null) {
+          // Find next upcoming round
+          for (const r of roundEntries) {
+            if (r.date > now) {
+              nextRoundNum = r.num;
+              nextRoundDate = r.date;
+              break;
+            }
+          }
+        }
+
+        // 4. Show appropriate mode
+        if (activeRoundNum !== null) {
+          setupLiveMode(activeRoundNum, seasonKey);
+        } else if (nextRoundNum !== null) {
+          startCountdown(nextRoundDate, nextRoundNum);
+        } else {
+          // Check if any rounds exist at all — if roundEntries empty, fallback to season_settings
+          if (roundEntries.length === 0) {
+            // No date data — try to detect from live_games
+            const { data: lgData } = await sb
+              .from('live_games')
+              .select('round_number')
+              .eq('season_key', seasonKey)
+              .order('round_number', { ascending: false })
+              .limit(1);
+
+            if (lgData && lgData.length > 0) {
+              // There are games — treat as active
+              setupLiveMode(lgData[0].round_number, seasonKey);
+            } else {
+              hideEl('hubLoading');
+              showEl('hubComplete');
+            }
+          } else {
+            // All round dates are in the past — but check live_games before declaring season complete
+            // (admin may have started a round manually without dates being set for it)
+            const { data: lgData } = await sb
+              .from('live_games')
+              .select('round_number, status')
+              .eq('season_key', seasonKey)
+              .order('round_number', { ascending: false })
+              .limit(10);
+
+            const activeLive = lgData && lgData.filter(g => g.status === 'live' || g.status === 'waiting');
+            if (activeLive && activeLive.length > 0) {
+              // There are active/waiting games — treat as live
+              setupLiveMode(lgData[0].round_number, seasonKey);
+            } else if (lgData && lgData.length > 0) {
+              // Games exist but all done — show last round as done
+              setupLiveMode(lgData[0].round_number, seasonKey);
+            } else {
+              // Truly nothing — show season complete only if round_count is met
+              hideEl('hubLoading');
+              showEl('hubComplete');
+            }
+          }
+        }
+
+      } catch(err) {
+        console.error('Hub init error:', err);
+        hideEl('hubLoading');
+        document.getElementById('hubLoading').style.display = '';
+        document.getElementById('hubLoading').innerHTML = `
+          <div style="font-size:40px;margin-bottom:12px;">⚠️</div>
+          <p style="color:var(--muted);">Could not load round data. Please refresh or check your connection.</p>
+          <button onclick="location.reload()" class="button-ghost" style="margin-top:16px;">Retry</button>
+        `;
+        showEl('hubLoading');
+      }
+    }
+
+    init();
+  </script>
+  <script>
+    /* Nav glider — animate to clicked link, then navigate */
+    (function() {
+      function initGlider() {
+        var nav = document.querySelector('.nav');
+        if (!nav) return;
+        var glider = nav.querySelector('.nav-glider');
+        if (!glider) { glider = document.createElement('div'); glider.className = 'nav-glider'; nav.insertBefore(glider, nav.firstChild); }
+
+        function positionOf(el) {
+          var nr = nav.getBoundingClientRect();
+          var er = el.getBoundingClientRect();
+          return { x: er.left - nr.left - 6, w: er.width };
+        }
+
+        function moveGlider(x, w, instant) {
+          if (instant) {
+            glider.style.transition = 'none';
+            glider.style.width = w + 'px';
+            glider.style.transform = 'translateX(' + x + 'px)';
+            glider.getBoundingClientRect(); /* force reflow */
+            glider.style.transition = '';
+          } else {
+            glider.style.width = w + 'px';
+            glider.style.transform = 'translateX(' + x + 'px)';
+          }
+        }
+
+        var active = nav.querySelector('a.active');
+        if (!active) { glider.style.width = '0'; return; }
+
+        var dest = positionOf(active);
+
+        /* On load: snap to stored position (where user came from), then animate to active */
+        var stored = sessionStorage.getItem('navGlider');
+        if (stored) {
+          try {
+            var prev = JSON.parse(stored);
+            moveGlider(prev.x, prev.w, true);   /* instant snap to origin */
+            requestAnimationFrame(function() {
+              requestAnimationFrame(function() {
+                moveGlider(dest.x, dest.w, false); /* animate to active */
+              });
+            });
+          } catch(e) { moveGlider(dest.x, dest.w, true); }
+        } else {
+          moveGlider(dest.x, dest.w, true);
+        }
+
+        /* On click: slide glider to target, then navigate after animation */
+        nav.querySelectorAll('a').forEach(function(a) {
+          a.addEventListener('click', function(e) {
+            e.preventDefault();
+            var href = a.getAttribute('href');
+            var pos = positionOf(a);
+            sessionStorage.setItem('navGlider', JSON.stringify(pos));
+            moveGlider(pos.x, pos.w, false);
+            setTimeout(function() { window.location.href = href; }, 180);
+          });
+        });
+      }
+      if (document.readyState === 'loading') { document.addEventListener('DOMContentLoaded', initGlider); }
+      else { initGlider(); }
+      window.addEventListener('resize', function() { sessionStorage.removeItem('navGlider'); initGlider(); });
+    })();
+  </script>
+</body>
+</html>

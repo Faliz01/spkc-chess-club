@@ -263,3 +263,84 @@ DO $$ BEGIN
       USING (bucket_id = 'private_uploads');
   END IF;
 END $$;
+
+-- ── live_games ────────────────────────────────────────────────────────────────
+-- Stores current live game state for realtime broadcast during match nights.
+-- Admin syncs PGN/FEN from Chess.com; viewers subscribe via Supabase Realtime.
+-- One row per active game per round. Cleared/reset each round by admin.
+CREATE TABLE IF NOT EXISTS live_games (
+  id           uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  season_key   text NOT NULL,
+  round_number integer NOT NULL,
+  board_slot   integer NOT NULL DEFAULT 1,  -- display order (1=feature, 2-N=arena)
+  white_name   text,
+  black_name   text,
+  white_username text,
+  black_username text,
+  pgn          text,
+  fen          text DEFAULT 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1',
+  status       text NOT NULL DEFAULT 'waiting',  -- 'waiting' | 'live' | 'done'
+  result       text,  -- '1-0' | '0-1' | '1/2-1/2' | null
+  game_link    text,
+  is_featured  boolean NOT NULL DEFAULT false,
+  updated_at   timestamptz NOT NULL DEFAULT now(),
+  UNIQUE(season_key, round_number, board_slot)
+);
+-- Enable realtime for this table (run ALTER PUBLICATION in Supabase dashboard too)
+ALTER TABLE live_games REPLICA IDENTITY FULL;
+ALTER TABLE live_games ENABLE ROW LEVEL SECURITY;
+DO $$ BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE tablename='live_games' AND policyname='anon_read_live_games') THEN
+    CREATE POLICY "anon_read_live_games" ON live_games FOR SELECT USING (true);
+  END IF;
+  IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE tablename='live_games' AND policyname='auth_write_live_games') THEN
+    CREATE POLICY "auth_write_live_games" ON live_games FOR ALL USING (auth.role() = 'authenticated');
+  END IF;
+END $$;
+
+-- ── live_chat ─────────────────────────────────────────────────────────────────
+-- Spectator chat for live-match-viewer.html
+CREATE TABLE IF NOT EXISTS live_chat (
+  id           uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  season_key   text NOT NULL,
+  round_number integer NOT NULL,
+  username     text NOT NULL,
+  message      text NOT NULL,
+  created_at   timestamptz NOT NULL DEFAULT now()
+);
+ALTER TABLE live_chat REPLICA IDENTITY FULL;
+ALTER TABLE live_chat ENABLE ROW LEVEL SECURITY;
+DO $$ BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE tablename='live_chat' AND policyname='anon_read_chat') THEN
+    CREATE POLICY "anon_read_chat" ON live_chat FOR SELECT USING (true);
+  END IF;
+  IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE tablename='live_chat' AND policyname='anon_insert_chat') THEN
+    CREATE POLICY "anon_insert_chat" ON live_chat FOR INSERT TO anon WITH CHECK (true);
+  END IF;
+END $$;
+
+-- ── hall_of_fame ──────────────────────────────────────────────────────────────
+-- Stores historic season champions and notable games for hall-of-fame.html
+CREATE TABLE IF NOT EXISTS hall_of_fame (
+  id           uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  season_key   text NOT NULL,
+  season_label text NOT NULL,
+  champion     text NOT NULL,         -- player display name
+  chess_username text,
+  podium       jsonb DEFAULT '[]',    -- [{place:2,name:'...',username:'...'},{place:3,...}]
+  best_game_pgn text,
+  best_game_link text,
+  best_game_desc text,
+  season_year  integer,
+  display_order integer DEFAULT 0,
+  created_at   timestamptz DEFAULT now()
+);
+ALTER TABLE hall_of_fame ENABLE ROW LEVEL SECURITY;
+DO $$ BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE tablename='hall_of_fame' AND policyname='anon_read_hof') THEN
+    CREATE POLICY "anon_read_hof" ON hall_of_fame FOR SELECT USING (true);
+  END IF;
+  IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE tablename='hall_of_fame' AND policyname='auth_write_hof') THEN
+    CREATE POLICY "auth_write_hof" ON hall_of_fame FOR ALL USING (auth.role() = 'authenticated');
+  END IF;
+END $$;

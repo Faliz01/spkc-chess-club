@@ -11,17 +11,18 @@
 
   <div class="page-shell">
     <header class="hero">
-      <nav class="nav" aria-label="Primary">
-        <a href="index.html">Home</a>
-        <a href="join.html">Join</a>
-        <a href="tournaments.html">Tournaments</a>
-        <a href="rules.html">Rules</a>
-        <a href="brilliants.html" class="active">Brilliants</a>
-        <a href="matches.html">Matches</a>
-        <a href="history.html">History</a>
-        <a href="openings.html">Openings</a>
+      <div class="nav-wrap"><nav class="nav" aria-label="Primary">
+        <a href="index.html"><span class="nav-icon">🏠</span>Home</a>
+        <a href="join.html"><span class="nav-icon">✋</span>Join</a>
+        <a href="tournaments.html"><span class="nav-icon">🏆</span>Tournaments</a>
+        <a href="rules.html"><span class="nav-icon">📋</span>Rules</a>
+        <a href="brilliants.html" class="active"><span class="nav-icon">💎</span>Brilliants</a>
+        <a href="matches.html"><span class="nav-icon">⚔️</span>Matches</a>
+        <a href="history.html"><span class="nav-icon">📜</span>History</a>
+        <a href="openings.html"><span class="nav-icon">📖</span>Openings</a>
+        <a href="live-hub.html"><span class="nav-live-dot"></span>Live</a>
         <button class="dark-toggle" id="darkToggle" aria-label="Toggle dark mode" title="Toggle dark mode">🌙</button>
-      </nav>
+      </nav></div>
 
       <div class="hero-layout">
         <div class="hero-copy">
@@ -77,6 +78,10 @@
         <div class="section-head">
           <h2 class="section-title">Brilliant moves</h2>
           <span id="brilliantsCount" class="section-badge">Loading...</span>
+          <div style="margin-left:auto;display:flex;gap:6px;align-items:center;">
+            <button id="viewGrid" title="Grid view" aria-label="Switch to grid view" style="background:var(--primary);color:#fff;border:none;border-radius:8px;padding:6px 12px;font-size:12px;font-weight:700;cursor:pointer;">&#9783; Grid</button>
+            <button id="viewList" title="List view" aria-label="Switch to list view" style="background:var(--surface-soft);color:var(--muted);border:1px solid var(--line);border-radius:8px;padding:6px 12px;font-size:12px;font-weight:700;cursor:pointer;">&#9776; List</button>
+          </div>
         </div>
 
         <div class="brilliant-filter-bar" id="brilliantFilterBar">
@@ -432,6 +437,39 @@
       initBrilliants();
     }
 
+    // ── View toggle: Grid ↔ List ─────────────────────────────────────────
+    (function() {
+      const gridBtn = document.getElementById('viewGrid');
+      const listBtn = document.getElementById('viewList');
+      const gridEl  = document.getElementById('brilliantsGrid');
+      if (!gridBtn || !listBtn || !gridEl) return;
+
+      function setView(mode) {
+        if (mode === 'list') {
+          gridEl.classList.remove('brilliants-grid');
+          gridEl.classList.add('brilliants-list');
+          gridBtn.style.background = 'var(--surface-soft)';
+          gridBtn.style.color = 'var(--muted)';
+          gridBtn.style.border = '1px solid var(--line)';
+          listBtn.style.background = 'var(--primary)';
+          listBtn.style.color = '#fff';
+          listBtn.style.border = 'none';
+        } else {
+          gridEl.classList.add('brilliants-grid');
+          gridEl.classList.remove('brilliants-list');
+          gridBtn.style.background = 'var(--primary)';
+          gridBtn.style.color = '#fff';
+          gridBtn.style.border = 'none';
+          listBtn.style.background = 'var(--surface-soft)';
+          listBtn.style.color = 'var(--muted)';
+          listBtn.style.border = '1px solid var(--line)';
+        }
+      }
+
+      gridBtn.addEventListener('click', function() { setView('grid'); });
+      listBtn.addEventListener('click', function() { setView('list'); });
+    })();
+
     // ── Public claim submission ───────────────────────────────────────────
     (function() {
       var claimBtn    = document.getElementById('claimSubmitBtn');
@@ -513,6 +551,72 @@
           btn.textContent = isDark ? '☀️' : '🌙';
         });
       }
+    })();
+  </script>
+  <script>
+    /* Nav glider — animate to clicked link, then navigate */
+    (function() {
+      function initGlider() {
+        var nav = document.querySelector('.nav');
+        if (!nav) return;
+        var glider = nav.querySelector('.nav-glider');
+        if (!glider) { glider = document.createElement('div'); glider.className = 'nav-glider'; nav.insertBefore(glider, nav.firstChild); }
+
+        function positionOf(el) {
+          var nr = nav.getBoundingClientRect();
+          var er = el.getBoundingClientRect();
+          return { x: er.left - nr.left - 6, w: er.width };
+        }
+
+        function moveGlider(x, w, instant) {
+          if (instant) {
+            glider.style.transition = 'none';
+            glider.style.width = w + 'px';
+            glider.style.transform = 'translateX(' + x + 'px)';
+            glider.getBoundingClientRect(); /* force reflow */
+            glider.style.transition = '';
+          } else {
+            glider.style.width = w + 'px';
+            glider.style.transform = 'translateX(' + x + 'px)';
+          }
+        }
+
+        var active = nav.querySelector('a.active');
+        if (!active) { glider.style.width = '0'; return; }
+
+        var dest = positionOf(active);
+
+        /* On load: snap to stored position (where user came from), then animate to active */
+        var stored = sessionStorage.getItem('navGlider');
+        if (stored) {
+          try {
+            var prev = JSON.parse(stored);
+            moveGlider(prev.x, prev.w, true);   /* instant snap to origin */
+            requestAnimationFrame(function() {
+              requestAnimationFrame(function() {
+                moveGlider(dest.x, dest.w, false); /* animate to active */
+              });
+            });
+          } catch(e) { moveGlider(dest.x, dest.w, true); }
+        } else {
+          moveGlider(dest.x, dest.w, true);
+        }
+
+        /* On click: slide glider to target, then navigate after animation */
+        nav.querySelectorAll('a').forEach(function(a) {
+          a.addEventListener('click', function(e) {
+            e.preventDefault();
+            var href = a.getAttribute('href');
+            var pos = positionOf(a);
+            sessionStorage.setItem('navGlider', JSON.stringify(pos));
+            moveGlider(pos.x, pos.w, false);
+            setTimeout(function() { window.location.href = href; }, 180);
+          });
+        });
+      }
+      if (document.readyState === 'loading') { document.addEventListener('DOMContentLoaded', initGlider); }
+      else { initGlider(); }
+      window.addEventListener('resize', function() { sessionStorage.removeItem('navGlider'); initGlider(); });
     })();
   </script>
 </body>
