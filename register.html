@@ -1,0 +1,531 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Register for SPKC Season</title>
+  <link rel="stylesheet" href="style.css" />
+  <style>
+    /* ── Registration status cards ── */
+    .reg-status-card {
+      display: flex; gap: 16px; align-items: flex-start;
+      padding: 18px 20px; border-radius: var(--radius-md);
+      border: 2px solid; margin-bottom: 12px;
+    }
+    .reg-status-icon {
+      font-size: 28px; flex-shrink: 0; line-height: 1; margin-top: 2px;
+    }
+    .reg-status-body { flex: 1; min-width: 0; }
+    .reg-status-season {
+      font-size: 11px; font-weight: 800; text-transform: uppercase;
+      letter-spacing: 1px; color: var(--muted); margin-bottom: 4px;
+    }
+    .reg-status-headline {
+      font-size: 17px; font-weight: 900; margin: 0 0 4px;
+    }
+    .reg-status-sub {
+      font-size: 13px; color: var(--muted); margin: 0 0 10px;
+    }
+    .reg-status-instructions {
+      font-size: 13px; line-height: 1.6;
+      padding: 10px 14px; border-radius: 8px;
+      background: rgba(0,0,0,0.04);
+    }
+    html.dark .reg-status-instructions { background: rgba(255,255,255,0.05); }
+    .reg-status-date {
+      font-size: 11px; color: var(--muted); margin-top: 8px; font-weight: 700;
+    }
+
+    /* Pending */
+    .reg-status-card--pending {
+      border-color: #e8a000; background: #fffbee;
+    }
+    html.dark .reg-status-card--pending { background: #1e1900; border-color: #b07800; }
+    .reg-status-card--pending .reg-status-headline { color: #7a5200; }
+    html.dark .reg-status-card--pending .reg-status-headline { color: #ffd060; }
+
+    /* Accepted */
+    .reg-status-card--accepted {
+      border-color: #1a7a44; background: #edfaf3;
+    }
+    html.dark .reg-status-card--accepted { background: #001a0d; border-color: #1a7a44; }
+    .reg-status-card--accepted .reg-status-headline { color: #125c33; }
+    html.dark .reg-status-card--accepted .reg-status-headline { color: #50d090; }
+
+    /* Rejected */
+    .reg-status-card--rejected {
+      border-color: #c0392b; background: #fff5f5;
+    }
+    html.dark .reg-status-card--rejected { background: #200000; border-color: #a83a3a; }
+    .reg-status-card--rejected .reg-status-headline { color: #a83a3a; }
+    html.dark .reg-status-card--rejected .reg-status-headline { color: #ff7070; }
+
+    /* Status check input row */
+    .status-check-row {
+      display: flex; gap: 10px; margin-top: 16px; flex-wrap: wrap; align-items: flex-end;
+    }
+    .status-check-row .form-input { flex: 1; min-width: 200px; }
+  </style>
+</head>
+<body>
+  <a href="#main" class="skip-link">Skip to content</a>
+
+  <div class="page-shell">
+    <header class="hero">
+      <nav class="nav" aria-label="Primary">
+        <a href="index.html">Home</a>
+        <a href="join.html">Join</a>
+        <a href="tournaments.html">Tournaments</a>
+        <a href="rules.html">Rules</a>
+        <a href="brilliants.html">Brilliants</a>
+        <a href="matches.html">Matches</a>
+        <a href="history.html">History</a>
+        <a href="openings.html">Openings</a>
+        <button class="dark-toggle" id="darkToggle" aria-label="Toggle dark mode" title="Toggle dark mode">🌙</button>
+      </nav>
+
+      <div class="hero-layout">
+        <div class="hero-copy">
+          <p class="eyebrow">Season Registration</p>
+          <h1>Register for the official SPKC online chess season on the website.</h1>
+          <p class="hero-text">
+            Join the Chess.com club first, then submit this form to apply for the official season. Registration is not the same as club membership.
+          </p>
+
+          <div class="button-row">
+            <a class="button-ghost" href="join.html">Back to Join Page</a>
+            <a class="button-link" href="https://www.chess.com/club/spkc-international-chess-club-1/join/f3b06a?utm_campaign=club_invite_link&utm_source=chesscom&utm_medium=copy" target="_blank" rel="noopener noreferrer">Join Chess.com Club</a>
+          </div>
+
+          <div class="hero-stats">
+            <div class="stat-card">
+              <span class="stat-number" id="heroSeasonCount">Loading...</span>
+              <span class="stat-label">Available seasons</span>
+            </div>
+            <div class="stat-card">
+              <span class="stat-number" id="heroWindow">Loading...</span>
+              <span class="stat-label">Registration window</span>
+            </div>
+            <div class="stat-card">
+              <span class="stat-number" id="heroState">Loading...</span>
+              <span class="stat-label">Current status</span>
+            </div>
+          </div>
+        </div>
+
+        <aside class="hero-side badge-card hero-media-card">
+          <img
+            src="https://pplx-res.cloudinary.com/image/upload/pplx_search_images/6055d70b19760746ee0336569b7bdaed749ad3dc.jpg"
+            alt="Chess board close-up for season registration page"
+            width="800"
+            height="457"
+            loading="lazy"
+            class="hero-image"
+          />
+          <div class="media-caption-block">
+            <span class="badge-title">How it works</span>
+            <p>
+              Submit the form, wait for organiser confirmation, and only join official season tournaments after your registration is accepted.
+            </p>
+          </div>
+        </aside>
+      </div>
+    </header>
+
+    <main id="main" class="content-grid">
+      <section class="panel span-7">
+        <h2 class="section-title">Registration form</h2>
+        <form id="registrationForm" class="info-stack">
+          <div class="info-box">
+            <label for="seasonKey"><strong>Season</strong></label><br />
+            <select id="seasonKey" required class="form-input"></select>
+          </div>
+
+          <div class="info-box">
+            <label for="fullName"><strong>Full name</strong></label><br />
+            <input id="fullName" type="text" required maxlength="100" class="form-input" />
+          </div>
+
+          <div class="info-box">
+            <label for="className"><strong>Class</strong></label><br />
+            <input id="className" type="text" required maxlength="50" placeholder="e.g. 2J" class="form-input" />
+          </div>
+
+          <div class="info-box">
+            <label for="chessUsername"><strong>Chess.com username</strong></label><br />
+            <input id="chessUsername" type="text" required maxlength="50" class="form-input" />
+          </div>
+
+          <div class="info-box">
+            <label for="contactText"><strong>Contact number</strong></label><br />
+            <input id="contactText" type="text" required maxlength="100" class="form-input" />
+          </div>
+
+          <div class="button-row">
+            <button id="submitButton" type="submit" class="button-link" style="border:none;">Submit registration</button>
+          </div>
+        </form>
+
+        <div id="formStatus" class="info-box" style="margin-top:16px;">Loading registration settings...</div>
+      </section>
+
+      <section class="panel span-12" id="statusLookupPanel">
+        <div class="section-head">
+          <h2 class="section-title">Check your registration status</h2>
+        </div>
+        <p style="color:var(--muted);font-size:14px;margin:0 0 4px;">Enter your Chess.com username to instantly see your application state across all seasons.</p>
+        <div class="status-check-row">
+          <input id="statusCheckUsername" type="text" placeholder="e.g. Bestfaliz01"
+            class="form-input" autocomplete="off" autocapitalize="none" spellcheck="false" />
+          <button id="statusCheckBtn" type="button" class="button-link" style="border:none; white-space:nowrap;">Check status</button>
+        </div>
+        <div id="statusCheckResult" style="margin-top:18px;"></div>
+      </section>
+
+      <section class="panel span-5">
+        <h2 class="section-title">Important notes</h2>
+        <div class="info-stack">
+          <div class="info-box">Joining the Chess.com club does not automatically register you for the season.</div>
+          <div class="info-box">Each Chess.com username may only submit one registration per season.</div>
+          <div class="info-box">Registration opens and closes are controlled live by the organiser.</div>
+          <div class="info-box">You only begin scoring season points after your registration is accepted.</div>
+        </div>
+      </section>
+    </main>
+
+    <footer>SPKC Chess Club - season registration form.</footer>
+  </div>
+
+  <!-- ── localStorage safety wrappers — must come first ── -->
+  <script>
+    function safeGetStorage(k) { try { return localStorage.getItem(k); } catch(e) { return null; } }
+    function safeSetStorage(k,v) { try { localStorage.setItem(k,v); } catch(e) {} }
+  </script>
+
+  <script>
+    // Feature E: Offline / connection timeout guard
+    var dataLoaded = false;
+    var OFFLINE_MSG_HTML = '<div class="offline-msg"><span class="offline-icon">📡</span><strong>Could not connect</strong><p>Check your internet connection and refresh the page.</p><button onclick="location.reload()">Try again</button></div>';
+    setTimeout(function() {
+      if (!dataLoaded) {
+        document.querySelectorAll('.shimmer, [class*="shimmer"], .loading-placeholder').forEach(function(el) {
+          el.innerHTML = OFFLINE_MSG_HTML;
+        });
+        // Also replace any element whose text content still says "Loading"
+        document.querySelectorAll('.panel, .info-box, section').forEach(function(el) {
+          if (el.children.length === 0 && el.textContent.toLowerCase().includes('loading')) {
+            el.innerHTML = OFFLINE_MSG_HTML;
+          }
+        });
+      }
+    }, 8000);
+  </script>
+  <script src="lib/supabase.min.js"></script>
+  <script>
+    const SUPABASE_URL = 'https://qoczwxslhygakivfgxdy.supabase.co';
+    // NOTE: The anon key is safe to expose in client-side code — it only has the permissions
+    // you set in Supabase RLS policies. Never expose your service_role key here.
+    const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFvY3p3eHNsaHlnYWtpdmZneGR5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk2MTAwNzMsImV4cCI6MjA5NTE4NjA3M30.J5I0IR5Ra_JePDzJYHpzstbNRCo667B201iVhjbDZjs';
+
+    const { createClient } = supabase;
+    const supabaseClient = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+    const form = document.getElementById('registrationForm');
+    const formStatus = document.getElementById('formStatus');
+    const seasonKeySelect = document.getElementById('seasonKey');
+    const submitButton = document.getElementById('submitButton');
+    const heroSeasonCount = document.getElementById('heroSeasonCount');
+    const heroWindow = document.getElementById('heroWindow');
+    const heroState = document.getElementById('heroState');
+
+    let seasonSettings = [];
+
+    function setStatus(message) {
+      formStatus.textContent = message;
+    }
+
+    function formatDateTime(value) {
+      if (!value) return 'Not set';
+      const date = new Date(value);
+      if (Number.isNaN(date.getTime())) return 'Invalid';
+      return date.toLocaleString('en-GB', {
+        year: 'numeric',
+        month: 'short',
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+      });
+    }
+
+    function getSeasonSetting(seasonKey) {
+      return seasonSettings.find(item => item.season_key === seasonKey) || null;
+    }
+
+    function getSeasonState(setting) {
+      if (!setting) {
+        return { label: 'Unavailable', open: false, reason: 'Season settings were not found.' };
+      }
+
+      if (!setting.registration_enabled) {
+        return { label: 'Disabled', open: false, reason: 'Registration is currently disabled for this season.' };
+      }
+
+      const now = new Date();
+      const opensAt = setting.registration_opens_at ? new Date(setting.registration_opens_at) : null;
+      const closesAt = setting.registration_closes_at ? new Date(setting.registration_closes_at) : null;
+
+      if (opensAt && now < opensAt) {
+        return { label: 'Not open yet', open: false, reason: 'Registration has not opened yet for this season.' };
+      }
+
+      if (closesAt && now > closesAt) {
+        return { label: 'Closed', open: false, reason: 'Registration is closed because the deadline has passed.' };
+      }
+
+      return { label: 'Open', open: true, reason: 'Fill in the form to register.' };
+    }
+
+    function rebuildSeasonOptions() {
+      seasonKeySelect.innerHTML = seasonSettings.map(setting => {
+        return `<option value="${escapeHtml(setting.season_key)}">${escapeHtml(setting.season_label)}</option>`;
+      }).join('');
+    }
+
+    function refreshSeasonUI() {
+      const currentSetting = getSeasonSetting(seasonKeySelect.value);
+      const state = getSeasonState(currentSetting);
+
+      if (!currentSetting) {
+        heroWindow.textContent = 'Unavailable';
+        heroState.textContent = 'Unavailable';
+        submitButton.disabled = true;
+        setStatus('Season settings are unavailable.');
+        return;
+      }
+
+      heroWindow.textContent = `${formatDateTime(currentSetting.registration_opens_at)} - ${formatDateTime(currentSetting.registration_closes_at)}`;
+      heroState.textContent = state.label;
+      submitButton.disabled = !state.open;
+      setStatus(state.reason);
+    }
+
+    async function loadSeasonSettings() {
+      setStatus('Loading registration settings...');
+
+      const { data, error } = await supabaseClient
+        .from('season_settings')
+        .select('season_key, season_label, registration_enabled, registration_opens_at, registration_closes_at')
+        .order('registration_opens_at', { ascending: false, nullsFirst: false });
+
+      if (error) {
+        heroSeasonCount.textContent = '0';
+        heroWindow.textContent = 'Unavailable';
+        heroState.textContent = 'Error';
+        submitButton.disabled = true;
+        setStatus('Failed to load registration settings: ' + error.message);
+        return;
+      }
+
+      seasonSettings = Array.isArray(data) ? data : [];
+      heroSeasonCount.textContent = String(seasonSettings.length);
+
+      if (!seasonSettings.length) {
+        heroWindow.textContent = 'Unavailable';
+        heroState.textContent = 'Unavailable';
+        submitButton.disabled = true;
+        setStatus('No season settings are available.');
+        return;
+      }
+
+      rebuildSeasonOptions();
+      refreshSeasonUI();
+    }
+
+    seasonKeySelect.addEventListener('change', refreshSeasonUI);
+
+    form.addEventListener('submit', async (event) => {
+      event.preventDefault();
+
+      const currentSetting = getSeasonSetting(seasonKeySelect.value);
+      const state = getSeasonState(currentSetting);
+
+      if (!currentSetting) {
+        setStatus('Registration failed: season settings were not found.');
+        return;
+      }
+
+      if (!state.open) {
+        submitButton.disabled = true;
+        setStatus(state.reason);
+        return;
+      }
+
+      setStatus('Submitting registration...');
+
+      const payload = {
+        season_key: currentSetting.season_key,
+        full_name: document.getElementById('fullName').value.trim(),
+        class_name: document.getElementById('className').value.trim(),
+        chess_username: document.getElementById('chessUsername').value.trim().toLowerCase(),
+        contact_text: document.getElementById('contactText').value.trim(),
+        status: 'pending',
+        notes: '',
+        deadline_at: currentSetting.registration_closes_at
+      };
+
+      const { error } = await supabaseClient
+        .from('registrations')
+        .insert([payload], { returning: 'minimal' });
+
+      if (error) {
+        const message = String(error.message || '').toLowerCase();
+        const code = String(error.code || '');
+
+        if (code === '23505' || message.includes('duplicate key')) {
+          setStatus('You have already registered for this season with that Chess.com username.');
+          return;
+        }
+
+        if (message.includes('row-level security') || message.includes('violates row-level security policy')) {
+          setStatus('Registration failed because the current season settings do not allow this submission.');
+          return;
+        }
+
+        setStatus('Registration failed: ' + error.message);
+        return;
+      }
+
+      form.reset();
+      refreshSeasonUI();
+      setStatus('Registration submitted successfully. Please wait for organiser confirmation.');
+    });
+
+    function escapeHtml(value) {
+      return String(value ?? '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+    }
+
+    // ── Rich status card builder ──────────────────────────────────────────────────────
+    const STATUS_CONFIG = {
+      pending: {
+        icon: '⏳',
+        cls: 'pending',
+        headline: 'Pending Review',
+        sub: 'Your application has been logged and is awaiting verification.',
+        instructions: 'The tournament coordinator is currently validating your account alignment and eligibility. You will be notified when a decision is made. No action is required from you right now — check back soon.'
+      },
+      accepted: {
+        icon: '✅',
+        cls: 'accepted',
+        headline: 'Accepted & Confirmed',
+        sub: 'Roster verification clear! Your profile is locked into the active season.',
+        instructions: 'You are officially registered. Your score data will automatically stream once Round 1 begins. Join the Chess.com season tournaments when they open and your results will be tracked automatically.'
+      },
+      rejected: {
+        icon: '❌',
+        cls: 'rejected',
+        headline: 'Action Required',
+        sub: 'Your registration was deferred — there may be a mismatch or missing detail.',
+        instructions: 'Please re-submit with the correct Chess.com username and your full school name and class. If you believe this is an error, contact the tournament organiser directly with your Chess.com profile link.'
+      }
+    };
+
+    function buildStatusCard(reg) {
+      const s = (reg.status || 'pending').toLowerCase();
+      const cfg = STATUS_CONFIG[s] || {
+        icon: '❔', cls: 'pending',
+        headline: s.charAt(0).toUpperCase() + s.slice(1),
+        sub: 'Status returned from the database.',
+        instructions: 'Contact the organiser if you need more information.'
+      };
+      // Look up season label from loaded settings
+      const setting = seasonSettings.find(x => x.season_key === reg.season_key);
+      const seasonLabel = setting ? (setting.season_label || reg.season_key) : reg.season_key;
+      const submittedDate = reg.created_at
+        ? new Date(reg.created_at).toLocaleDateString('en-GB', { day:'numeric', month:'short', year:'numeric' })
+        : null;
+      return `
+        <div class="reg-status-card reg-status-card--${escapeHtml(cfg.cls)}">
+          <div class="reg-status-icon">${cfg.icon}</div>
+          <div class="reg-status-body">
+            <div class="reg-status-season">${escapeHtml(seasonLabel)}</div>
+            <div class="reg-status-headline">${cfg.headline}</div>
+            <div class="reg-status-sub">${cfg.sub}</div>
+            ${reg.full_name ? `<div style="font-size:13px;font-weight:700;margin-bottom:8px;">Registered as: ${escapeHtml(reg.full_name)}</div>` : ''}
+            <div class="reg-status-instructions">${cfg.instructions}</div>
+            ${submittedDate ? `<div class="reg-status-date">Submitted ${submittedDate}</div>` : ''}
+          </div>
+        </div>`;
+    }
+
+    async function runStatusCheck() {
+      const username = document.getElementById('statusCheckUsername').value.trim().toLowerCase();
+      const result = document.getElementById('statusCheckResult');
+      if (!username) {
+        result.innerHTML = '<div class="info-box">Enter your Chess.com username first.</div>';
+        return;
+      }
+      result.innerHTML = '<div class="info-box" style="color:var(--muted);">Checking…</div>';
+      const { data, error } = await supabaseClient
+        .from('registrations')
+        .select('season_key, full_name, status, created_at')
+        .ilike('chess_username', username)
+        .order('created_at', { ascending: false });
+
+      dataLoaded = true; // Feature E — outside the error block
+      if (error) {
+        result.innerHTML = `<div class="info-box">Error: ${escapeHtml(error.message)}</div>`;
+        return;
+      }
+      if (!data || !data.length) {
+        result.innerHTML = `
+          <div class="info-box" style="border-color:var(--line);">
+            <strong>No registrations found</strong> for <code style="background:var(--surface-soft);padding:2px 6px;border-radius:5px;font-size:13px;">@${escapeHtml(username)}</code>.
+            <br><span style="font-size:13px;color:var(--muted);">If you have not registered yet, use the form on the left.</span>
+          </div>`;
+        return;
+      }
+      result.innerHTML = data.map(buildStatusCard).join('');
+    }
+
+    document.getElementById('statusCheckBtn').addEventListener('click', runStatusCheck);
+    document.getElementById('statusCheckUsername').addEventListener('keydown', function(e) {
+      if (e.key === 'Enter') { e.preventDefault(); runStatusCheck(); }
+    });
+
+    // Auto-check if ?username= is in the URL (e.g. linked from profile page)
+    (function() {
+      const urlUsername = new URLSearchParams(window.location.search).get('username') || '';
+      if (urlUsername) {
+        document.getElementById('statusCheckUsername').value = urlUsername;
+        // Scroll to status panel and run check after data loads
+        document.getElementById('statusLookupPanel').scrollIntoView({ behavior: 'smooth', block: 'start' });
+        runStatusCheck();
+      }
+    })();
+
+    loadSeasonSettings();
+  </script>
+
+  <!-- ── Dark mode toggle ── -->
+  <script>
+    (function() {
+      const btn = document.getElementById('darkToggle');
+      const stored = safeGetStorage('spkc-dark');
+      if (stored === '1') document.documentElement.classList.add('dark');
+      if (btn) {
+        btn.textContent = document.documentElement.classList.contains('dark') ? '☀️' : '🌙';
+        btn.addEventListener('click', function() {
+          const isDark = document.documentElement.classList.toggle('dark');
+          safeSetStorage('spkc-dark', isDark ? '1' : '0');
+          btn.textContent = isDark ? '☀️' : '🌙';
+        });
+      }
+    })();
+  </script>
+</body>
+</html>

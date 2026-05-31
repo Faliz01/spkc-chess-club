@@ -1,0 +1,1966 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>SPKC Chess Club Tournaments</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <a href="#main" class="skip-link">Skip to content</a>
+
+  <div class="page-shell">
+    <header class="hero">
+      <nav class="nav" aria-label="Primary">
+        <a href="index.html">Home</a>
+        <a href="join.html">Join</a>
+        <a href="tournaments.html" class="active">Tournaments</a>
+        <a href="rules.html">Rules</a>
+        <a href="brilliants.html">Brilliants</a>
+        <a href="matches.html">Matches</a>
+        <a href="history.html">History</a>
+        <a href="openings.html">Openings</a>
+        <button class="dark-toggle" id="darkToggle" aria-label="Toggle dark mode" title="Toggle dark mode">🌙</button>
+      </nav>
+
+      <div class="hero-layout">
+        <div class="hero-copy">
+          <p class="eyebrow">SPKC Tournaments</p>
+          <h1 id="heroTitle">Track season standings, round status, and archived results.</h1>
+          <p class="hero-text" id="heroText">
+            Select a season to view its schedule, standings, and round-by-round performance from the official workbook.
+          </p>
+
+          <div class="button-row">
+            <a class="button-link" href="rules.html#section1">View Official Rules</a>
+            <a class="button-ghost" href="https://www.chess.com/club/spkc-international-chess-club-1/join/f3b06a?utm_campaign=club_invite_link&utm_source=chesscom&utm_medium=copy" target="_blank" rel="noopener noreferrer">Open Club Link</a>
+          </div>
+
+          <div class="season-switcher">
+            <label for="seasonSelect" class="season-label">Season</label>
+            <select id="seasonSelect" class="season-select" aria-label="Choose a tournament season"></select>
+          </div>
+
+          <div class="hero-stats">
+            <div class="stat-card">
+              <span class="stat-number" id="heroRounds">-</span>
+              <span class="stat-label">Official rounds</span>
+            </div>
+            <div class="stat-card">
+              <span class="stat-number" id="heroFormat">-</span>
+              <span class="stat-label">Format cycle</span>
+            </div>
+            <div class="stat-card">
+              <span class="stat-number" id="heroLeader">Loading...</span>
+              <span class="stat-label">Current leader</span>
+            </div>
+          </div>
+
+          <div class="countdown-inline">
+            <span class="countdown-label-small">Next round in</span>
+            <span class="countdown-time-inline" id="heroCountdown">...</span>
+          </div>
+
+          <div class="season-progress-wrap" id="seasonProgressWrap" style="display:none;">
+            <div class="season-progress-label">
+              <span id="progressLabel">Season progress</span>
+              <span id="progressFraction" class="progress-fraction">0 / 6</span>
+            </div>
+            <div class="season-progress-bar-bg">
+              <div class="season-progress-bar-fill" id="progressBarFill" style="width:0%"></div>
+            </div>
+          </div>
+        </div>
+
+        <aside class="hero-side badge-card hero-media-card">
+          <img
+            src="https://pplx-res.cloudinary.com/image/upload/pplx_search_images/a0defd430124915ce5808c5b81c14ab3589f6f2e.jpg"
+            alt="Chess trophy representing tournament prizes and awards"
+            width="500"
+            height="600"
+            loading="lazy"
+            class="hero-image"
+          />
+          <div class="media-caption-block">
+            <span class="badge-title">Season archive</span>
+            <p id="seasonSummary">
+              Each season page is loaded from the official workbook stored in Supabase Storage.
+            </p>
+          </div>
+        </aside>
+      </div>
+    </header>
+
+    <main id="main" class="content-grid">
+      <section class="panel span-12">
+        <div class="section-head">
+          <h2 class="section-title">Season schedule</h2>
+          <span id="seasonBadge" class="section-badge">Loading season...</span>
+        </div>
+        <div id="scheduleGrid" class="event-grid">
+          <div class="info-box">Loading schedule from workbook...</div>
+        </div>
+        <p class="note-line" id="seasonNote">
+          Schedule and standings are loaded from the selected season workbook.
+        </p>
+      </section>
+
+      <section class="panel span-5">
+        <h2 class="section-title">Season details</h2>
+        <img
+          src="https://pplx-res.cloudinary.com/image/upload/pplx_search_images/6055d70b19760746ee0336569b7bdaed749ad3dc.jpg"
+          alt="Close-up chess image used as supporting tournament visual"
+          width="800"
+          height="457"
+          loading="lazy"
+          class="section-image"
+        />
+        <div class="info-stack" id="seasonInfoStack">
+          <div class="info-box">Loading season details...</div>
+        </div>
+      </section>
+
+      <section class="panel span-7">
+        <h2 class="section-title" id="standingsSectionTitle">Current standings</h2>
+        <div class="player-search-wrap">
+          <input type="search" id="playerSearch" class="player-search-input"
+            placeholder="Search player or username…"
+            aria-label="Search players by name or Chess.com username" />
+          <p class="player-search-no-results" id="playerSearchNoResults">No players found for '<span id="playerSearchTerm"></span>'.</p>
+        </div>
+        <div class="standings-filter-bar">
+          <span class="standings-filter-label">Sort by</span>
+          <button class="standings-sort-btn active" data-sort="points" id="sortByPoints">Total Points</button>
+          <button class="standings-sort-btn" data-sort="bullet" id="sortByBullet"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 20" width="10" height="13" style="vertical-align:middle;margin-right:3px;" aria-label="Bullet"><ellipse cx="8" cy="6" rx="5" ry="6" fill="#f5b800"/><rect x="3" y="6" width="10" height="5" fill="#e0a000"/><polygon points="3,11 5,18 8,20 11,18 13,11" fill="#f5b800"/></svg>Bullet Pts</button>
+          <button class="standings-sort-btn" data-sort="blitz" id="sortByBlitz">&#9889; Blitz Pts</button>
+          <button class="standings-sort-btn" data-sort="rapid" id="sortByRapid">&#128336; Rapid Pts</button>
+        </div>
+        <div id="overallGrid" class="standings-grid">
+          <div class="info-box">Loading standings from Supabase...</div>
+        </div>
+      </section>
+
+      <section class="panel span-12" id="seasonLeaderboardPanel">
+        <div class="section-head">
+          <div>
+            <h2 class="section-title">Season Leaderboard</h2>
+            <p class="note-line" id="seasonLbSubtitle" style="margin-top:4px;">Top players this season</p>
+          </div>
+        </div>
+        <div id="seasonLbBars" class="season-lb-bars">
+          <div class="info-box">Loading leaderboard data…</div>
+        </div>
+      </section>
+
+      <section class="panel span-12" id="ratingsLeaderboardPanel">
+        <div class="section-head">
+          <h2 class="section-title">Ratings leaderboard</h2>
+          <div class="leaderboard-tabs" id="leaderboardTabs">
+            <button class="lb-tab active" data-mode="bullet"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 20" width="12" height="15" style="vertical-align:middle;margin-right:3px;flex-shrink:0;" aria-label="Bullet"><ellipse cx="8" cy="6" rx="5" ry="6" fill="#f5b800"/><rect x="3" y="6" width="10" height="5" fill="#e0a000"/><polygon points="3,11 5,18 8,20 11,18 13,11" fill="#f5b800"/></svg> Bullet</button>
+            <button class="lb-tab" data-mode="blitz">⚡ Blitz</button>
+            <button class="lb-tab" data-mode="rapid">🕐 Rapid</button>
+          </div>
+        </div>
+        <div id="ratingsLeaderboard" class="ratings-lb-grid">
+          <div class="info-box">Loading ratings leaderboard...</div>
+        </div>
+      </section>
+
+      <section class="panel span-12">
+        <h2 class="section-title">Round-by-round results</h2>
+        <div class="player-filter-bar" id="playerFilterBar" style="margin-bottom:16px; display:none;">
+          <input id="playerFilterInput" type="text" placeholder="Filter by player name or username…"
+            style="width:100%; max-width:360px; padding:12px 14px; border-radius:12px; border:1px solid var(--line); font:inherit; background:var(--surface); color:var(--text);" />
+          <button id="playerFilterClear" style="margin-left:8px; padding:10px 14px; border-radius:12px; border:1px solid var(--line); background:#eef3fc; color:var(--primary); font-weight:700; cursor:pointer;">Clear</button>
+        </div>
+        <div id="roundSections" class="round-sections">
+          <div class="info-box">Loading round results from Supabase...</div>
+        </div>
+      </section>
+    </main>
+
+    <footer>SPKC Chess Club - tournament archive and season standings overview.</footer>
+  </div>
+
+  <!-- Player Profile Modal -->
+  <div id="playerModalOverlay" class="player-modal-overlay" style="display:none;" aria-modal="true" role="dialog">
+    <div class="player-modal-panel">
+      <button class="player-modal-close" id="playerModalClose" aria-label="Close">&times;</button>
+      <div id="playerModalContent" class="player-modal-content">
+        <div class="rating-shimmer" style="height:200px; border-radius:16px;"></div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // Feature E: Offline / connection timeout guard
+    var dataLoaded = false;
+    var OFFLINE_MSG_HTML = '<div class="offline-msg"><span class="offline-icon">📡</span><strong>Could not connect</strong><p>Check your internet connection and refresh the page.</p><button onclick="location.reload()">Try again</button></div>';
+    setTimeout(function() {
+      if (!dataLoaded) {
+        document.querySelectorAll('.shimmer, [class*="shimmer"], .loading-placeholder').forEach(function(el) {
+          el.innerHTML = OFFLINE_MSG_HTML;
+        });
+        // Also replace any element whose text content still says "Loading"
+        document.querySelectorAll('.panel, .info-box, section').forEach(function(el) {
+          if (el.children.length === 0 && el.textContent.toLowerCase().includes('loading')) {
+            el.innerHTML = OFFLINE_MSG_HTML;
+          }
+        });
+      }
+    }, 8000);
+  </script>
+  <script src="lib/supabase.min.js"></script>
+  <script src="lib/xlsx.full.min.js"></script>
+  <script>
+    const SUPABASE_URL = 'https://qoczwxslhygakivfgxdy.supabase.co';
+    // NOTE: The anon key is safe to expose in client-side code — it only has the permissions
+    // you set in Supabase RLS policies. Never expose your service_role key here.
+    const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFvY3p3eHNsaHlnYWtpdmZneGR5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk2MTAwNzMsImV4cCI6MjA5NTE4NjA3M30.J5I0IR5Ra_JePDzJYHpzstbNRCo667B201iVhjbDZjs';
+    const BUCKET = 'private_uploads';
+    const ROUND_DATES_PATH = 'latest/season-dates.json';
+
+    // SEASONS object — populated dynamically from Supabase, with hardcoded fallback
+    let SEASONS = {};
+
+    // Fallback seasons used when Supabase returns nothing (e.g. migration not yet run)
+    const FALLBACK_SEASONS = {
+      '2026-season': {
+        label: '2026 Season',
+        filePath: 'latest/season-standings.xlsx',
+        sheetName: '2026 Season',
+        sheetHints: ['2026 Season', '2026'],
+        roundCount: 6,
+        roundDates: { 1: '26 April 2026', 2: '10 May 2026', 3: '14 June 2026', 4: '21 June 2026', 5: '5 July 2026', 6: '12 July 2026' },
+        summary: 'The first archived season, using the official standings workbook for 2026.',
+        notes: [
+          'Format: Swiss, with each round played as a separate Chess.com club tournament.',
+          'Official round time: every Sunday at 20:00.',
+          'Time-control cycle: Bullet, Blitz, Rapid, then repeated.'
+        ],
+        roundTime: 'Sundays 20:00',
+        seasonWindow: '26 Apr - 12 Jul',
+        formatCycle: 'Bullet / Blitz / Rapid'
+      },
+      '2027-season-1': {
+        label: '2027 Season 1',
+        filePath: 'latest/season-standings.xlsx',
+        sheetName: '2027 Season 1',
+        sheetHints: ['2027 Season 1', '2027'],
+        roundCount: 6,
+        roundDates: { 1: 'TBC', 2: 'TBC', 3: 'TBC', 4: 'TBC', 5: 'TBC', 6: 'TBC' },
+        summary: 'Season 1 of the 2027 tournament cycle.',
+        notes: ['Dates to be announced.', 'Format follows the same Swiss structure as 2026.'],
+        roundTime: 'Sundays 20:00',
+        seasonWindow: 'TBC',
+        formatCycle: 'Bullet / Blitz / Rapid'
+      }
+    };
+
+    const FORMAT_CYCLE = ['Bullet', 'Blitz', 'Rapid'];
+
+    const { createClient } = supabase;
+    const supabaseClient = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+    const seasonSelect = document.getElementById('seasonSelect');
+    const scheduleGrid = document.getElementById('scheduleGrid');
+    const overallGrid = document.getElementById('overallGrid');
+    const roundSections = document.getElementById('roundSections');
+    const heroRounds = document.getElementById('heroRounds');
+    const heroFormat = document.getElementById('heroFormat');
+    const heroLeader = document.getElementById('heroLeader');
+    const heroTitle = document.getElementById('heroTitle');
+    const heroText = document.getElementById('heroText');
+    const seasonSummary = document.getElementById('seasonSummary');
+    const seasonInfoStack = document.getElementById('seasonInfoStack');
+    const seasonBadge = document.getElementById('seasonBadge');
+    const seasonNote = document.getElementById('seasonNote');
+
+    let dynamicRoundDates = {};
+
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', initializeTournamentPage);
+    } else {
+      initializeTournamentPage();
+    }
+
+    // ── Init ─────────────────────────────────────────────────────────────
+
+    // ── Debug helper ──────────────────────────────────────────────────────
+    function dbg(msg, data) {
+      var prefix = '[SPKC] ';
+      if (data !== undefined) {
+        console.log(prefix + msg, data);
+      } else {
+        console.log(prefix + msg);
+      }
+      // Also show first critical error visibly on page
+      if (msg.toLowerCase().includes('error') || msg.toLowerCase().includes('fail') || msg.toLowerCase().includes('not found')) {
+        var dbgEl = document.getElementById('spkc-debug-bar');
+        if (!dbgEl) {
+          dbgEl = document.createElement('div');
+          dbgEl.id = 'spkc-debug-bar';
+          dbgEl.style.cssText = 'position:fixed;bottom:0;left:0;right:0;background:#1a1a2e;color:#f5b800;font:12px monospace;padding:8px 12px;z-index:9999;max-height:120px;overflow-y:auto;border-top:2px solid #f5b800;';
+          document.body.appendChild(dbgEl);
+        }
+        var line = document.createElement('div');
+        line.textContent = '⚠ ' + msg + (data ? ' — ' + JSON.stringify(data) : '');
+        dbgEl.appendChild(line);
+      }
+    }
+
+    async function initializeTournamentPage() {
+      dbg('initializeTournamentPage started');
+      // Load seasons from Supabase and round dates from storage in parallel
+      await Promise.all([
+        loadSeasonsFromSupabase(),
+        loadSeasonDatesFromStorage()
+      ]);
+
+      dbg('Seasons loaded', Object.keys(SEASONS));
+      dbg('Dynamic round dates loaded', Object.keys(dynamicRoundDates));
+
+      // After both complete, apply overrides and build the UI
+      applyDynamicRoundDates();
+      buildSeasonOptions();
+
+      dbg('Season dropdown value after buildSeasonOptions', seasonSelect.value);
+
+      let _lastValidSeasonKey = seasonSelect.value;
+      seasonSelect.addEventListener('change', async function() {
+        const seasonKey = seasonSelect.value;
+        dbg('Season changed to', seasonKey);
+        setSeasonMeta(seasonKey);
+        try {
+          await loadWorkbookFromSupabase(seasonKey);
+          _lastValidSeasonKey = seasonKey; // only update on success
+        } catch(e) {
+          dbg('Season change failed, reverting dropdown to', _lastValidSeasonKey);
+          seasonSelect.value = _lastValidSeasonKey; // revert to last working season
+        }
+      });
+
+      // Wire up leaderboard tabs
+      document.querySelectorAll('.lb-tab').forEach(btn => {
+        btn.addEventListener('click', () => {
+          document.querySelectorAll('.lb-tab').forEach(b => b.classList.remove('active'));
+          btn.classList.add('active');
+          renderLeaderboard(btn.dataset.mode);
+        });
+      });
+
+      const initialSeasonKey = seasonSelect.value || Object.keys(SEASONS)[0];
+      dbg('Initial season key', initialSeasonKey);
+      if (initialSeasonKey) {
+        setSeasonMeta(initialSeasonKey);
+        loadWorkbookFromSupabase(initialSeasonKey);
+      } else {
+        showLoadError('No seasons are configured. Please add seasons via the admin panel.');
+      }
+    }
+
+    // ── Load seasons from Supabase ────────────────────────────────────────
+
+    async function loadSeasonsFromSupabase() {
+      try {
+        dbg('loadSeasonsFromSupabase: querying season_settings...');
+        const { data, error } = await supabaseClient
+          .from('season_settings')
+          .select('*')
+          .order('registration_opens_at', { ascending: false, nullsFirst: false });
+
+        if (error) {
+          dbg('loadSeasonsFromSupabase error — using fallback', error.message);
+          SEASONS = { ...FALLBACK_SEASONS };
+          return;
+        }
+
+        const rows = Array.isArray(data) ? data : [];
+        dbg('season_settings rows returned', rows.length);
+
+        if (rows.length === 0) {
+          dbg('season_settings is empty — using fallback seasons');
+          SEASONS = { ...FALLBACK_SEASONS };
+          return;
+        }
+
+        dataLoaded = true;
+        SEASONS = {};
+
+        rows.forEach(row => {
+          const seasonKey = String(row.season_key || '').trim();
+          if (!seasonKey) return;
+
+          const seasonLabel = String(row.season_label || seasonKey).trim();
+          const filePath = String(row.file_path || 'latest/season-standings.xlsx').trim();
+          const sheetName = String(row.sheet_name || seasonLabel).trim();
+          const roundCount = Number(row.round_count) || 6;
+
+          // Parse sheet_hints — stored as JSON string, fallback to array
+          let sheetHints = [seasonLabel, seasonKey];
+          if (row.sheet_hints) {
+            try {
+              const parsed = JSON.parse(row.sheet_hints);
+              if (Array.isArray(parsed) && parsed.length > 0) {
+                sheetHints = parsed;
+              }
+            } catch (_e) { /* use default */ }
+          }
+
+          // Parse notes — stored as JSON string, fallback to []
+          let notes = [];
+          if (row.notes) {
+            try {
+              const parsed = JSON.parse(row.notes);
+              if (Array.isArray(parsed)) {
+                notes = parsed;
+              }
+            } catch (_e) {
+              // If it's a plain string (not JSON), treat as single note
+              if (typeof row.notes === 'string' && row.notes.trim()) {
+                notes = [row.notes.trim()];
+              }
+            }
+          }
+
+          // Build default roundDates object (TBC for all rounds)
+          const roundDates = {};
+          for (let i = 1; i <= roundCount; i++) {
+            roundDates[i] = 'TBC';
+          }
+
+          SEASONS[seasonKey] = {
+            label: seasonLabel,
+            filePath,
+            sheetName,
+            sheetHints,
+            roundCount,
+            roundDates,
+            summary: String(row.summary || `Official workbook archive for ${seasonLabel}.`).trim(),
+            notes,
+            roundTime: String(row.round_time || '').trim(),
+            seasonWindow: String(row.season_window || '').trim(),
+            formatCycle: String(row.format_cycle || 'Bullet / Blitz / Rapid').trim(),
+            // Keep raw values for default-season detection in buildSeasonOptions
+            _registrationOpensAt: row.registration_opens_at || '',
+            _registrationEnabled: row.registration_enabled === true || row.registration_enabled === 'true',
+            _registrationClosesAt: row.registration_closes_at || ''
+          };
+        });
+      } catch (err) {
+        dbg('loadSeasonsFromSupabase threw — using fallback', String(err));
+        SEASONS = { ...FALLBACK_SEASONS };
+      }
+    }
+
+    // ── Season options UI ─────────────────────────────────────────────────
+
+    function buildSeasonOptions() {
+      const seasonKeys = Object.keys(SEASONS);
+
+      seasonSelect.innerHTML = seasonKeys.map(key => {
+        const season = SEASONS[key];
+        return `<option value="${escapeHtml(key)}">${escapeHtml(season.label)}</option>`;
+      }).join('');
+
+      // Default season priority:
+      // 1. Any season with registration_enabled = true and registration still open (closes_at in future or no closes_at)
+      // 2. Most recently started season (registration_opens_at <= now)
+      // 3. Any season that has a date
+      // 4. First season in list
+      const now = new Date();
+
+      // Priority 1 — registration actively open
+      const regOpen = seasonKeys.filter(k => {
+        const s = SEASONS[k];
+        if (!s._registrationEnabled) return false;
+        const closes = s._registrationClosesAt ? new Date(s._registrationClosesAt) : null;
+        return !closes || closes > now; // no close date = open indefinitely
+      });
+      // Among open-registration seasons, prefer the one whose registration_opens_at is soonest in future or most recent past
+      regOpen.sort((a, b) => {
+        const da = SEASONS[a]._registrationOpensAt ? new Date(SEASONS[a]._registrationOpensAt) : new Date(0);
+        const db = SEASONS[b]._registrationOpensAt ? new Date(SEASONS[b]._registrationOpensAt) : new Date(0);
+        return db - da; // most recently opened first
+      });
+
+      // Priority 2 — already started (registration_opens_at <= now)
+      const started = seasonKeys.filter(k => {
+        const d = SEASONS[k]._registrationOpensAt;
+        return d && new Date(d) <= now;
+      });
+      started.sort((a, b) => new Date(SEASONS[b]._registrationOpensAt) - new Date(SEASONS[a]._registrationOpensAt));
+
+      // Fallback: any key that has a date, then just the first key
+      const hasDates = seasonKeys.filter(k => SEASONS[k]._registrationOpensAt)
+        .sort((a,b) => new Date(SEASONS[b]._registrationOpensAt) - new Date(SEASONS[a]._registrationOpensAt));
+
+      const defaultKey = regOpen[0] || started[0] || hasDates[0] || seasonKeys[0];
+      if (defaultKey) { seasonSelect.value = defaultKey; dbg('buildSeasonOptions: default selected', defaultKey); }
+    }
+
+    // ── Round dates from storage ──────────────────────────────────────────
+
+    async function loadSeasonDatesFromStorage() {
+      try {
+        dbg('loadSeasonDatesFromStorage: getting signed URL for', ROUND_DATES_PATH);
+        const { data: signedData, error: signedError } = await supabaseClient
+          .storage
+          .from(BUCKET)
+          .createSignedUrl(ROUND_DATES_PATH, 10800);
+
+        if (signedError || !signedData?.signedUrl) {
+          dbg('loadSeasonDatesFromStorage signed URL error', signedError ? signedError.message : 'no signedUrl returned');
+          dynamicRoundDates = {};
+          return;
+        }
+
+        dbg('loadSeasonDatesFromStorage: fetching JSON from signed URL');
+        const response = await fetch(signedData.signedUrl);
+
+        if (!response.ok) {
+          dbg('loadSeasonDatesFromStorage fetch failed', response.status + ' ' + response.statusText);
+          dynamicRoundDates = {};
+          return;
+        }
+
+        const json = await response.json();
+        dynamicRoundDates = json && typeof json === 'object' ? json : {};
+        dbg('loadSeasonDatesFromStorage: loaded dates for seasons', Object.keys(dynamicRoundDates));
+      } catch (error) {
+        dbg('loadSeasonDatesFromStorage threw', String(error));
+        dynamicRoundDates = {};
+      }
+    }
+
+    function applyDynamicRoundDates() {
+      Object.keys(SEASONS).forEach(seasonKey => {
+        const season = SEASONS[seasonKey];
+        const override = dynamicRoundDates[seasonKey];
+
+        if (!season || !override || typeof override !== 'object') return;
+
+        // Override round count only if the JSON specifies one
+        const overrideRoundCount = Number(
+          override.roundCount ||
+          Object.keys(override.roundDates || {}).length ||
+          0
+        );
+        if (overrideRoundCount > 0) season.roundCount = overrideRoundCount;
+
+        // Merge round dates: JSON wins over TBC placeholders
+        const merged = { ...(season.roundDates || {}) };
+        Object.entries(override.roundDates || {}).forEach(([k, v]) => {
+          merged[k] = v;
+          merged[Number(k)] = v; // keep both string and numeric keys in sync
+        });
+        season.roundDates = merged;
+
+        // Label override is optional
+        if (override.label) season.label = override.label;
+      });
+    }
+
+    // ── Season meta display ───────────────────────────────────────────────
+
+    function setSeasonMeta(seasonKey) {
+      const season = SEASONS[seasonKey];
+      if (!season) return;
+
+      heroTitle.textContent = `Track ${season.label} standings, round status, and results.`;
+      heroText.textContent = `View the official workbook-backed schedule, standings, and round-by-round results for ${season.label}.`;
+      seasonSummary.textContent = season.summary || `Official workbook archive for ${season.label}.`;
+      seasonBadge.textContent = season.label;
+      seasonNote.textContent = `Current view: ${season.label}. Data is loaded from ${season.filePath}.`;
+      heroRounds.textContent = '-';
+      heroFormat.textContent = season.formatCycle || 'Bullet / Blitz / Rapid';
+      heroLeader.textContent = 'Loading...';
+      heroTitle.textContent = `Track ${season.label} standings, round status, and results.`;
+
+      // Also update round time / season window stat cards if they exist on this page
+      const heroRoundTimeEl = document.getElementById('heroRoundTime');
+      const heroSeasonWindowEl = document.getElementById('heroSeasonWindow');
+      if (heroRoundTimeEl) heroRoundTimeEl.textContent = season.roundTime || 'Sundays 20:00';
+      if (heroSeasonWindowEl) heroSeasonWindowEl.textContent = season.seasonWindow || season.label || '-';
+
+      // Restart countdown with real round dates now that season is loaded
+      startCountdown('heroCountdown', season.roundDates || {}, season.roundTime || '20:00');
+
+      const notes = Array.isArray(season.notes) ? season.notes : [];
+      seasonInfoStack.innerHTML = notes.length
+        ? notes.map(note => `<div class="info-box">${escapeHtml(note)}</div>`).join('')
+        : '<div class="info-box">No season notes available.</div>';
+
+      // Reset standings title to "Current standings" while new season loads
+      const standingsTitle = document.getElementById('standingsSectionTitle');
+      if (standingsTitle) standingsTitle.textContent = 'Current standings';
+    }
+
+    // ── Progress bar ──────────────────────────────────────────────────────
+
+    function updateProgressBar(completed, total, label) {
+      const wrap = document.getElementById('seasonProgressWrap');
+      const fill = document.getElementById('progressBarFill');
+      const fraction = document.getElementById('progressFraction');
+      const lbl = document.getElementById('progressLabel');
+      if (!wrap) return;
+      wrap.style.display = 'block';
+      lbl.textContent = label || 'Season progress';
+      fraction.textContent = `${completed} / ${total} rounds`;
+      fill.style.width = total > 0 ? `${Math.round((completed / total) * 100)}%` : '0%';
+    }
+
+    // ── Workbook loading ──────────────────────────────────────────────────
+
+    function showNoData(label) {
+      var msg = escapeHtml(label || 'This season') + ' has no standings data yet.';
+      scheduleGrid.innerHTML  = '<div class="info-box">' + msg + '</div>';
+      overallGrid.innerHTML   = '<div class="info-box">' + msg + '</div>';
+      roundSections.innerHTML = '<div class="info-box">' + msg + '</div>';
+      heroLeader.textContent  = 'TBA';
+      heroRounds.textContent  = '0';
+    }
+
+    async function loadWorkbookFromSupabase(seasonKey) {
+      const season = SEASONS[seasonKey];
+      dbg('loadWorkbookFromSupabase called', { seasonKey, filePath: season ? season.filePath : 'SEASON NOT FOUND' });
+
+      if (!season) {
+        dbg('loadWorkbookFromSupabase error — season not found in SEASONS', seasonKey);
+        showLoadError('Selected season configuration was not found. Season key: ' + seasonKey);
+        return;
+      }
+
+      // Dummy / future season with no real file — show gracefully, don’t attempt load
+      const isDummy = !season._registrationOpensAt && seasonKey === (season.label || '');
+      if (isDummy) {
+        dbg('loadWorkbookFromSupabase: dummy/test season, skipping workbook load', seasonKey);
+        showNoData(season.label);
+        return;
+      }
+
+      try {
+        scheduleGrid.innerHTML = '<div class="info-box">Loading schedule...</div>';
+        overallGrid.innerHTML = '<div class="info-box">Loading standings...</div>';
+        roundSections.innerHTML = '<div class="info-box">Loading round results...</div>';
+
+        dbg('loadWorkbookFromSupabase: requesting signed URL for', season.filePath);
+        const { data: signedData, error: signedError } = await supabaseClient
+          .storage
+          .from(BUCKET)
+          .createSignedUrl(season.filePath, 10800);
+
+        if (signedError) {
+          throw new Error('createSignedUrl failed: ' + signedError.message);
+        }
+        if (!signedData || !signedData.signedUrl) {
+          throw new Error('createSignedUrl returned no URL (bucket may not exist or RLS blocks anon)');
+        }
+
+        dbg('loadWorkbookFromSupabase: signed URL obtained, fetching workbook...');
+        const response = await fetch(signedData.signedUrl);
+
+        if (!response.ok) {
+          throw new Error('Workbook fetch failed: ' + response.status + ' ' + response.statusText);
+        }
+
+        dbg('loadWorkbookFromSupabase: workbook fetched, parsing...');
+        const data = await response.arrayBuffer();
+        const workbook = XLSX.read(data, { type: 'array' });
+        dbg('loadWorkbookFromSupabase: sheets in workbook', workbook.SheetNames);
+
+        const matchedSheetName = findBestSheetName(workbook.SheetNames, season);
+        dbg('loadWorkbookFromSupabase: matched sheet', matchedSheetName);
+
+        if (!matchedSheetName) {
+          throw new Error('Sheet not found. Wanted: ' + season.sheetName + '. Available: ' + workbook.SheetNames.join(', '));
+        }
+
+        const sheet = workbook.Sheets[matchedSheetName];
+        if (!sheet) {
+          throw new Error('Sheet resolved but unavailable: ' + matchedSheetName);
+        }
+
+        const rows = XLSX.utils.sheet_to_json(sheet, { header: 1, defval: '' });
+        dbg('loadWorkbookFromSupabase: rows parsed', rows.length);
+
+        const parsed = parseWorkbookRows(rows, season);
+        dbg('loadWorkbookFromSupabase: rankPlayers', parsed.rankPlayers.length);
+        dbg('loadWorkbookFromSupabase: pointsPlayers', parsed.pointsPlayers.length);
+        dbg('loadWorkbookFromSupabase: roundKeys', parsed.roundKeys);
+
+        if (!parsed.pointsPlayers.length) {
+          dbg('loadWorkbookFromSupabase: pointsPlayers is empty — sheet may have no data yet or block label mismatch');
+          showNoData(season.label);
+          return;
+        }
+
+        // A round counts as "done" if:
+        //   (a) the column header itself contains CXL (e.g. "R6 CXL") — round was cancelled, OR
+        //   (b) at least one player has a real numeric score
+        // Rounds where header has no CXL and cells are all blank/DNS/DNF/DSQ/TBC are NOT done.
+        const NON_SCORE = new Set(['', '0', 'ATT', 'DNS', 'DSQ', 'DNF', '—', '-', 'N/A', 'TBC']);
+        const completedCount = parsed.roundKeys.filter(roundKey => {
+          // (a) header says CXL — cancelled round counts as done
+          if (/CXL/i.test(roundKey)) return true;
+          // (b) any player has a real numeric score
+          return parsed.rankPlayers.some(p => {
+            const s = String(p[roundKey] || '').trim().toUpperCase();
+            return !NON_SCORE.has(s) && s !== 'CXL' && !isNaN(parseFloat(s));
+          });
+        }).length;
+        updateProgressBar(completedCount, parsed.roundKeys.length, season.label);
+
+        // Update standings title: "Final standings" only when the LAST round is done
+        const standingsTitle = document.getElementById('standingsSectionTitle');
+        if (standingsTitle) {
+          const lastRoundKey = parsed.roundKeys[parsed.roundKeys.length - 1];
+          const lastRoundDone = lastRoundKey && (
+            /CXL/i.test(lastRoundKey) ||
+            parsed.rankPlayers.some(p => {
+              const s = String(p[lastRoundKey] || '').trim().toUpperCase();
+              return !NON_SCORE.has(s) && s !== 'CXL' && !isNaN(parseFloat(s));
+            })
+          );
+          standingsTitle.textContent = lastRoundDone ? 'Final standings' : 'Current standings';
+        }
+
+        renderSchedule(parsed.rankPlayers, parsed.pointsPlayers, parsed.roundKeys, season);
+        renderOverall(parsed.pointsPlayers, parsed.roundKeys);
+        renderRounds(parsed.rankPlayers, parsed.pointsPlayers, parsed.roundKeys, season);
+        updateHeroLeader(parsed.pointsPlayers);
+
+        heroRounds.textContent = parsed.roundKeys.length ? String(parsed.roundKeys.length) : '0';
+        dbg('loadWorkbookFromSupabase: done ✓');
+      } catch (error) {
+        dbg('loadWorkbookFromSupabase error', error.message || String(error));
+        showLoadError(error.message || String(error));
+      }
+    }
+
+    // ── Workbook parsing ──────────────────────────────────────────────────
+
+    function findBestSheetName(sheetNames, season) {
+      const names = Array.isArray(sheetNames) ? sheetNames : [];
+      const exactTarget = String(season.sheetName || '').trim().toLowerCase();
+      const hints = Array.isArray(season.sheetHints) ? season.sheetHints : [];
+
+      if (exactTarget) {
+        const exact = names.find(name => String(name).trim().toLowerCase() === exactTarget);
+        if (exact) return exact;
+      }
+
+      for (const hint of hints) {
+        const normalizedHint = String(hint || '').trim().toLowerCase();
+        if (!normalizedHint) continue;
+
+        const exactHint = names.find(name => String(name).trim().toLowerCase() === normalizedHint);
+        if (exactHint) return exactHint;
+      }
+
+      for (const hint of hints) {
+        const normalizedHint = String(hint || '').trim().toLowerCase();
+        if (!normalizedHint) continue;
+
+        const partial = names.find(name => String(name).toLowerCase().includes(normalizedHint));
+        if (partial) return partial;
+      }
+
+      if (season.label) {
+        const labelHint = String(season.label).trim().toLowerCase();
+        const labelMatch = names.find(name => String(name).toLowerCase().includes(labelHint));
+        if (labelMatch) return labelMatch;
+      }
+
+      return names[0] || null;
+    }
+
+    function showLoadError(message) {
+      const safeMessage = escapeHtml(message);
+      scheduleGrid.innerHTML = `<div class="info-box">Schedule load failed: ${safeMessage}</div>`;
+      overallGrid.innerHTML = `<div class="info-box">Standings load failed: ${safeMessage}</div>`;
+      roundSections.innerHTML = `<div class="info-box">Round results load failed: ${safeMessage}</div>`;
+      heroLeader.textContent = 'Unavailable';
+      heroRounds.textContent = '0';
+    }
+
+    function parseWorkbookRows(rows, season) {
+      // Try exact match first, then fuzzy (handles e.g. "2026 Season Total Points")
+      const rankBlock   = parseNamedBlock(rows, 'Total Rank')   || parseNamedBlock(rows, 'Total Rank',   true) || { headers: [], players: [] };
+      const pointsBlock = parseNamedBlock(rows, 'Total Points') || parseNamedBlock(rows, 'Total Points', true) || { headers: [], players: [] };
+
+      const allowedRoundCount = Number(
+        season?.roundCount ||
+        Object.keys(season?.roundDates || {}).length ||
+        6
+      );
+
+      const roundKeys = (pointsBlock.headers || [])
+        .map(h => String(h || '').trim())
+        .filter(h => /^R\s*\d+/i.test(h))
+        .sort((a, b) => {
+          const aNum = Number((a.match(/R\s*(\d+)/i) || [0, 0])[1]);
+          const bNum = Number((b.match(/R\s*(\d+)/i) || [0, 0])[1]);
+          return aNum - bNum;
+        })
+        .filter(h => {
+          const num = Number((h.match(/R\s*(\d+)/i) || [0, 0])[1]);
+          return num >= 1 && num <= allowedRoundCount;
+        });
+
+      return {
+        rankPlayers: rankBlock.players,
+        pointsPlayers: pointsBlock.players,
+        roundKeys
+      };
+    }
+
+    // fuzzy=true: match any cell that CONTAINS blockName (handles e.g. "2026 Season Total Points")
+    function parseNamedBlock(rows, blockName, fuzzy) {
+      var labelIndex  = -1;
+      var headerIndex = -1;
+      var blockNameLower = blockName.toLowerCase();
+
+      // Other block labels that signal the START of a new section (stop reading players when we hit one)
+      var BLOCK_LABELS = ['total rank', 'total points', 'total bullet rank', 'total bullet points',
+                          'total blitz rank', 'total blitz points', 'total rapid rank', 'total rapid points'];
+
+      for (var i = 0; i < rows.length; i++) {
+        var row = rows[i].map(function(v){ return String(v).trim(); });
+        var matched = fuzzy
+          ? row.some(function(cell){ return cell.toLowerCase().includes(blockNameLower); })
+          : row.includes(blockName);
+        if (matched) { labelIndex = i; break; }
+      }
+
+      if (labelIndex === -1) {
+        if (!fuzzy) {
+          // Log first 8 non-empty rows so we can see what the sheet actually contains
+          var sample = rows.slice(0,20).filter(function(r){ return r.some(function(c){ return String(c).trim(); }); }).slice(0,8);
+          dbg('parseNamedBlock: "' + blockName + '" not found (exact). Sample rows:', sample.map(function(r){ return r.join(' | '); }));
+        }
+        return null; // return null so caller can try fuzzy
+      }
+
+      dbg('parseNamedBlock: "' + blockName + '" found at row ' + labelIndex + (fuzzy?' (fuzzy)':''));
+
+      for (var j = labelIndex + 1; j < rows.length; j++) {
+        var hrow = rows[j].map(function(v){ return String(v).trim(); });
+        if (hrow.includes('Player') && hrow.includes('Chess.com Username') && hrow.includes('Total Score')) {
+          headerIndex = j;
+          break;
+        }
+      }
+
+      if (headerIndex === -1) {
+        dbg('parseNamedBlock: header row not found after "' + blockName + '". Rows after label:', rows.slice(labelIndex+1, labelIndex+6).map(function(r){ return r.join(' | '); }));
+        return null;
+      }
+      dbg('parseNamedBlock: "' + blockName + '" header at row ' + headerIndex + ', cols: ' + rows[headerIndex].join(' | '));
+
+      var headers = rows[headerIndex].map(function(v){ return String(v).trim(); });
+      var players = [];
+      var seen = new Set();
+
+      for (var k = headerIndex + 1; k < rows.length; k++) {
+        var rawRow = rows[k].map(function(v){ return String(v).trim(); });
+        if (rawRow.every(function(c){ return c === ''; })) continue;
+
+        // Stop when we hit a NEW block label (but NOT the current one we're inside)
+        var hitNewBlock = BLOCK_LABELS.some(function(lbl) {
+          if (lbl === blockNameLower) return false; // don't stop on our own label
+          return rawRow.some(function(cell){ return cell.toLowerCase() === lbl; });
+        });
+        if (hitNewBlock) { dbg('parseNamedBlock: stopping at row ' + k + ' (new block label detected)'); break; }
+
+        var player = {};
+        headers.forEach(function(h, idx){ player[h] = rawRow[idx] !== undefined ? rawRow[idx] : ''; });
+
+        var name     = String(player['Player'] || '').trim();
+        var username = String(player['Chess.com Username'] || '').trim();
+        if (!name || !username || name === 'Player') continue;
+
+        var key = name + '__' + username;
+        if (seen.has(key)) continue;
+        seen.add(key);
+        players.push(player);
+      }
+
+      dbg('parseNamedBlock: "' + blockName + '" parsed ' + players.length + ' players');
+      return { headers: headers, players: players };
+    }
+
+    // ── Render functions ──────────────────────────────────────────────────
+
+    function renderSchedule(rankPlayers, pointsPlayers, roundKeys, season) {
+      if (!roundKeys.length) {
+        scheduleGrid.innerHTML = '<div class="info-box">No round schedule data detected.</div>';
+        return;
+      }
+
+      const pointsMap = new Map(
+        pointsPlayers.map(player => [
+          makePlayerKey(player['Player'], player['Chess.com Username']),
+          player
+        ])
+      );
+
+      const cards = roundKeys.map((roundKey, index) => {
+        const roundNumberMatch = roundKey.match(/R\s*(\d+)/i);
+        const roundNumber = roundNumberMatch ? Number(roundNumberMatch[1]) : index + 1;
+        const format = FORMAT_CYCLE[(roundNumber - 1) % 3];
+        const dateText = (season.roundDates &&
+          (season.roundDates[roundNumber] || season.roundDates[String(roundNumber)])) || `Round ${roundNumber}`;
+
+        const entries = rankPlayers.map(rankPlayer => {
+          const key = makePlayerKey(rankPlayer['Player'], rankPlayer['Chess.com Username']);
+          const pointsPlayer = pointsMap.get(key) || {};
+
+          return {
+            standing: String(rankPlayer[roundKey] ?? '').trim(),
+            points: String(pointsPlayer[roundKey] ?? '').trim()
+          };
+        });
+
+        const hasCancelled =
+          roundKey.toUpperCase().includes('CXL') ||
+          entries.some(entry => { const s = entry.standing.toUpperCase(); return s === 'CXL' || s === 'ATT'; });
+
+        const hasPlayed = entries.some(entry => {
+          const standing = entry.standing.toUpperCase();
+          return standing !== '' && standing !== '0' && standing !== 'CXL' && standing !== 'ATT';
+        });
+
+        let status = 'Scheduled';
+        let cardClass = '';
+        let description = 'This round appears to be scheduled or not played yet.';
+
+        if (hasCancelled) {
+          status = 'Cancelled';
+          cardClass = 'cancelled';
+          description = 'This round is marked as cancelled in the workbook.';
+        } else if (hasPlayed) {
+          status = 'Completed';
+          cardClass = 'completed';
+          description = 'This round has recorded standings in the workbook.';
+        }
+
+        return `
+          <article class="event-card ${cardClass}">
+            <span class="event-meta">Round ${roundNumber}</span>
+            <h3>${escapeHtml(dateText)}</h3>
+            <p>${escapeHtml(description)}</p>
+            <div class="meta-row">
+              <span class="meta-pill">${escapeHtml(format)}</span>
+              <span class="meta-pill ${status === 'Cancelled' ? 'cancelled' : ''}">${escapeHtml(status)}</span>
+            </div>
+          </article>
+        `;
+      });
+
+      scheduleGrid.innerHTML = cards.join('');
+    }
+
+    async function renderOverall(players, roundKeys) {
+      if (!players.length) {
+        overallGrid.innerHTML = '<div class="info-box">No usable overall standings rows found.</div>';
+        return;
+      }
+
+      // ── All declarations FIRST so nothing is used before it is defined ──
+
+      // Store for modal access
+      window._spkcPointsPlayers = players;
+      window._spkcRoundKeys = roundKeys || [];
+
+      // Sort state — must be declared before buildCard or applySortAndRender use it
+      var _currentSort = 'points';
+      var FORMAT_SORT_MODES = { bullet: 'Bullet', blitz: 'Blitz', rapid: 'Rapid' };
+
+      // Set formatCycle on window so getFormatPoints can read it
+      var _currentSeason = SEASONS[seasonSelect.value] || {};
+      window._spkcFormatCycle = _currentSeason.formatCycle || _currentSeason.format_cycle || 'Bullet / Blitz / Rapid';
+
+      var sorted = [...players].sort((a, b) =>
+        Number(b['Total Score'] || 0) - Number(a['Total Score'] || 0)
+      );
+
+      window._spkcSortedPlayers = sorted;
+      window._spkcPointsMap = new Map(players.map(p => [
+        String(p['Chess.com Username'] || '').trim().toLowerCase(), p
+      ]));
+
+      // ── Helper: sum points for rounds matching a given format type ──
+      function getFormatPoints(player, formatType) {
+        var cycle = (window._spkcFormatCycle || 'Bullet / Blitz / Rapid')
+          .split(/[/,|]+/).map(function(s){ return s.trim(); }).filter(Boolean);
+        if (!cycle.length) return 0;
+        var total = 0;
+        (roundKeys || []).forEach(function(rk, idx) {
+          var roundFormat = cycle[idx % cycle.length];
+          if (roundFormat.toLowerCase() !== formatType.toLowerCase()) return;
+          var v = player[rk];
+          if (String(v).trim().toUpperCase() === 'ATT') { total += 5; return; }
+          var n = parseFloat(v);
+          if (!isNaN(n)) total += n;
+        });
+        return total;
+      }
+
+      // ── Helper: build all rating badges ──
+      function buildRatingBadges(r) {
+        var badges = [
+          r.bullet != null ? '<span class="rating-badge bullet" title="Bullet"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 20" width="12" height="15" style="vertical-align:middle;margin-right:3px;flex-shrink:0;" aria-label="Bullet"><ellipse cx="8" cy="6" rx="5" ry="6" fill="#f5b800"/><rect x="3" y="6" width="10" height="5" fill="#e0a000"/><polygon points="3,11 5,18 8,20 11,18 13,11" fill="#f5b800"/></svg> ' + r.bullet + '</span>' : '',
+          r.blitz  != null ? '<span class="rating-badge blitz" title="Blitz">&#9889; ' + r.blitz + '</span>' : '',
+          r.rapid  != null ? '<span class="rating-badge rapid" title="Rapid">&#128336; ' + r.rapid + '</span>' : ''
+        ].filter(Boolean);
+        if (!badges.length) return '<span class="rating-na">No ratings found</span>';
+        return '<div class="rating-badges">' + badges.join('') + '</div>';
+      }
+
+      // ── Helper: build filtered rating badge for format-sort modes ──
+      function buildRatingBadgesFiltered(r, mode) {
+        if (FORMAT_SORT_MODES[mode]) {
+          var val = r[mode];
+          if (val == null) return '<span class="rating-na">No ' + mode + ' rating</span>';
+          var icons = {
+            bullet: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 20" width="12" height="15" style="vertical-align:middle;margin-right:3px;" aria-label="Bullet"><ellipse cx="8" cy="6" rx="5" ry="6" fill="#f5b800"/><rect x="3" y="6" width="10" height="5" fill="#e0a000"/><polygon points="3,11 5,18 8,20 11,18 13,11" fill="#f5b800"/></svg>',
+            blitz: '&#9889;',
+            rapid: '&#128336;'
+          };
+          var cls = { bullet: 'bullet', blitz: 'blitz', rapid: 'rapid' };
+          return '<div class="rating-badges"><span class="rating-badge ' + cls[mode] + '">' + icons[mode] + ' ' + val + '</span></div>';
+        }
+        return buildRatingBadges(r);
+      }
+
+      // ── Helper: build a standing card ──
+      function buildCard(player, index, sortMode) {
+        var username   = String(player['Chess.com Username'] || '').trim().toLowerCase();
+        var playerName = String(player['Player'] || '').trim();
+        var totalScore = String(player['Total Score'] || 0);
+        var rank       = index + 1;
+        var brilliants = parseInt(player['Brilliants'] || '0', 10);
+        var brilliantsBadge = brilliants > 0
+          ? '<div style="margin-top:8px;"><span class="brilliant-badge">✨ ' + brilliants + ' Brilliant' + (brilliants > 1 ? 's' : '') + ' · +' + (brilliants * 4) + ' pts</span></div>'
+          : '';
+        var formatPtsBadge = '';
+        if (sortMode && FORMAT_SORT_MODES[sortMode]) {
+          var fmtPts   = getFormatPoints(player, FORMAT_SORT_MODES[sortMode]);
+          var fmtLabel = { bullet: 'Bullet', blitz: 'Blitz', rapid: 'Rapid' }[sortMode] || sortMode;
+          var fmtIcons = {
+            bullet: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 20" width="11" height="14" style="vertical-align:middle;margin-right:2px;"><ellipse cx="8" cy="6" rx="5" ry="6" fill="#f5b800"/><rect x="3" y="6" width="10" height="5" fill="#e0a000"/><polygon points="3,11 5,18 8,20 11,18 13,11" fill="#f5b800"/></svg>',
+            blitz: '&#9889;', rapid: '&#128336;'
+          };
+          var fmtIcon = fmtIcons[sortMode] || '';
+          formatPtsBadge = '<div style="margin-top:6px;"><span style="font-size:11px;background:var(--surface-soft);border:1.5px solid var(--line);border-radius:8px;padding:2px 8px;color:var(--muted);font-weight:700;">' + fmtIcon + ' ' + fmtLabel + ': ' + fmtPts + ' pts</span></div>';
+        }
+        var topClass = index === 0 ? 'top-1' : index === 1 ? 'top-2' : index === 2 ? 'top-3' : '';
+        return [
+          '<article class="standing-card ' + topClass + '" id="standing-card-' + escapeHtml(username) + '">',
+          '  <div class="rank-row">',
+          '    <span class="rank">#' + rank + '</span>',
+          '    <span class="points">' + escapeHtml(totalScore) + ' pts</span>',
+          '  </div>',
+          '  <h3 style="display:flex;align-items:center;justify-content:space-between;gap:8px;">',
+          '    <span style="cursor:pointer;text-decoration:underline dotted;text-underline-offset:3px;" data-username="' + escapeHtml(username) + '" data-player="' + escapeHtml(playerName) + '" data-rank="' + rank + '" data-score="' + escapeHtml(totalScore) + '">' + escapeHtml(playerName) + '</span>',
+          '    <a href="player.html?username=' + encodeURIComponent(username) + '" title="Full profile" style="font-size:11px;font-weight:800;color:var(--primary);text-decoration:none;background:var(--surface-soft);border:1.5px solid var(--line);border-radius:8px;padding:2px 8px;white-space:nowrap;flex-shrink:0;" target="_blank">Profile ↗</a>',
+          '  </h3>',
+          '  <p class="standing-meta"><a href="https://www.chess.com/member/' + encodeURIComponent(username) + '" target="_blank" rel="noopener noreferrer" style="color:var(--muted);font-size:11px;">@' + escapeHtml(username) + '</a></p>',
+          '  <div class="meta-row" style="margin-top:8px;"><div class="rating-shimmer"></div></div>',
+          brilliantsBadge,
+          formatPtsBadge,
+          '</article>'
+        ].join('');
+      }
+
+      // ── applySortAndRender: re-sort and redraw cards ──
+      function applySortAndRender() {
+        var sortedPlayers = [...players];
+        if (_currentSort === 'points') {
+          sortedPlayers.sort(function(a, b) { return Number(b['Total Score']||0) - Number(a['Total Score']||0); });
+        } else if (FORMAT_SORT_MODES[_currentSort]) {
+          var fmtType = FORMAT_SORT_MODES[_currentSort];
+          sortedPlayers.sort(function(a, b) { return getFormatPoints(b, fmtType) - getFormatPoints(a, fmtType); });
+        }
+        overallGrid.innerHTML = sortedPlayers.map(function(p, i) { return buildCard(p, i, _currentSort); }).join('');
+        highlightPersonalBestRounds(sortedPlayers, roundKeys);
+        initPlayerSearch();
+        attachCardListeners();
+        // Update rating badges if ratings already loaded
+        if (window._spkcRatings) {
+          sortedPlayers.forEach(function(p) {
+            var username = String(p['Chess.com Username']||'').trim().toLowerCase();
+            var card = document.getElementById('standing-card-' + username);
+            if (!card) return;
+            var rEntry = window._spkcRatings.find(function(r) { return r.username === username; });
+            if (!rEntry) return;
+            var metaRow = card.querySelector('.meta-row');
+            if (metaRow) metaRow.innerHTML = buildRatingBadgesFiltered(rEntry, _currentSort);
+          });
+        }
+      }
+
+      // ── attachCardListeners: wire up click handlers after each render ──
+      function attachCardListeners() {
+        document.querySelectorAll('.standing-card h3 span[data-username]').forEach(function(span) {
+          span.addEventListener('click', function() {
+            var username   = this.dataset.username;
+            var playerName = this.dataset.player;
+            var rank       = Number(this.dataset.rank);
+            var score      = this.dataset.score;
+            var playerData = window._spkcPointsMap ? window._spkcPointsMap.get(username) : null;
+            openPlayerModal(username, playerName, playerData, window._spkcRoundKeys || [], rank, score);
+          });
+        });
+      }
+
+      // ── Initial render (no ratings yet — shimmer in meta-row) ──
+      overallGrid.innerHTML = sorted.map(function(p, i) { return buildCard(p, i, _currentSort); }).join('');
+      highlightPersonalBestRounds(sorted, roundKeys);
+      attachCardListeners();
+
+      // Season leaderboard bar chart
+      renderSeasonLeaderboard(players, _currentSeason.label || '');
+
+      // Player search
+      initPlayerSearch();
+
+      // Sort button listeners
+      document.querySelectorAll('.standings-sort-btn').forEach(function(btn) {
+        btn.addEventListener('click', function() {
+          document.querySelectorAll('.standings-sort-btn').forEach(function(b) { b.classList.remove('active'); });
+          this.classList.add('active');
+          _currentSort = this.dataset.sort;
+          applySortAndRender();
+        });
+      });
+
+      // ── Fetch Chess.com ratings in parallel ──
+      var ratingPromises = sorted.map(function(player) {
+        var username = String(player['Chess.com Username'] || '').trim().toLowerCase();
+        var empty = { username: username, ratings: { bullet: null, blitz: null, rapid: null, bulletBest: null, blitzBest: null, rapidBest: null } };
+        if (!username) return Promise.resolve(empty);
+        var timeoutP = new Promise(function(_, rej) { setTimeout(function() { rej(new Error('timeout')); }, 10000); });
+        var fetchP   = fetch('https://api.chess.com/pub/player/' + encodeURIComponent(username) + '/stats')
+          .then(function(resp) {
+            if (!resp.ok) return empty;
+            return resp.json().then(function(json) {
+              return {
+                username: username,
+                ratings: {
+                  bullet:     json && json.chess_bullet  ? (json.chess_bullet.last  ? json.chess_bullet.last.rating  : null) : null,
+                  blitz:      json && json.chess_blitz   ? (json.chess_blitz.last   ? json.chess_blitz.last.rating   : null) : null,
+                  rapid:      json && json.chess_rapid   ? (json.chess_rapid.last   ? json.chess_rapid.last.rating   : null) : null,
+                  bulletBest: json && json.chess_bullet  ? (json.chess_bullet.best  ? json.chess_bullet.best.rating  : null) : null,
+                  blitzBest:  json && json.chess_blitz   ? (json.chess_blitz.best   ? json.chess_blitz.best.rating   : null) : null,
+                  rapidBest:  json && json.chess_rapid   ? (json.chess_rapid.best   ? json.chess_rapid.best.rating   : null) : null,
+                }
+              };
+            });
+          })
+          .catch(function() { return empty; });
+        return Promise.race([fetchP, timeoutP]).catch(function() { return empty; });
+      });
+
+      // Update each card as its rating arrives
+      ratingPromises.forEach(function(promise) {
+        promise.then(function(result) {
+          var username = result.username;
+          var card = document.getElementById('standing-card-' + username);
+          if (!card) return;
+          var metaRow = card.querySelector('.meta-row');
+          if (metaRow) metaRow.innerHTML = buildRatingBadges(result.ratings || {});
+        }).catch(function() {});
+      });
+
+      // After ALL ratings done — store and render leaderboard
+      Promise.allSettled(ratingPromises).then(function(results) {
+        window._spkcRatings = results
+          .filter(function(r) { return r.status === 'fulfilled'; })
+          .map(function(r, i) {
+            var val = r.value;
+            return {
+              username:   val.username,
+              name:       sorted[i] ? sorted[i]['Player'] : '',
+              bullet:     val.ratings.bullet     || null,
+              blitz:      val.ratings.blitz      || null,
+              rapid:      val.ratings.rapid      || null,
+              bulletBest: val.ratings.bulletBest || null,
+              blitzBest:  val.ratings.blitzBest  || null,
+              rapidBest:  val.ratings.rapidBest  || null,
+            };
+          });
+        // Render ratings leaderboard
+        var activeTab = document.querySelector('.lb-tab.active');
+        renderLeaderboard(activeTab ? activeTab.dataset.mode : 'bullet');
+        // If currently sorted by format, refresh badges
+        if (FORMAT_SORT_MODES[_currentSort]) applySortAndRender();
+      });
+    }
+
+    function renderLeaderboard(mode) {
+      const lb = document.getElementById('ratingsLeaderboard');
+      if (!lb) return;
+      const data = window._spkcRatings || [];
+      const filtered = data
+        .filter(p => p[mode] != null)
+        .sort((a, b) => b[mode] - a[mode]);
+
+      if (filtered.length === 0) {
+        lb.innerHTML = `<div class="info-box">No ${escapeHtml(mode)} ratings available yet.</div>`;
+        return;
+      }
+
+      const rankClass = (i) => i === 0 ? 'lb-gold' : i === 1 ? 'lb-silver' : i === 2 ? 'lb-bronze' : '';
+      lb.innerHTML = filtered.map((p, i) => {
+        // Feature 7: PB badge
+        const isPB = (mode === 'bullet' && p.bullet === p.bulletBest && p.bulletBest != null)
+                  || (mode === 'blitz'  && p.blitz  === p.blitzBest  && p.blitzBest  != null)
+                  || (mode === 'rapid'  && p.rapid  === p.rapidBest  && p.rapidBest  != null);
+        const pbBadge = isPB ? '<span class="modal-pb-badge">★ PB</span>' : '';
+        return `
+          <div class="lb-card ${rankClass(i)}">
+            <div class="lb-rank-row">
+              <span class="lb-rank">#${i + 1}</span>
+              <span class="lb-rating ${mode}">${p[mode]} ${pbBadge}</span>
+            </div>
+            <div class="lb-name">${escapeHtml(p.name)} <a href="player.html?username=${encodeURIComponent(p.username)}" title="View profile" style="font-size:11px;font-weight:700;color:var(--primary);text-decoration:none;opacity:0.7;" target="_blank">↗</a></div>
+            <a class="lb-username" href="https://www.chess.com/member/${encodeURIComponent(p.username)}" target="_blank" rel="noopener noreferrer">@${escapeHtml(p.username)}</a>
+          </div>
+        `;
+      }).join('');
+    }
+
+    function renderRounds(rankPlayers, pointsPlayers, roundKeys, season) {
+      if (!rankPlayers.length || !pointsPlayers.length || !roundKeys.length) {
+        roundSections.innerHTML = '<div class="info-box">No usable round data detected.</div>';
+        return;
+      }
+
+      const pointsMap = new Map(
+        pointsPlayers.map(player => [
+          makePlayerKey(player['Player'], player['Chess.com Username']),
+          player
+        ])
+      );
+
+      const sectionHtml = roundKeys.map((roundKey, index) => {
+        const roundNumberMatch = roundKey.match(/R\s*(\d+)/i);
+        const roundNumber = roundNumberMatch ? Number(roundNumberMatch[1]) : index + 1;
+        const dateText = (season.roundDates &&
+          (season.roundDates[roundNumber] || season.roundDates[String(roundNumber)])) || `Round ${roundNumber}`;
+
+        const rows = rankPlayers.map(rankPlayer => {
+          const key = makePlayerKey(rankPlayer['Player'], rankPlayer['Chess.com Username']);
+          const pointsPlayer = pointsMap.get(key) || {};
+
+          const standing = String(rankPlayer[roundKey] ?? '').trim();
+          const points = String(pointsPlayer[roundKey] ?? '').trim();
+
+          return {
+            player: String(rankPlayer['Player'] || '').trim(),
+            username: String(rankPlayer['Chess.com Username'] || '').trim(),
+            standing,
+            points
+          };
+        }).filter(entry => entry.player && entry.username);
+
+        const hasCancelled =
+          roundKey.toUpperCase().includes('CXL') ||
+          rows.some(row => { const s = row.standing.toUpperCase(); return s === 'CXL' || s === 'ATT'; });
+
+        const hasPlayedData = rows.some(row => {
+          const standing = row.standing.toUpperCase();
+          return standing !== '' && standing !== '0' && standing !== 'CXL' && standing !== 'ATT';
+        });
+
+        let statusText = 'Scheduled';
+        let statusClass = 'status-scheduled';
+        let statusIcon = '⏳';
+
+        if (hasCancelled) {
+          statusText = 'Cancelled';
+          statusClass = 'status-cxl';
+          statusIcon = '✕';
+        } else if (hasPlayedData) {
+          statusText = 'Completed';
+          statusClass = 'status-completed';
+          statusIcon = '✓';
+        }
+
+        const sortedRows = [...rows].sort((a, b) => {
+          const aCancelled = a.standing.toUpperCase() === 'CXL' || a.standing.toUpperCase() === 'ATT';
+          const bCancelled = b.standing.toUpperCase() === 'CXL' || b.standing.toUpperCase() === 'ATT';
+          if (aCancelled && !bCancelled) return 1;
+          if (!aCancelled && bCancelled) return -1;
+
+          const aStanding = parseStandingValue(a.standing);
+          const bStanding = parseStandingValue(b.standing);
+          if (aStanding !== bStanding) return aStanding - bStanding;
+
+          return b.points.localeCompare(a.points, undefined, { numeric: true, sensitivity: 'base' });
+        });
+
+        return `
+          <section class="round-box">
+            <div class="round-header">
+              <div>
+                <p class="event-meta">Round ${roundNumber}</p>
+                <h3>${escapeHtml(dateText)}</h3>
+              </div>
+              <div style="display:flex; gap:10px; flex-wrap:wrap; align-items:center;">
+                <span class="round-tag">${escapeHtml(FORMAT_CYCLE[(roundNumber - 1) % 3])}</span>
+                <span class="${statusClass}">${statusIcon} ${escapeHtml(statusText)}</span>
+              </div>
+            </div>
+            ${
+              hasPlayedData
+                ? `
+                  <div class="table-wrap">
+                    <table class="round-table">
+                      <thead>
+                        <tr>
+                          <th>Place</th>
+                          <th>Player</th>
+                          <th>Username</th>
+                          <th>Score</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        ${sortedRows.map(row => `
+                          <tr>
+                            <td>${escapeHtml(row.standing || '-')}</td>
+                            <td>${escapeHtml(row.player)}</td>
+                            <td>${escapeHtml(row.username)}</td>
+                            <td>${escapeHtml(row.points || '-')}</td>
+                          </tr>
+                        `).join('')}
+                      </tbody>
+                    </table>
+                  </div>
+                `
+                : '<div class="info-box">No round data has been recorded for this round yet.</div>'
+            }
+          </section>
+        `;
+      });
+
+      roundSections.innerHTML = sectionHtml.join('');
+
+      // Feature 9: Show filter bar and wire up filter logic
+      const filterBar = document.getElementById('playerFilterBar');
+      if (filterBar) {
+        filterBar.style.display = 'flex';
+        filterBar.style.alignItems = 'center';
+        filterBar.style.flexWrap = 'wrap';
+        filterBar.style.gap = '8px';
+      }
+
+      const filterInput = document.getElementById('playerFilterInput');
+      const filterClear = document.getElementById('playerFilterClear');
+      if (filterInput) {
+        filterInput.value = '';
+        // Remove previous listeners by cloning
+        const newInput = filterInput.cloneNode(true);
+        filterInput.parentNode.replaceChild(newInput, filterInput);
+        newInput.addEventListener('input', function() {
+          const q = this.value.trim().toLowerCase();
+          document.querySelectorAll('.round-box').forEach(box => {
+            const rows = box.querySelectorAll('tbody tr');
+            if (!rows.length) return;
+            let visible = 0;
+            rows.forEach(row => {
+              const text = row.textContent.toLowerCase();
+              const show = !q || text.includes(q);
+              row.style.display = show ? '' : 'none';
+              if (show) visible++;
+            });
+            // show/hide no-match message
+            let noMatch = box.querySelector('.filter-no-match');
+            if (!noMatch) {
+              noMatch = document.createElement('p');
+              noMatch.className = 'filter-no-match';
+              noMatch.style.cssText = 'color:var(--muted);font-size:13px;margin:8px 0 0;';
+              noMatch.textContent = 'No players match the filter.';
+              box.appendChild(noMatch);
+            }
+            noMatch.style.display = (q && visible === 0) ? '' : 'none';
+          });
+        });
+      }
+      if (filterClear) {
+        const newClear = filterClear.cloneNode(true);
+        filterClear.parentNode.replaceChild(newClear, filterClear);
+        newClear.addEventListener('click', function() {
+          const inp = document.getElementById('playerFilterInput');
+          if (inp) { inp.value = ''; inp.dispatchEvent(new Event('input')); }
+        });
+      }
+    }
+
+    function updateHeroLeader(players) {
+      if (!players.length) {
+        heroLeader.textContent = 'Unavailable';
+        return;
+      }
+
+      const sorted = [...players].sort((a, b) => {
+        return Number(b['Total Score'] || 0) - Number(a['Total Score'] || 0);
+      });
+
+      const leader = sorted[0];
+      heroLeader.textContent = leader ? leader['Player'] : 'Unavailable';
+    }
+
+    function parseStandingValue(value) {
+      const text = String(value || '').trim().toUpperCase();
+      if (!text) return 9999;
+      if (text === 'CXL') return 9998;
+      if (text === 'ATT') return 9998;
+      if (text === 'DNS') return 9997;
+      if (text === 'DNF') return 9996;
+      if (text === 'DSQ') return 9995;
+
+      const numericMatch = text.match(/^(\d+)/);
+      if (numericMatch) return Number(numericMatch[1]);
+
+      const number = Number(text);
+      return Number.isFinite(number) ? number : 9994;
+    }
+
+    function makePlayerKey(name, username) {
+      return `${String(name || '').trim()}__${String(username || '').trim()}`;
+    }
+
+    function escapeHtml(value) {
+      return String(value ?? '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+    }
+
+    // Smart countdown — uses actual round dates, falls back to next Sunday 20:00 HKT
+    // Tracks interval ID to cancel previous call before starting new one
+    const _countdownIntervals = {};
+    function startCountdown(displayId, roundDates, roundTimeStr) {
+      const el = document.getElementById(displayId);
+      if (!el) return;
+      // Clear any existing interval for this element
+      if (_countdownIntervals[displayId]) {
+        clearInterval(_countdownIntervals[displayId]);
+        delete _countdownIntervals[displayId];
+      }
+      const MONTHS = ['jan','feb','mar','apr','may','jun','jul','aug','sep','oct','nov','dec'];
+      function parseTime(str) {
+        const p = String(str||'').match(/(\d{1,2}):(\d{2})/);
+        return p ? { h:+p[1], m:+p[2] } : { h:20, m:0 };
+      }
+      function parseDateStr(s) {
+        s = String(s||'').trim(); if (!s) return null;
+        const iso = s.match(/^(\d{4})-(\d{1,2})-(\d{1,2})$/);
+        if (iso) return { yr:+iso[1], mo:+iso[2], dy:+iso[3] };
+        const dmy = s.match(/^(\d{1,2})\s+([A-Za-z]+)\s+(\d{4})$/);
+        if (dmy) { const mi=MONTHS.indexOf(dmy[2].slice(0,3).toLowerCase()); if(mi>=0) return {yr:+dmy[3],mo:mi+1,dy:+dmy[1]}; }
+        const mdy = s.match(/^([A-Za-z]+)\s+(\d{1,2}),?\s+(\d{4})$/);
+        if (mdy) { const mi=MONTHS.indexOf(mdy[1].slice(0,3).toLowerCase()); if(mi>=0) return {yr:+mdy[3],mo:mi+1,dy:+mdy[2]}; }
+        return null;
+      }
+      function getNextRound(nowMs) {
+        if (!roundDates || !Object.keys(roundDates).length) return null;
+        const {h,m} = parseTime(roundTimeStr);
+        const cands = [];
+        Object.entries(roundDates).forEach(([key,dateStr]) => {
+          if (!dateStr) return;
+          const p = parseDateStr(dateStr); if (!p) return;
+          const utcMs = Date.UTC(p.yr,p.mo-1,p.dy,h,m,0,0) - 8*3600*1000;
+          if (utcMs+90*60*1000 > nowMs) {
+            cands.push({ utcMs, num: parseInt((key.match(/\d+/)||['0'])[0],10), dateStr });
+          }
+        });
+        if (!cands.length) return null;
+        return cands.sort((a,b)=>a.utcMs-b.utcMs)[0];
+      }
+      function allDatesTBC() {
+        // Returns true if roundDates has entries but ALL are TBC/empty/unparseable
+        if (!roundDates || !Object.keys(roundDates).length) return true;
+        return Object.values(roundDates).every(v => {
+          const s = String(v||'').trim().toUpperCase();
+          return !s || s === 'TBC' || s === 'TBA' || !parseDateStr(v);
+        });
+      }
+      function tick() {
+        const nowMs = Date.now();
+        const next = getNextRound(nowMs);
+        if (next) {
+          const diff = next.utcMs - nowMs;
+          if (diff<=0 && diff>-90*60*1000) { el.textContent='Live now!'; return; }
+          if (diff>0 && diff<=60000) { el.textContent='Starting soon!'; return; }
+          if (diff<=0) { el.textContent=`R${next.num} ended`; return; }
+          const s=Math.floor(diff/1000);
+          el.textContent=`${Math.floor(s/86400)}d ${String(Math.floor((s%86400)/3600)).padStart(2,'0')}h ${String(Math.floor((s%3600)/60)).padStart(2,'0')}m ${String(s%60).padStart(2,'0')}s`;
+        } else if (allDatesTBC()) {
+          // No real dates configured — don't guess, just say TBA
+          el.textContent = 'TBA';
+        } else {
+          // All known rounds have passed — season is over
+          el.textContent = 'Season ended';
+        }
+      }
+      tick(); _countdownIntervals[displayId] = setInterval(tick,1000);
+    }
+
+    // Called with real round dates once season data loads — see initPage / renderStandings
+    startCountdown('heroCountdown', null, '20:00');
+
+    // ── Feature 2: Personal best round highlight ────────────────────────
+
+    function highlightPersonalBestRounds(players, roundKeys) {
+      if (!players || !roundKeys || !roundKeys.length) return;
+      players.forEach(player => {
+        const username = String(player['Chess.com Username'] || '').trim().toLowerCase();
+        const card = document.getElementById(`standing-card-${username}`);
+        if (!card) return;
+
+        // Collect numeric scores per round
+        const scores = roundKeys.map(rk => {
+          const val = String(player[rk] || '').trim().toUpperCase();
+          if (!val || val === 'CXL' || val === 'DNS' || val === 'DNF' || val === 'DSQ') return null;
+          const n = parseFloat(val);
+          return isNaN(n) ? null : n;
+        });
+
+        const validScores = scores.filter(s => s !== null);
+        if (!validScores.length) return;
+
+        const maxScore = Math.max(...validScores);
+
+        // Apply class to round-cell spans with that score
+        card.querySelectorAll('.round-cell').forEach(span => {
+          const ds = span.dataset.score;
+          if (ds === '' || ds === undefined) return;
+          const n = parseFloat(ds);
+          if (!isNaN(n) && n === maxScore) {
+            span.classList.add('round-pb');
+          }
+        });
+      });
+    }
+
+    // ── Feature 3: Season Leaderboard bar chart ───────────────────────────
+
+    function renderSeasonLeaderboard(pointsPlayers, seasonLabel) {
+      const container = document.getElementById('seasonLbBars');
+      const subtitle  = document.getElementById('seasonLbSubtitle');
+      if (!container) return;
+
+      if (subtitle) subtitle.textContent = `Top players — ${seasonLabel || 'Current Season'}`;
+
+      if (!pointsPlayers || !pointsPlayers.length) {
+        container.innerHTML = '<div class="info-box">No standings data available yet.</div>';
+        return;
+      }
+
+      const sorted = [...pointsPlayers]
+        .sort((a, b) => Number(b['Total Score'] || 0) - Number(a['Total Score'] || 0))
+        .slice(0, 5);
+
+      const maxScore = Number(sorted[0]['Total Score'] || 1) || 1;
+
+      const colorClass = (i) => i === 0 ? 'gold' : i === 1 ? 'silver' : i === 2 ? 'bronze' : '';
+
+      container.innerHTML = sorted.map((p, i) => {
+        const name  = escapeHtml(String(p['Player'] || '').trim());
+        const score = Number(p['Total Score'] || 0);
+        const pct   = Math.max(4, Math.round((score / maxScore) * 100));
+        return `
+          <div class="season-lb-row">
+            <span class="season-lb-name" title="${name}">${name}</span>
+            <div class="season-lb-bar-wrap" role="progressbar" aria-valuenow="${score}" aria-valuemax="${maxScore}">
+              <div class="season-lb-bar-fill ${colorClass(i)}" style="width:${pct}%;"></div>
+            </div>
+            <span class="season-lb-score">${score}</span>
+          </div>`;
+      }).join('');
+    }
+
+    // ── Feature 4: Player search/filter ──────────────────────────────────
+
+    function initPlayerSearch() {
+      const input = document.getElementById('playerSearch');
+      const noResults = document.getElementById('playerSearchNoResults');
+      const term = document.getElementById('playerSearchTerm');
+      if (!input) return;
+
+      // Remove previous listeners by cloning
+      const fresh = input.cloneNode(true);
+      input.parentNode.replaceChild(fresh, input);
+
+      fresh.addEventListener('input', function() {
+        const q = this.value.trim().toLowerCase();
+        let visibleCount = 0;
+
+        document.querySelectorAll('#overallGrid .standing-card').forEach(card => {
+          const nameEl = card.querySelector('h3 span[data-player]');
+          const metaEl = card.querySelector('.standing-meta');
+          const playerName = (nameEl ? nameEl.dataset.player : card.querySelector('h3')?.textContent || '').toLowerCase();
+          const usernameText = (nameEl ? nameEl.dataset.username : '').toLowerCase();
+
+          const match = !q || playerName.includes(q) || usernameText.includes(q);
+          card.classList.toggle('search-hidden', !match);
+          if (match) visibleCount++;
+        });
+
+        // Ratings leaderboard rows
+        document.querySelectorAll('#ratingsLeaderboard .lb-card').forEach(card => {
+          const name = (card.querySelector('.lb-name')?.textContent || '').toLowerCase();
+          const uname = (card.querySelector('.lb-username')?.textContent || '').toLowerCase();
+          const match = !q || name.includes(q) || uname.includes(q);
+          card.style.display = match ? '' : 'none';
+        });
+
+        if (noResults) {
+          noResults.style.display = (q && visibleCount === 0) ? '' : 'none';
+          if (term) term.textContent = q;
+        }
+      });
+    }
+
+    // ── Feature 1: Player Profile Modal ──────────────────────────────────
+
+    function openPlayerModal(username, playerName, player, roundKeys, rank, score) {
+      const overlay = document.getElementById('playerModalOverlay');
+      const content = document.getElementById('playerModalContent');
+      if (!overlay || !content) return;
+
+      overlay.style.display = 'flex';
+      document.body.style.overflow = 'hidden';
+
+      // Show shimmer
+      content.innerHTML = '<div class="rating-shimmer" style="height:200px; border-radius:16px;"></div>';
+
+      // Fetch stats with 8s timeout
+      const timeoutPromise = new Promise((_, reject) => setTimeout(() => reject(new Error('timeout')), 8000));
+      const fetchPromise = fetch(`https://api.chess.com/pub/player/${encodeURIComponent(username)}/stats`);
+
+      Promise.race([fetchPromise, timeoutPromise])
+        .then(resp => resp.ok ? resp.json() : null)
+        .catch(() => null)
+        .then(json => {
+          // Get current ratings from window._spkcRatings
+          const ratingsData = (window._spkcRatings || []).find(r => r.username === username) || {};
+          const bullet = ratingsData.bullet ?? null;
+          const blitz  = ratingsData.blitz  ?? null;
+          const rapid  = ratingsData.rapid  ?? null;
+          const bulletBest = json?.chess_bullet?.best?.rating ?? ratingsData.bulletBest ?? null;
+          const blitzBest  = json?.chess_blitz?.best?.rating  ?? ratingsData.blitzBest  ?? null;
+          const rapidBest  = json?.chess_rapid?.best?.rating  ?? ratingsData.rapidBest  ?? null;
+
+          // Build rating rows
+          const ratingModes = [
+            { key: 'bullet', label: '⚡ Bullet', val: bullet, best: bulletBest },
+            { key: 'blitz',  label: '🔥 Blitz',  val: blitz,  best: blitzBest  },
+            { key: 'rapid',  label: '🕐 Rapid',  val: rapid,  best: rapidBest  },
+          ];
+
+          const ratingHtml = ratingModes.map(m => {
+            const isPB = m.val != null && m.val === m.best;
+            return `
+              <div class="modal-stat-box">
+                <span class="modal-stat-num" style="font-size:15px;">${m.val != null ? m.val : '—'}</span>
+                <span class="modal-stat-lbl">${m.label}</span>
+                ${isPB ? '<span class="modal-pb-badge" style="margin-top:4px;">★ PB</span>' : ''}
+                ${m.best != null ? `<span style="font-size:10px; color:var(--muted); margin-top:2px; display:block;">Best: ${m.best}</span>` : ''}
+              </div>
+            `;
+          }).join('');
+
+          // Bar chart
+          const barRoundKeys = roundKeys || [];
+          const barScores = barRoundKeys.map(rk => {
+            if (!player) return { key: rk, score: 0, isCxl: false };
+            const val = String(player[rk] || '').trim().toUpperCase();
+            const isAtt = val === 'ATT';
+            const isCxl = val === 'CXL';
+            const numScore = isAtt ? 5 : isCxl ? 0 : (parseFloat(val) || 0);
+            return { key: rk, score: numScore, isCxl, isAtt };
+          });
+
+          const maxScore = Math.max(...barScores.map(b => b.score), 0.5);
+
+          const barHtml = barScores.map((b, i) => {
+            const heightPct = b.isCxl ? 15 : (b.score === 0 ? 5 : Math.round((b.score / maxScore) * 100));
+            const barClass = b.isCxl ? 'cxl' : b.isAtt ? 'att' : (b.score === 0 ? 'zero' : '');
+            const roundNum = (barRoundKeys[i].match(/R\s*(\d+)/i) || ['', i + 1])[1];
+            const label = b.isCxl ? `${b.score}` : String(b.score);
+            return `
+              <div class="modal-bar-col">
+                <span class="modal-bar-val">${b.isAtt ? 'ATT' : b.isCxl ? 'CXL' : label}</span>
+                <div class="modal-bar ${barClass}" style="height:${heightPct}%;"></div>
+                <span class="modal-bar-label">R${roundNum}</span>
+              </div>
+            `;
+          }).join('');
+
+          content.innerHTML = `
+            <h2 class="modal-player-name">${escapeHtml(playerName)}</h2>
+            <p class="modal-username">
+              <a href="https://www.chess.com/member/${encodeURIComponent(username)}" target="_blank" rel="noopener noreferrer" style="color:var(--primary);">@${escapeHtml(username)}</a>
+            </p>
+
+            <p class="modal-section-label">Ratings</p>
+            <div class="modal-stat-row">
+              ${ratingHtml}
+            </div>
+
+            <p class="modal-section-label">Season performance</p>
+            <div class="modal-stat-row">
+              <div class="modal-stat-box">
+                <span class="modal-stat-num">${escapeHtml(String(score || '0'))}</span>
+                <span class="modal-stat-lbl">Total points</span>
+              </div>
+              <div class="modal-stat-box">
+                <span class="modal-stat-num">#${escapeHtml(String(rank || '—'))}</span>
+                <span class="modal-stat-lbl">Overall rank</span>
+              </div>
+            </div>
+
+            ${barRoundKeys.length > 0 ? `
+              <p class="modal-section-label">Round by round</p>
+              <div class="modal-bar-chart">
+                ${barHtml}
+              </div>
+            ` : ''}
+
+            <p class="modal-section-label">Head-to-head this season</p>
+            <div id="modalH2HSection">
+              <div class="rating-shimmer" style="height:60px; border-radius:10px; margin-top:4px;"></div>
+            </div>
+          `;
+
+          // Kick off H2H fetch after modal content is in DOM
+          fetchAndRenderH2H(username);
+        });
+    }
+
+    // ── Feature 1: H2H fetch & render ─────────────────────────────────────
+
+    async function fetchAndRenderH2H(viewedUsername) {
+      const h2hEl = document.getElementById('modalH2HSection');
+      if (!h2hEl) return;
+
+      // Collect tournament links from current season settings
+      const seasonKey = seasonSelect.value;
+      const season = SEASONS[seasonKey];
+      const links = season?.round_tournament_links ||
+                    season?.roundTournamentLinks ||
+                    window._spkcTournamentLinks || [];
+
+      if (!Array.isArray(links) || links.length === 0) {
+        h2hEl.innerHTML = '<p style="color:var(--muted);font-size:13px;margin:4px 0;">No match data available yet.</p>';
+        return;
+      }
+
+      try {
+        // Step 1: For each tournament URL, fetch its rounds
+        const allGames = [];
+
+        await Promise.all(links.map(async (tourneyUrl) => {
+          try {
+            // Extract url-id from chess.com tournament URL
+            const urlId = extractTournamentId(tourneyUrl);
+            if (!urlId) return;
+
+            // Fetch tournament metadata to get number of rounds
+            const metaResp = await fetchWithTimeout(`https://api.chess.com/pub/tournament/${urlId}`, 6000);
+            if (!metaResp.ok) return;
+            const meta = await metaResp.json();
+
+            const roundsArr = meta?.rounds || [];
+            // rounds is array of URLs like https://api.chess.com/pub/tournament/{id}/{n}
+            await Promise.all(roundsArr.map(async (roundUrl) => {
+              try {
+                // Fetch the group (group 1)
+                const groupResp = await fetchWithTimeout(`${roundUrl}/1`, 6000);
+                if (!groupResp.ok) return;
+                const groupData = await groupResp.json();
+                const games = groupData?.games || [];
+                allGames.push(...games);
+              } catch { /* skip */ }
+            }));
+          } catch { /* skip */ }
+        }));
+
+        if (allGames.length === 0) {
+          h2hEl.innerHTML = '<p style="color:var(--muted);font-size:13px;margin:4px 0;">No game data found in tournament archives.</p>';
+          return;
+        }
+
+        // Step 2: Compute H2H
+        const h2h = computeH2H(viewedUsername, allGames);
+
+        if (Object.keys(h2h).length === 0) {
+          h2hEl.innerHTML = '<p style="color:var(--muted);font-size:13px;margin:4px 0;">No games played against other members found.</p>';
+          return;
+        }
+
+        // Step 3: Render table
+        h2hEl.innerHTML = renderH2HTable(h2h);
+
+      } catch (err) {
+        h2hEl.innerHTML = `<p style="color:var(--muted);font-size:13px;margin:4px 0;">Could not load match data: ${escapeHtml(err.message || String(err))}</p>`;
+      }
+    }
+
+    function extractTournamentId(url) {
+      if (!url) return null;
+      // chess.com tournament URLs: https://www.chess.com/club/tournaments/spkc.../xyz123
+      // API id format: club/tournaments/slug
+      try {
+        const u = new URL(String(url));
+        // e.g. /club/tournaments/spkc-international-chess-club-1/season-1-round-1
+        const parts = u.pathname.replace(/^\//, '').split('/');
+        // Filter to path after /club/ or just return the full pathname slug
+        // Chess.com API expects the tournament URL-id as the segment after /pub/tournament/
+        // which matches the path after chess.com/ for club tournaments
+        return parts.join('/');
+      } catch {
+        // Try extracting from raw string
+        const match = String(url).match(/chess\.com\/(.+)/);
+        return match ? match[1] : null;
+      }
+    }
+
+    async function fetchWithTimeout(url, ms) {
+      const controller = new AbortController();
+      const timer = setTimeout(() => controller.abort(), ms);
+      try {
+        const resp = await fetch(url, { signal: controller.signal });
+        return resp;
+      } finally {
+        clearTimeout(timer);
+      }
+    }
+
+    function computeH2H(viewedUsername, games) {
+      const vu = String(viewedUsername || '').trim().toLowerCase();
+      const record = {}; // opponent -> { w, d, l }
+
+      games.forEach(game => {
+        const white = String(game.white?.username || '').trim().toLowerCase();
+        const black = String(game.black?.username || '').trim().toLowerCase();
+
+        if (white !== vu && black !== vu) return;
+
+        const isWhite = white === vu;
+        const opponent = isWhite ? black : white;
+        if (!opponent) return;
+
+        const result = String(game.white?.result || '').toLowerCase();
+        // result values from chess.com: 'win', 'checkmated', 'timeout', 'resigned', 'stalemate', 'agreed', 'repetition', 'insufficient', etc.
+        let outcome; // from viewed player's perspective
+        if (result === 'win') {
+          outcome = isWhite ? 'w' : 'l';
+        } else if (['stalemate', 'agreed', 'repetition', 'insufficient', 'timevsinsufficient', '50move'].includes(result)) {
+          outcome = 'd';
+        } else {
+          // white lost
+          outcome = isWhite ? 'l' : 'w';
+        }
+
+        if (!record[opponent]) record[opponent] = { w: 0, d: 0, l: 0 };
+        record[opponent][outcome]++;
+      });
+
+      return record;
+    }
+
+    function renderH2HTable(h2h) {
+      const entries = Object.entries(h2h)
+        .map(([opp, rec]) => ({ opp, ...rec, total: rec.w + rec.d + rec.l }))
+        .sort((a, b) => b.total - a.total || b.w - a.w);
+
+      if (!entries.length) return '<p style="color:var(--muted);font-size:13px;">No opponents found.</p>';
+
+      const rows = entries.map(e => {
+        const resultStr = `${e.w}-${e.d}-${e.l}`;
+        let pillClass = 'even';
+        if (e.w > e.l) pillClass = 'win';
+        else if (e.l > e.w) pillClass = 'loss';
+        else if (e.d > 0 && e.w === e.l) pillClass = 'draw';
+        return `
+          <tr>
+            <td><a href="https://www.chess.com/member/${encodeURIComponent(e.opp)}" target="_blank" rel="noopener noreferrer" style="color:var(--primary);text-decoration:none;">@${escapeHtml(e.opp)}</a></td>
+            <td style="text-align:center;">${e.w}</td>
+            <td style="text-align:center;">${e.d}</td>
+            <td style="text-align:center;">${e.l}</td>
+            <td><span class="h2h-result-pill ${pillClass}">${escapeHtml(resultStr)}</span></td>
+          </tr>`;
+      }).join('');
+
+      return `
+        <div style="overflow-x:auto;">
+          <table class="modal-h2h-table">
+            <thead>
+              <tr>
+                <th>Opponent</th>
+                <th style="text-align:center;">W</th>
+                <th style="text-align:center;">D</th>
+                <th style="text-align:center;">L</th>
+                <th>Record</th>
+              </tr>
+            </thead>
+            <tbody>${rows}</tbody>
+          </table>
+        </div>`;
+    }
+
+    function closePlayerModal() {
+      const overlay = document.getElementById('playerModalOverlay');
+      if (overlay) overlay.style.display = 'none';
+      document.body.style.overflow = '';
+    }
+
+    // Close modal on overlay click (outside panel)
+    document.getElementById('playerModalOverlay').addEventListener('click', function(e) {
+      if (e.target === this) closePlayerModal();
+    });
+
+    // Close modal on close button
+    document.getElementById('playerModalClose').addEventListener('click', closePlayerModal);
+
+    // Close on Escape key
+    document.addEventListener('keydown', function(e) {
+      if (e.key === 'Escape') closePlayerModal();
+    });
+  </script>
+
+  <script>
+    
+    // Safe localStorage wrapper (crashes on school tablets with strict privacy settings)
+    function safeGetStorage(key, fallback) {
+      try { return localStorage.getItem(key); } catch(e) { return fallback || null; }
+    }
+    function safeSetStorage(key, value) {
+      try { localStorage.setItem(key, value); } catch(e) { /* storage blocked */ }
+    }
+
+    // Dark mode toggle
+    (function() {
+      const btn = document.getElementById('darkToggle');
+      const stored = safeGetStorage('spkc-dark');
+      if (stored === '1') document.documentElement.classList.add('dark');
+      if (btn) {
+        btn.textContent = document.documentElement.classList.contains('dark') ? '☀️' : '🌙';
+        btn.addEventListener('click', function() {
+          const isDark = document.documentElement.classList.toggle('dark');
+          safeSetStorage('spkc-dark', isDark ? '1' : '0');
+          btn.textContent = isDark ? '☀️' : '🌙';
+        });
+      }
+    })();
+  </script>
+</body>
+</html>

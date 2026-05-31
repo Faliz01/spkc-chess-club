@@ -1,0 +1,1754 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Player Profile — SPKC Chess Club</title>
+  <link rel="stylesheet" href="style.css">
+  <!-- cm-chessboard: pure JS/CSS, no jQuery needed -->
+  <link rel="stylesheet" href="assets/chessboard.css">
+  <style>
+    .profile-hero {
+      display: flex; align-items: center; gap: 24px; flex-wrap: wrap;
+    }
+    .profile-avatar {
+      width: 90px; height: 90px; border-radius: 50%;
+      object-fit: cover; border: 3px solid var(--primary);
+      background: var(--surface-soft); flex-shrink: 0;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 40px; color: var(--muted);
+    }
+    .profile-avatar img { width:100%; height:100%; border-radius:50%; object-fit:cover; }
+    .profile-name { font-size: 26px; font-weight: 900; color: var(--text); margin: 0 0 4px; }
+    .profile-username { font-size: 14px; color: var(--muted); font-weight: 600; margin: 0 0 10px; }
+    .profile-rating-row { display: flex; flex-wrap: wrap; gap: 8px; }
+    .profile-rating-chip {
+      display: inline-flex; align-items: center; gap: 6px;
+      padding: 5px 14px; border-radius: 999px; font-size: 13px; font-weight: 800;
+      border: 1.5px solid var(--line); background: var(--surface-soft);
+    }
+    .profile-rating-chip strong { color: var(--text); font-size: 15px; }
+    html.dark .profile-rating-chip { background: #1a2738; border-color: #1e3050; }
+
+    /* Stats grid */
+    .profile-stats-grid {
+      display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 12px;
+      margin-top: 4px;
+    }
+    .profile-stat-card {
+      background: var(--surface-soft); border: 1.5px solid var(--line);
+      border-radius: var(--radius-md); padding: 14px 12px; text-align: center;
+    }
+    html.dark .profile-stat-card { background: #1a2738; border-color: #1e3050; }
+    .profile-stat-num { font-size: 22px; font-weight: 900; color: var(--primary); display: block; }
+    .profile-stat-label { font-size: 11px; color: var(--muted); font-weight: 700; text-transform: uppercase; letter-spacing: 0.8px; }
+
+    /* Round history bar */
+    .round-history-list { display: flex; flex-direction: column; gap: 8px; margin-top: 4px; }
+    .round-history-row {
+      display: grid; grid-template-columns: 60px 1fr 50px 60px;
+      align-items: center; gap: 10px;
+      padding: 10px 14px; border-radius: var(--radius-md);
+      background: var(--surface-soft); border: 1.5px solid var(--line);
+      font-size: 13px;
+    }
+    html.dark .round-history-row { background: #1a2738; border-color: #1e3050; }
+    .rh-label { font-weight: 800; color: var(--muted); font-size: 12px; }
+    .rh-bar-wrap { background: var(--line); border-radius: 999px; height: 8px; overflow: hidden; }
+    .rh-bar { height: 100%; border-radius: 999px; background: linear-gradient(90deg, var(--primary), var(--primary-2)); transition: width 0.6s ease; }
+    .rh-score { font-weight: 900; color: var(--text); text-align: right; font-size: 14px; }
+    .rh-rank { font-size: 11px; font-weight: 700; color: var(--muted); text-align: right; }
+    .rh-row--best .rh-bar { background: linear-gradient(90deg, #e8a000, #f5c842); }
+    .rh-row--best .rh-score { color: #c87800; }
+    html.dark .rh-row--best .rh-score { color: #f0c040; }
+
+    /* H2H table */
+    .h2h-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+    .h2h-table th { text-align: left; padding: 8px 12px; color: var(--muted); font-weight: 800; font-size: 11px; text-transform: uppercase; letter-spacing: 0.8px; border-bottom: 2px solid var(--line); }
+    .h2h-table td { padding: 10px 12px; border-bottom: 1px solid var(--line); }
+    .h2h-table tr:last-child td { border-bottom: none; }
+    .h2h-table tr:hover td { background: var(--surface-soft); }
+    html.dark .h2h-table tr:hover td { background: #1a2738; }
+    .h2h-record { font-weight: 900; font-size: 13px; }
+    .h2h-win { color: #1a7a44; } .h2h-loss { color: #a83a3a; } .h2h-draw { color: #8a6800; }
+    html.dark .h2h-win { color: #50c080; } html.dark .h2h-loss { color: #ff7070; } html.dark .h2h-draw { color: #e8c040; }
+    .h2h-pill { display:inline-flex; align-items:center; gap:5px; font-size:12px; font-weight:800;
+      padding:3px 10px; border-radius:999px; }
+    .h2h-pill--win { background:#dcf5e8; color:#1a7a44; } .h2h-pill--loss { background:#fde8e8; color:#a83a3a; } .h2h-pill--draw { background:#fdf6e0; color:#8a6800; } .h2h-pill--even { background:var(--surface-soft); color:var(--muted); }
+    html.dark .h2h-pill--win { background:#0d2a1a; color:#50c080; } html.dark .h2h-pill--loss { background:#2a0d0d; color:#ff7070; } html.dark .h2h-pill--draw { background:#221800; color:#e8c040; } html.dark .h2h-pill--even { background:#1a2738; }
+
+    /* Season games */
+    .season-game-card {
+      display: grid; grid-template-columns: 28px 1fr auto; gap: 10px;
+      align-items: center; padding: 10px 14px;
+      border: 1.5px solid var(--line); border-radius: var(--radius-md);
+      margin-bottom: 8px; transition: 0.15s;
+      background: var(--surface);
+    }
+    .season-game-card:hover { border-color: var(--primary); transform: translateY(-1px); }
+    html.dark .season-game-card { background: #141e2e; border-color: #1e3050; }
+    .sgc-result { width:28px; height:28px; border-radius:8px; display:flex; align-items:center; justify-content:center; font-weight:900; font-size:13px; flex-shrink:0; }
+    .sgc-result--win { background:#dcf5e8; color:#1a7a44; } .sgc-result--loss { background:#fde8e8; color:#a83a3a; } .sgc-result--draw { background:#fdf6e0; color:#8a6800; }
+    html.dark .sgc-result--win { background:#0d2a1a; color:#50c080; } html.dark .sgc-result--loss { background:#2a0d0d; color:#ff7070; } html.dark .sgc-result--draw { background:#221800; color:#e8c040; }
+    .sgc-info { display:flex; flex-direction:column; gap:2px; }
+    .sgc-opp { font-size:13px; font-weight:800; color:var(--text); }
+    .sgc-meta { font-size:11px; color:var(--muted); }
+    .sgc-link { font-size:12px; font-weight:800; color:var(--primary); text-decoration:none; white-space:nowrap; }
+    .sgc-link:hover { text-decoration:underline; }
+
+    .profile-section-title {
+      font-size: 16px; font-weight: 900; color: var(--text);
+      margin: 0 0 14px; padding-bottom: 10px; border-bottom: 2px solid var(--line);
+    }
+    .profile-back { display:inline-flex; align-items:center; gap:6px; font-size:13px; font-weight:700;
+      color:var(--primary); text-decoration:none; margin-bottom:16px; }
+    .profile-back:hover { text-decoration:underline; }
+    .profile-no-data { color:var(--muted); font-size:13px; margin:0; }
+    .profile-shimmer { height:20px; border-radius:8px; background:linear-gradient(90deg,var(--surface-soft) 25%,var(--line) 50%,var(--surface-soft) 75%); background-size:200% 100%; animation:shimmer 1.4s infinite; margin-bottom:8px; }
+
+    /* ── Game Replayer Modal ── */
+    .replayer-modal-bg {
+      display:none; position:fixed; inset:0; z-index:2000;
+      background:rgba(0,0,0,0.55); backdrop-filter:blur(6px);
+      align-items:center; justify-content:center;
+    }
+    .replayer-modal-bg.open { display:flex; }
+    .replayer-modal {
+      background:var(--surface); border:1.5px solid var(--line);
+      border-radius:var(--radius-lg); padding:24px 20px 20px;
+      width:min(94vw, 440px); box-shadow:var(--shadow); position:relative;
+    }
+    html.dark .replayer-modal { background:#141e2e; border-color:#1e3050; }
+    .replayer-close {
+      position:absolute; top:12px; right:14px;
+      background:none; border:none; font-size:22px; cursor:pointer;
+      color:var(--muted); line-height:1;
+    }
+    .replayer-close:hover { color:var(--text); }
+    .replayer-meta {
+      font-size:13px; font-weight:800; color:var(--text);
+      text-align:center; margin-bottom:14px; min-height:18px;
+    }
+    .replayer-status {
+      font-size:12px; color:var(--muted); text-align:center;
+      margin-bottom:10px; min-height:16px;
+    }
+    #replayerBoard {
+      width:100%; aspect-ratio:1; border-radius:10px; overflow:hidden;
+      margin-bottom:14px;
+    }
+    .replayer-move-list {
+      max-height:80px; overflow-y:auto; font-size:12px;
+      font-family:monospace; color:var(--muted);
+      background:var(--surface-soft); border-radius:8px;
+      padding:6px 10px; margin-bottom:12px; line-height:1.8;
+    }
+    html.dark .replayer-move-list { background:#1a2738; }
+    .replayer-controls {
+      display:grid; grid-template-columns:1fr 1fr 1fr 1fr;
+      gap:8px;
+    }
+    .replayer-btn {
+      padding:8px 0; border:1.5px solid var(--line); border-radius:10px;
+      background:var(--surface-soft); color:var(--text);
+      font-size:14px; font-weight:800; cursor:pointer; transition:0.15s;
+      text-align:center;
+    }
+    .replayer-btn:hover:not(:disabled) { background:var(--primary); color:#fff; border-color:var(--primary); }
+    .replayer-btn:disabled { opacity:0.35; cursor:not-allowed; }
+    html.dark .replayer-btn { background:#1a2738; border-color:#1e3050; }
+    .replayer-external {
+      display:block; text-align:center; margin-top:12px;
+      font-size:12px; color:var(--primary); font-weight:700;
+      text-decoration:none;
+    }
+    .replayer-external:hover { text-decoration:underline; }
+    .replayer-flip-btn {
+      display:block; width:100%; margin-top:8px;
+      padding:7px 0; border:1.5px solid var(--line); border-radius:10px;
+      background:var(--surface-soft); color:var(--muted);
+      font-size:12px; font-weight:800; cursor:pointer; transition:0.15s;
+      text-align:center;
+    }
+    .replayer-flip-btn:hover { background:var(--line); color:var(--text); }
+    html.dark .replayer-flip-btn { background:#1a2738; border-color:#1e3050; }
+    /* Animate the board in */
+    .replayer-modal { animation: modalIn 0.18s ease; }
+    @keyframes modalIn { from { opacity:0; transform:scale(0.96) translateY(8px); } to { opacity:1; transform:none; } }
+    /* "Replay" button on each game card */
+    .sgc-replay-btn {
+      font-size:12px; font-weight:800; color:var(--primary);
+      background:none; border:1.5px solid var(--line); border-radius:8px;
+      padding:4px 10px; cursor:pointer; white-space:nowrap; transition:0.15s;
+      text-decoration:none; display:inline-block;
+    }
+    .sgc-replay-btn:hover { background:var(--primary); color:#fff; border-color:var(--primary); }
+
+    /* ── Opening Performance ── */
+    .opening-tabs { display:flex; gap:8px; margin-bottom:16px; flex-wrap:wrap; }
+    .opening-tab {
+      padding:6px 18px; border-radius:999px; font-size:13px; font-weight:800;
+      border:1.5px solid var(--line); background:var(--surface-soft); color:var(--muted);
+      cursor:pointer; transition:0.15s;
+    }
+    .opening-tab.active { background:var(--primary); color:#fff; border-color:var(--primary); }
+    html.dark .opening-tab { background:#1a2738; border-color:#1e3050; }
+    html.dark .opening-tab.active { background:var(--primary); color:#fff; }
+    .opening-row {
+      display:grid; grid-template-columns:1fr 80px 80px 80px; gap:8px;
+      align-items:center; padding:10px 14px;
+      border:1.5px solid var(--line); border-radius:var(--radius-md);
+      background:var(--surface-soft); margin-bottom:8px; font-size:13px;
+    }
+    html.dark .opening-row { background:#1a2738; border-color:#1e3050; }
+    .opening-row-name { font-weight:800; color:var(--text); }
+    .opening-row-eco { font-size:11px; color:var(--muted); font-weight:700; }
+    .opening-row-stat { text-align:center; font-weight:900; font-size:14px; }
+    .opening-row-bar-wrap { grid-column:1/-1; background:var(--line); border-radius:999px; height:5px; overflow:hidden; margin-top:2px; }
+    .opening-row-bar { height:100%; border-radius:999px; background:linear-gradient(90deg,var(--primary),var(--primary-2)); }
+    .opening-win-rate { color:#1a7a44; }
+    html.dark .opening-win-rate { color:#50c080; }
+    .opening-header-labels {
+      display:grid; grid-template-columns:1fr 80px 80px 80px; gap:8px;
+      padding:0 14px 6px; font-size:11px; font-weight:800;
+      color:var(--muted); text-transform:uppercase; letter-spacing:0.6px;
+    }
+    .opening-header-labels span:not(:first-child) { text-align:center; }
+
+    /* ── Activity Heatmap ── */
+    .heatmap-grid {
+      display:flex; flex-direction:column; gap:6px;
+    }
+    .heatmap-row {
+      display:grid; align-items:center; gap:8px;
+      font-size:12px;
+    }
+    .heatmap-row-label { font-weight:800; color:var(--muted); font-size:12px; min-width:60px; }
+    .heatmap-cell {
+      height:32px; border-radius:8px;
+      display:flex; align-items:center; justify-content:center;
+      font-size:11px; font-weight:800; transition:0.2s;
+      border:1.5px solid transparent;
+    }
+    .heatmap-cell--present {
+      background:linear-gradient(135deg,var(--primary),var(--primary-2));
+      color:#fff;
+    }
+    .heatmap-cell--att {
+      background:linear-gradient(135deg,#6dbf6d,#a8d8a8);
+      color:#1a4a1a;
+    }
+    .heatmap-cell--absent {
+      background:var(--surface-soft); color:var(--muted);
+      border-color:var(--line);
+    }
+    html.dark .heatmap-cell--absent { background:#1a2738; border-color:#1e3050; }
+    .heatmap-legend {
+      display:flex; gap:16px; flex-wrap:wrap; margin-top:12px; font-size:12px; color:var(--muted);
+    }
+    .heatmap-legend-item { display:flex; align-items:center; gap:6px; }
+    .heatmap-legend-dot { width:12px; height:12px; border-radius:3px; flex-shrink:0; }
+
+    /* Brilliant card fixes — signed URLs */
+    .brilliant-card-img {
+      width:100%; border-radius:10px; margin-top:10px;
+      max-height:220px; object-fit:cover; display:block;
+    }
+    .brilliant-replay-btn {
+      display:inline-flex; align-items:center; gap:6px;
+      padding:6px 14px; border-radius:8px; font-size:12px; font-weight:800;
+      background:none; border:1.5px solid var(--line); color:var(--primary);
+      cursor:pointer; transition:0.15s; margin-top:6px; margin-right:8px;
+    }
+    .brilliant-replay-btn:hover { background:var(--primary); color:#fff; border-color:var(--primary); }
+  </style>
+</head>
+<body>
+<!-- Inline SVG sprite: piece symbols loaded directly into DOM, no XHR needed -->
+<svg xmlns="http://www.w3.org/2000/svg" style="display:none" aria-hidden="true">
+  <g id="wk" stroke-linecap="round" stroke-linejoin="round" transform="translate(5,5)" stroke="#000" stroke-width="1.5"><line x1="15" y1="4.968" x2="15" y2="0"/><line x1="12.857" y1="1.765" x2="17.143" y2="1.765"/><path d="M17.571,7.5 C17.571,7.5 16.714,5.294 15,5.294 C13.286,5.294 12.429,7.5 12.429,7.5 C11.143,10.147 15,16.765 15,16.765 C15,16.765 18.857,10.147 17.571,7.5 Z" fill="#fff"/><path d="M5.571,27.353 C10.286,30.441 18.857,30.441 23.571,27.353 L23.571,21.176 C23.571,21.176 31.286,17.206 28.714,11.912 C25.286,6.176 17.143,8.824 15,15.441 L15,18.529 L15,15.441 C12,8.824 3.857,6.176 1.286,11.912 C-1.286,17.206 5.571,20.735 5.571,20.735 L5.571,27.353 Z" fill="#fff"/><path d="M5.571,21.176 C10.286,18.529 18.857,18.529 23.571,21.176" fill-opacity="0"/><path d="M5.571,24.265 C10.286,21.618 18.857,21.618 23.571,24.265" fill-opacity="0" stroke-linecap="square"/><path d="M5.571,27.353 C10.286,24.706 18.857,24.706 23.571,27.353" fill-opacity="0"/></g>
+  <g id="wq" stroke-linecap="round" stroke-linejoin="round" transform="translate(4,5)" stroke="#000" stroke-width="1.5"><path d="M3.459,6.2 C3.459,7.178 2.685,7.971 1.73,7.971 C0.774,7.971 0,7.178 0,6.2 C0,5.222 0.774,4.429 1.73,4.429 C2.685,4.429 3.459,5.222 3.459,6.2 Z" fill="#fff"/><path d="M17.73,2.214 C17.73,3.193 16.955,3.986 16,3.986 C15.045,3.986 14.27,3.193 14.27,2.214 C14.27,1.236 15.045,0.443 16,0.443 C16.955,0.443 17.73,1.236 17.73,2.214 Z" fill="#fff"/><path d="M32,6.2 C32,7.178 31.226,7.971 30.27,7.971 C29.315,7.971 28.541,7.178 28.541,6.2 C28.541,5.222 29.315,4.429 30.27,4.429 C31.226,4.429 32,5.222 32,6.2 Z" fill="#fff"/><path d="M10.378,3.1 C10.378,4.078 9.604,4.871 8.649,4.871 C7.693,4.871 6.919,4.078 6.919,3.1 C6.919,2.122 7.693,1.329 8.649,1.329 C9.604,1.329 10.378,2.122 10.378,3.1 Z" fill="#fff"/><path d="M25.081,3.543 C25.081,4.521 24.307,5.314 23.351,5.314 C22.396,5.314 21.622,4.521 21.622,3.543 C21.622,2.565 22.396,1.771 23.351,1.771 C24.307,1.771 25.081,2.565 25.081,3.543 Z" fill="#fff"/><path d="M4.324,18.6 C11.676,17.271 22.486,17.271 27.676,18.6 L29.405,7.971 L23.351,17.714 L23.351,5.314 L18.595,17.271 L16,3.986 L13.405,17.271 L8.649,4.871 L8.649,17.714 L2.595,7.971 L4.324,18.6 Z" fill="#fff"/><path d="M4.324,18.6 C4.324,20.371 5.622,20.371 6.486,22.143 C7.351,23.471 7.351,23.029 6.919,25.243 C5.622,26.129 5.622,27.457 5.622,27.457 C4.324,28.786 6.054,29.671 6.054,29.671 C11.676,30.557 20.324,30.557 25.946,29.671 C25.946,29.671 27.243,28.786 25.946,27.457 C25.946,27.457 26.378,26.129 25.081,25.243 C24.649,23.029 24.649,23.471 25.514,22.143 C26.378,20.371 27.676,20.371 27.676,18.6 C20.324,17.271 11.676,17.271 4.324,18.6 Z" fill="#fff"/><path d="M6.486,22.143 C9.514,21.257 22.486,21.257 25.514,22.143"/><path d="M6.919,25.243 C12.108,24.357 19.892,24.357 25.081,25.243"/></g>
+  <g id="wb" stroke-linecap="round" stroke-linejoin="round" transform="translate(6,5)" stroke="#000" stroke-width="1.5"><g fill="#fff"><path d="M2.545,27.353 C5.422,26.497 11.124,27.732 14,25.588 C16.876,27.732 22.578,26.497 25.455,27.353 C25.455,27.353 26.855,27.829 28,29.118 C27.423,29.974 26.6,29.991 25.455,29.559 C22.578,28.703 16.876,29.965 14,28.676 C11.124,29.965 5.422,28.703 2.545,29.559 C1.397,29.991 0.574,29.974 0,29.118 C1.149,27.406 2.545,27.353 2.545,27.353 Z"/><path d="M7.636,23.824 C9.758,26.029 18.242,26.029 20.364,23.824 C20.788,22.5 20.364,22.059 20.364,22.059 C20.364,19.853 18.242,18.529 18.242,18.529 C22.909,17.206 23.333,8.382 14,4.853 C4.667,8.382 5.091,17.206 9.758,18.529 C9.758,18.529 7.636,19.853 7.636,22.059 C7.636,22.059 7.212,22.5 7.636,23.824 Z"/><path d="M16.121,2.647 C16.121,3.865 15.172,4.853 14,4.853 C12.828,4.853 11.879,3.865 11.879,2.647 C11.879,1.429 12.828,0.441 14,0.441 C15.172,0.441 16.121,1.429 16.121,2.647 Z"/></g><path d="M9.758,18.529 L18.242,18.529 M7.636,22.059 L20.364,22.059 M14,9.265 L14,13.676 M11.879,11.471 L16.121,11.471"/></g>
+  <g id="wn" stroke-linecap="round" stroke-linejoin="round" transform="translate(6,6)" stroke="#000"><path d="M13.576,2.625 C22.485,3.5 27.576,9.625 27.152,28 L7.636,28 C7.636,20.125 16.121,22.313 14.424,9.625" stroke-width="1.5" fill="#fff"/><path d="M15.273,9.625 C15.595,12.171 10.564,16.074 8.485,17.5 C5.939,19.25 6.092,21.298 4.242,21 C3.358,20.178 5.439,18.34 4.242,18.375 C3.394,18.375 4.404,19.451 3.394,20.125 C2.545,20.125 -0.003,21 0,16.625 C0,14.875 5.091,6.125 5.091,6.125 C5.091,6.125 6.695,4.463 6.788,3.063 C6.168,2.193 6.364,1.313 6.364,0.438 C7.212,-0.438 8.909,2.625 8.909,2.625 L10.606,2.625 C10.606,2.625 11.268,0.882 12.727,0 C13.576,0 13.576,2.625 13.576,2.625" stroke-width="1.5" fill="#fff"/><path d="M2.97,16.188 C2.97,16.429 2.78,16.625 2.545,16.625 C2.311,16.625 2.121,16.429 2.121,16.188 C2.121,15.946 2.311,15.75 2.545,15.75 C2.78,15.75 2.97,15.946 2.97,16.188 Z" stroke-width="1.5" fill="#000"/><path d="M7.636,7.438 C7.636,8.162 7.446,8.75 7.212,8.75 C6.978,8.75 6.788,8.162 6.788,7.438 C6.788,6.713 6.978,6.125 7.212,6.125 C7.446,6.125 7.636,6.713 7.636,7.438 Z" stroke-width="1.5" fill="#000" transform="translate(7.212,7.438) rotate(30) translate(-7.212,-7.438)"/></g>
+  <g id="wr" stroke-linecap="round" stroke-linejoin="round" transform="translate(9,8)" stroke="#000" stroke-width="1.5"><polygon fill="#fff" points="0 26 22 26 22 23.4 0 23.4"/><polygon fill="#fff" points="2.444 23.4 2.444 19.933 19.556 19.933 19.556 23.4"/><polyline fill="#fff" points="1.63 4.333 1.63 0 4.889 0 4.889 1.733 8.963 1.733 8.963 0 13.037 0 13.037 1.733 17.111 1.733 17.111 0 20.37 0 20.37 4.333"/><polyline fill="#fff" points="20.37 4.333 17.926 6.933 4.074 6.933 1.63 4.333"/><polyline fill="#fff" points="17.926 6.933 17.926 17.767 4.074 17.767 4.074 6.933"/><polyline fill="#fff" points="17.926 17.767 19.148 19.933 2.852 19.933 4.074 17.767"/><line x1="1.63" y1="4.333" x2="20.37" y2="4.333"/></g>
+  <g id="wp" transform="translate(10,9)" fill="#fff" stroke="#000" stroke-linecap="round" stroke-width="1.5"><path d="M10,0 C8.158,0 6.667,1.501 6.667,3.355 C6.667,4.101 6.908,4.789 7.317,5.351 C5.692,6.29 4.583,8.043 4.583,10.065 C4.583,11.767 5.367,13.285 6.592,14.283 C4.092,15.172 0.417,18.938 0.417,25.581 L19.583,25.581 C19.583,18.938 15.908,15.172 13.408,14.283 C14.633,13.285 15.417,11.767 15.417,10.065 C15.417,8.043 14.308,6.29 12.683,5.351 C13.092,4.789 13.333,4.101 13.333,3.355 C13.333,1.501 11.842,0 10,0 Z"/></g>
+  <g id="bk" stroke-linecap="round" stroke-linejoin="round" transform="translate(5,5)" stroke-width="1.5"><line x1="15" y1="4.968" x2="15" y2="0" stroke="#000"/><path d="M15,16.765 C15,16.765 18.857,10.147 17.571,7.5 C17.571,7.5 16.714,5.294 15,5.294 C13.286,5.294 12.429,7.5 12.429,7.5 C11.143,10.147 15,16.765 15,16.765" stroke="#000" fill="#000"/><path d="M5.571,27.353 C10.286,30.441 18.857,30.441 23.571,27.353 L23.571,21.176 C23.571,21.176 31.286,17.206 28.714,11.912 C25.286,6.176 17.143,8.824 15,15.441 L15,18.529 L15,15.441 C12,8.824 3.857,6.176 1.286,11.912 C-1.286,17.206 5.571,20.735 5.571,20.735 L5.571,27.353 Z" stroke="#000" fill="#000"/><line x1="12.857" y1="1.765" x2="17.143" y2="1.765" stroke="#000"/><path d="M23.143,20.735 C23.143,20.735 30.429,17.206 28.311,12.221 C24.986,7.059 17.143,10.588 15,16.324 L15.009,18.176 L15,16.324 C12.857,10.588 4.205,7.059 1.712,12.221 C-0.429,17.206 5.871,20.162 5.871,20.162" stroke="#fff"/><path d="M5.571,21.176 C10.286,18.529 18.857,18.529 23.571,21.176 M5.571,24.265 C10.286,21.618 18.857,21.618 23.571,24.265 M5.571,27.353 C10.286,24.706 18.857,24.706 23.571,27.353" stroke="#fff"/></g>
+  <g id="bq" stroke-linecap="round" stroke-linejoin="round" transform="translate(3,4)"><g fill="#000"><ellipse cx="2.615" cy="6.222" rx="2.397" ry="2.444"/><ellipse cx="9.59" cy="3.556" rx="2.397" ry="2.444"/><ellipse cx="17" cy="2.667" rx="2.397" ry="2.444"/><ellipse cx="24.41" cy="3.556" rx="2.397" ry="2.444"/><ellipse cx="31.385" cy="6.222" rx="2.397" ry="2.444"/></g><path d="M5.231,18.667 C12.641,17.333 23.538,17.333 28.769,18.667 L30.949,7.556 L24.41,17.778 L24.149,5.244 L19.615,17.333 L17,4.444 L14.385,17.333 L9.851,5.244 L9.59,17.778 L3.051,7.556 L5.231,18.667 Z" stroke="#000" stroke-width="1.5" fill="#000"/><path d="M5.231,18.667 C5.231,20.444 6.538,20.444 7.41,22.222 C8.282,23.556 8.282,23.111 7.846,25.333 C6.538,26.222 6.538,27.556 6.538,27.556 C5.231,28.889 6.974,29.778 6.974,29.778 C12.641,30.667 21.359,30.667 27.026,29.778 C27.026,29.778 28.333,28.889 27.026,27.556 C27.026,27.556 27.462,26.222 26.154,25.333 C25.718,23.111 25.718,23.556 26.59,22.222 C27.462,20.444 28.769,20.444 28.769,18.667 C21.359,17.333 12.641,17.333 5.231,18.667 Z" stroke="#000" stroke-width="1.5" fill="#000"/><path d="M6.974,29.778 C13.467,32.081 20.533,32.081 27.026,29.778" stroke="#000" stroke-width="1.5"/><path d="M6.974,21.333 C13.467,19.03 20.533,19.03 27.026,21.333" stroke="#fff" stroke-width="1.5"/><line x1="8.282" y1="23.556" x2="25.718" y2="23.556" stroke="#fff" stroke-width="1.5"/><path d="M7.41,26.222 C13.637,28.324 20.363,28.324 26.59,26.222" stroke="#fff" stroke-width="1.5"/><path d="M6.538,28.889 C13.295,31.403 20.705,31.403 27.462,28.889" stroke="#fff" stroke-width="1.5"/></g>
+  <g id="bb" stroke-linecap="round" stroke-linejoin="round" transform="translate(6,5)" stroke-width="1.5"><g fill="#000" stroke="#000"><path d="M2.545,27.353 C5.422,26.497 11.124,27.732 14,25.588 C16.876,27.732 22.578,26.497 25.455,27.353 C25.455,27.353 26.855,27.829 28,29.118 C27.423,29.974 26.6,29.991 25.455,29.559 C22.578,28.703 16.876,29.965 14,28.676 C11.124,29.965 5.422,28.703 2.545,29.559 C1.397,29.991 0.574,29.974 0,29.118 C1.149,27.406 2.545,27.353 2.545,27.353 Z"/><path d="M7.636,23.824 C9.758,26.029 18.242,26.029 20.364,23.824 C20.788,22.5 20.364,22.059 20.364,22.059 C20.364,19.853 18.242,18.529 18.242,18.529 C22.909,17.206 23.333,8.382 14,4.853 C4.667,8.382 5.091,17.206 9.758,18.529 C9.758,18.529 7.636,19.853 7.636,22.059 C7.636,22.059 7.212,22.5 7.636,23.824 Z"/><path d="M16.121,2.647 C16.121,3.865 15.172,4.853 14,4.853 C12.828,4.853 11.879,3.865 11.879,2.647 C11.879,1.429 12.828,0.441 14,0.441 C15.172,0.441 16.121,1.429 16.121,2.647 Z"/></g><path d="M9.758,18.529 L18.242,18.529 M7.636,22.059 L20.364,22.059 M14,9.265 L14,13.676 M11.879,11.471 L16.121,11.471" stroke="#fff"/></g>
+  <g id="bn" stroke-linecap="round" stroke-linejoin="round" transform="translate(6,6)"><path d="M13.576,2.636 C22.485,3.515 27.576,9.667 27.152,28.121 L7.636,28.121 C7.636,20.212 16.121,22.409 14.424,9.667" stroke="#000" stroke-width="1.5" fill="#000"/><path d="M15.273,9.667 C15.595,12.224 10.564,16.143 8.485,17.576 C5.939,19.333 6.092,21.39 4.242,21.091 C3.358,20.265 5.439,18.419 4.242,18.455 C3.394,18.455 4.404,19.535 3.394,20.212 C2.545,20.212 -0.003,21.091 0,16.697 C0,14.939 5.091,6.152 5.091,6.152 C5.091,6.152 6.695,4.482 6.788,3.076 C6.168,2.202 6.364,1.318 6.364,0.439 C7.212,-0.439 8.909,2.636 8.909,2.636 L10.606,2.636 C10.606,2.636 11.268,0.886 12.727,0 C13.576,0 13.576,2.636 13.576,2.636" stroke="#000" stroke-width="1.5" fill="#000"/><path d="M2.97,16.258 C2.97,16.5 2.78,16.697 2.545,16.697 C2.311,16.697 2.121,16.5 2.121,16.258 C2.121,16.015 2.311,15.818 2.545,15.818 C2.78,15.818 2.97,16.015 2.97,16.258 Z" stroke="#fff" stroke-width="1.5" fill="#fff"/><path d="M7.636,7.47 C7.636,8.198 7.446,8.788 7.212,8.788 C6.978,8.788 6.788,8.198 6.788,7.47 C6.788,6.742 6.978,6.152 7.212,6.152 C7.446,6.152 7.636,6.742 7.636,7.47 Z" stroke="#fff" stroke-width="1.5" fill="#fff" transform="translate(7.212,7.47) rotate(30) translate(-7.212,-7.47)"/><path d="M15.739,2.988 L15.358,4.262 L15.782,4.394 C18.455,5.273 20.576,6.582 22.485,10.326 C24.394,14.069 25.242,19.386 24.818,28.121 L24.776,28.561 L26.685,28.561 L26.727,28.121 C27.152,19.281 25.981,13.314 23.97,9.368 C21.959,5.422 19.057,3.533 16.172,3.076 L15.739,2.988 Z" fill="#fff"/></g>
+  <g id="br" stroke-linecap="round" stroke-linejoin="round" transform="translate(9,8)"><polygon stroke="#000" stroke-width="1.5" fill="#000" points="0 26 22 26 22 23.4 0 23.4"/><polygon stroke="#000" stroke-width="1.5" fill="#000" points="2.852 19.933 4.074 17.767 17.926 17.767 19.148 19.933"/><polygon stroke="#000" stroke-width="1.5" fill="#000" points="2.444 23.4 2.444 19.933 19.556 19.933 19.556 23.4"/><polygon stroke="#000" stroke-width="1.5" fill="#000" points="4.074 17.767 4.074 6.5 17.926 6.5 17.926 17.767"/><polygon stroke="#000" stroke-width="1.5" fill="#000" points="4.074 6.5 1.63 4.333 20.37 4.333 17.926 6.5"/><polygon stroke="#000" stroke-width="1.5" fill="#000" points="1.63 4.333 1.63 0 4.889 0 4.889 1.733 8.963 1.733 8.963 0 13.037 0 13.037 1.733 17.111 1.733 17.111 0 20.37 0 20.37 4.333"/><polyline stroke="#fff" points="2.444 22.967 19.556 22.967"/><line x1="3.259" y1="19.5" x2="18.741" y2="19.5" stroke="#fff"/><line x1="4.074" y1="17.767" x2="17.926" y2="17.767" stroke="#fff"/><line x1="4.074" y1="6.5" x2="17.926" y2="6.5" stroke="#fff"/><line x1="1.63" y1="4.333" x2="20.37" y2="4.333" stroke="#fff"/></g>
+  <g id="bp" transform="translate(10,8)" fill="#000" stroke="#000" stroke-linecap="round" stroke-width="1.5"><path d="M10,0 C8.158,0 6.667,1.501 6.667,3.355 C6.667,4.101 6.908,4.789 7.317,5.351 C5.692,6.29 4.583,8.043 4.583,10.065 C4.583,11.767 5.367,13.285 6.592,14.283 C4.092,15.172 0.417,18.938 0.417,25.581 L19.583,25.581 C19.583,18.938 15.908,15.172 13.408,14.283 C14.633,13.285 15.417,11.767 15.417,10.065 C15.417,8.043 14.308,6.29 12.683,5.351 C13.092,4.789 13.333,4.101 13.333,3.355 C13.333,1.501 11.842,0 10,0 Z"/></g>
+</svg>
+  <!-- ── localStorage safety wrappers — MUST be first script in body ── -->
+  <script>
+    function safeGetStorage(k) { try { return localStorage.getItem(k); } catch(e) { return null; } }
+    function safeSetStorage(k,v) { try { localStorage.setItem(k,v); } catch(e) {} }
+    // Apply dark mode before paint to prevent flash
+    (function() {
+      var stored = safeGetStorage('spkc-dark');
+      if (stored === '1') document.documentElement.classList.add('dark');
+      else if (stored !== '0' && window.matchMedia && window.matchMedia('(prefers-color-scheme:dark)').matches)
+        document.documentElement.classList.add('dark');
+    })();
+  </script>
+
+  <div class="page-shell">
+    <header class="hero" style="padding-bottom:0;">
+      <nav class="nav" aria-label="Primary">
+        <a href="index.html">Home</a>
+        <a href="join.html">Join</a>
+        <a href="tournaments.html">Tournaments</a>
+        <a href="rules.html">Rules</a>
+        <a href="brilliants.html">Brilliants</a>
+        <a href="matches.html">Matches</a>
+        <a href="history.html">History</a>
+        <a href="openings.html">Openings</a>
+        <button class="dark-toggle" id="darkToggle" aria-label="Toggle dark mode">🌙</button>
+      </nav>
+    </header>
+
+    <main id="main" class="content-grid" style="padding-top:24px;">
+
+      <div class="span-12">
+        <a href="tournaments.html" class="profile-back">← Back to standings</a>
+      </div>
+
+      <!-- Hero -->
+      <section class="panel span-12" id="profileHero">
+        <div class="profile-hero">
+          <div class="profile-avatar" id="profileAvatarWrap">♟</div>
+          <div style="flex:1;min-width:0;">
+            <h1 class="profile-name" id="profileName">Loading…</h1>
+            <p class="profile-username" id="profileUsername"></p>
+            <div class="profile-rating-row" id="profileRatingRow">
+              <div class="profile-shimmer" style="width:220px;height:32px;border-radius:999px;"></div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Rating sparkline chart -->
+      <section class="panel span-12" id="profileSparklineSection">
+        <h2 class="profile-section-title">Rating history</h2>
+        <div class="rating-type-tabs" id="sparklineTabs">
+          <button class="rating-type-tab active" data-type="chess_bullet">Bullet</button>
+          <button class="rating-type-tab" data-type="chess_blitz">Blitz</button>
+          <button class="rating-type-tab" data-type="chess_rapid">Rapid</button>
+        </div>
+        <div id="sparklineWrap" class="sparkline-wrap">
+          <div class="profile-shimmer" style="height:80px;border-radius:8px;"></div>
+        </div>
+        <p class="sparkline-label" id="sparklineLabel"></p>
+      </section>
+
+      <!-- Season stats overview -->
+      <section class="panel span-12" id="profileStatsSection">
+        <h2 class="profile-section-title">Season overview</h2>
+        <div id="profileStatsGrid" class="profile-stats-grid">
+          <div class="profile-shimmer" style="height:70px;border-radius:12px;"></div>
+          <div class="profile-shimmer" style="height:70px;border-radius:12px;"></div>
+          <div class="profile-shimmer" style="height:70px;border-radius:12px;"></div>
+          <div class="profile-shimmer" style="height:70px;border-radius:12px;"></div>
+        </div>
+      </section>
+
+      <!-- Round-by-round history bar chart -->
+      <section class="panel span-12" id="profileRoundSection">
+        <h2 class="profile-section-title">Round-by-round scores</h2>
+        <div id="profileRoundList"><div class="profile-shimmer"></div></div>
+      </section>
+
+      <!-- Activity Heatmap -->
+      <section class="panel span-12" id="profileHeatmapSection">
+        <h2 class="profile-section-title">Round engagement</h2>
+        <div id="profileHeatmapContent"><div class="profile-shimmer"></div></div>
+      </section>
+
+      <!-- Head-to-head -->
+      <section class="panel span-12" id="profileH2HSection">
+        <h2 class="profile-section-title">Head-to-head this season</h2>
+        <div id="profileH2HContent"><div class="profile-shimmer"></div></div>
+      </section>
+
+      <!-- Opening Performance -->
+      <section class="panel span-12" id="profileOpeningsSection">
+        <h2 class="profile-section-title">Opening performance</h2>
+        <div class="opening-tabs" id="openingTabs">
+          <button class="opening-tab active" data-side="white">As White</button>
+          <button class="opening-tab" data-side="black">As Black</button>
+        </div>
+        <div id="profileOpeningsContent"><div class="profile-shimmer"></div><div class="profile-shimmer"></div><div class="profile-shimmer"></div></div>
+      </section>
+
+      <!-- Brilliant moves -->
+      <section class="panel span-12" id="profileBrilliants">
+        <h2 class="profile-section-title">Brilliant moves ✨</h2>
+        <div id="profileBrilliantsList"><div class="profile-shimmer"></div></div>
+      </section>
+
+      <!-- Season games (from Chess.com match archive) -->
+      <!-- ── Analytics dashboard ───────────────────────────────────── -->
+      <section class="panel span-12" id="profileAnalyticsSection">
+        <h2 class="profile-section-title">Season analytics</h2>
+        <!-- Tab bar -->
+        <div class="analytics-tabs" id="analyticsTabs">
+          <button class="analytics-tab active" data-tab="overview">Overview</button>
+          <button class="analytics-tab" data-tab="results">Results</button>
+          <button class="analytics-tab" data-tab="openings-adv">Openings</button>
+          <button class="analytics-tab" data-tab="rating">vs Rating</button>
+          <button class="analytics-tab" data-tab="time">Time of Day</button>
+          <button class="analytics-tab" data-tab="castling">Castling</button>
+        </div>
+        <!-- Panels -->
+        <div class="analytics-panel active" id="analyticsTab-overview">
+          <div id="analyticsOverviewContent"><div class="profile-shimmer"></div></div>
+        </div>
+        <div class="analytics-panel" id="analyticsTab-results">
+          <div id="analyticsResultsContent"><div class="profile-shimmer"></div></div>
+        </div>
+        <div class="analytics-panel" id="analyticsTab-openings-adv">
+          <div id="analyticsOpeningsContent"><div class="profile-shimmer"></div></div>
+        </div>
+        <div class="analytics-panel" id="analyticsTab-rating">
+          <div id="analyticsRatingContent"><div class="profile-shimmer"></div></div>
+        </div>
+        <div class="analytics-panel" id="analyticsTab-time">
+          <div id="analyticsTimeContent"><div class="profile-shimmer"></div></div>
+        </div>
+        <div class="analytics-panel" id="analyticsTab-castling">
+          <div id="analyticsCastlingContent"><div class="profile-shimmer"></div></div>
+        </div>
+      </section>
+
+      <section class="panel span-12" id="profileGames">
+        <h2 class="profile-section-title">Season games</h2>
+        <div id="profileGamesList"><div class="profile-shimmer"></div><div class="profile-shimmer"></div><div class="profile-shimmer"></div></div>
+      </section>
+
+    </main>
+    <footer>SPKC Chess Club — Player profile</footer>
+  </div>
+
+  <!-- ── Game Replayer Modal ── -->
+  <div class="replayer-modal-bg" id="replayerBg" role="dialog" aria-modal="true" aria-label="Game replayer">
+    <div class="replayer-modal">
+      <button class="replayer-close" id="replayerClose" aria-label="Close">×</button>
+      <div class="replayer-meta" id="replayerMeta">Loading…</div>
+      <div class="replayer-status" id="replayerStatus"></div>
+      <div id="replayerBoard"></div>
+      <div class="replayer-move-list" id="replayerMoveList"></div>
+      <div class="replayer-controls">
+        <button class="replayer-btn" id="rBtnStart" title="Start" disabled>⏮</button>
+        <button class="replayer-btn" id="rBtnPrev" title="Previous" disabled>◄</button>
+        <button class="replayer-btn" id="rBtnNext" title="Next" disabled>►</button>
+        <button class="replayer-btn" id="rBtnEnd" title="End" disabled>⏭</button>
+      </div>
+      <button class="replayer-flip-btn" id="rBtnFlip" title="Flip board">🔄 Flip board</button>
+      <a class="replayer-external" id="replayerExtLink" href="#" target="_blank" rel="noopener noreferrer">Open on Chess.com ↗</a>
+    </div>
+  </div>
+
+  <!-- chess.js: PGN parser + move logic (UMD build exposes global Chess) -->
+  <script src="lib/chess.min.js"></script>
+  <script src="lib/xlsx.full.min.js"></script>
+  <script src="lib/supabase.min.js"></script>
+
+  <!-- cm-chessboard: self-contained IIFE bundle (no ES module, works via file://) -->
+  <script src="cm-chessboard-bundle.js"></script>
+  <script>
+    const SUPABASE_URL = 'https://qoczwxslhygakivfgxdy.supabase.co';
+    const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFvY3p3eHNsaHlnYWtpdmZneGR5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk2MTAwNzMsImV4cCI6MjA5NTE4NjA3M30.J5I0IR5Ra_JePDzJYHpzstbNRCo667B201iVhjbDZjs';
+    const BUCKET = 'private_uploads';
+    const WORKBOOK_PATH = 'latest/season-standings.xlsx';
+    const { createClient } = supabase;
+    const supabaseClient = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+    function escapeHtml(v) {
+      return String(v??'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+    }
+    function getParam(n) { return new URLSearchParams(window.location.search).get(n)||''; }
+    function fetchWithTimeout(url, ms=10000) {
+      return Promise.race([fetch(url), new Promise((_,r)=>setTimeout(()=>r(new Error('Timeout')),ms))]);
+    }
+    function mapResult(r) {
+      if (!r) return 'draw';
+      const s = r.toLowerCase();
+      if (s==='win') return 'win';
+      if (['checkmated','resigned','timeout','abandoned','loss','timevsinsufficient'].includes(s)) return 'loss';
+      return 'draw';
+    }
+
+    // Opening analytics — global state (populated by loadSeasonGames, used by renderOpenings)
+    let _openingsWhite = [];  // Array of { eco, name, games, wins, draws, losses }
+    let _openingsBlack = [];
+    let _activeOpeningSide = 'white';
+
+    async function initPlayerPage() {
+      const username = getParam('username').trim().toLowerCase();
+      if (!username) {
+        document.getElementById('profileName').textContent = 'No player specified';
+        document.getElementById('profileStatsGrid').innerHTML = '<p class="profile-no-data">Use ?username=CHESS_USERNAME in the URL.</p>';
+        return;
+      }
+      document.title = username + ' — SPKC Chess Club';
+      document.getElementById('profileUsername').innerHTML =
+        `<a href="https://www.chess.com/member/${encodeURIComponent(username)}" target="_blank" rel="noopener noreferrer" style="color:var(--primary);font-weight:700;">@${escapeHtml(username)} ↗</a>`;
+
+      // Fire all loads in parallel
+      loadChessComProfile(username);
+      loadWorkbookData(username);
+      loadBrilliants(username);
+      loadSparkline(username);
+    }
+
+    // ── Rating sparkline ────────────────────────────────────────────────
+    let _sparklineData = {};
+    let _activeSparkType = 'chess_bullet';
+
+    function drawSparkline(type) {
+      const wrap = document.getElementById('sparklineWrap');
+      const label = document.getElementById('sparklineLabel');
+      if (!wrap) return;
+      const games = (_sparklineData[type] || []).slice(-30); // last 30 data points
+      if (!games.length) {
+        wrap.innerHTML = '<p class="profile-no-data">No rating history available for this format.</p>';
+        if (label) label.textContent = '';
+        return;
+      }
+      const ratings = games.map(g => g.rating);
+      const dates = games.map(g => g.date ? new Date(g.date * 1000).toLocaleDateString('en-GB', {day:'numeric',month:'short'}) : '');
+      const min = Math.min(...ratings) - 20;
+      const max = Math.max(...ratings) + 20;
+      const W = 600, H = 100, pad = 8;
+      const xs = ratings.map((_, i) => pad + (i / Math.max(ratings.length - 1, 1)) * (W - pad * 2));
+      const ys = ratings.map(r => H - pad - ((r - min) / (max - min)) * (H - pad * 2));
+      const polyline = xs.map((x, i) => `${x.toFixed(1)},${ys[i].toFixed(1)}`).join(' ');
+      const area = `${xs[0].toFixed(1)},${H} ` + polyline + ` ${xs[xs.length-1].toFixed(1)},${H}`;
+      const first = ratings[0], last = ratings[ratings.length - 1];
+      const diff = last - first;
+      const diffStr = (diff >= 0 ? '+' : '') + diff;
+      const lineColor = diff >= 0 ? '#1a7a44' : '#a83a3a';
+      const areaColor = diff >= 0 ? 'rgba(26,122,68,0.10)' : 'rgba(168,58,58,0.10)';
+      wrap.innerHTML = `
+        <svg class="sparkline-svg" viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg" aria-label="Rating history sparkline">
+          <polygon points="${area}" fill="${areaColor}"/>
+          <polyline points="${polyline}" fill="none" stroke="${lineColor}" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"/>
+          <circle cx="${xs[xs.length-1].toFixed(1)}" cy="${ys[ys.length-1].toFixed(1)}" r="4" fill="${lineColor}"/>
+        </svg>`;
+      if (label) label.textContent = `${ratings.length} games · Current: ${last} · Change: ${diffStr} · Range: ${Math.min(...ratings)}–${Math.max(...ratings)}`;
+    }
+
+    async function loadSparkline(username) {
+      const wrap = document.getElementById('sparklineWrap');
+      try {
+        const types = ['chess_bullet','chess_blitz','chess_rapid'];
+        const results = await Promise.all(types.map(t =>
+          fetch(`https://api.chess.com/pub/player/${encodeURIComponent(username)}/games/${new Date().getFullYear()}/${String(new Date().getMonth()+1).padStart(2,'0')}`)
+            .then(r => r.ok ? r.json() : null).catch(() => null)
+        ));
+        // Chess.com doesn't have separate per-type history; use stats best/last as two points
+        // Instead parse recent games for rating progression
+        const statsRes = await fetch(`https://api.chess.com/pub/player/${encodeURIComponent(username)}/stats`);
+        const stats = statsRes.ok ? await statsRes.json() : {};
+        _sparklineData = {};
+        ['chess_bullet','chess_blitz','chess_rapid'].forEach(t => {
+          const s = stats[t];
+          if (!s) return;
+          const pts = [];
+          if (s.record) {
+            // Build from best + last + current as minimal points
+          }
+          // Use best/last/current to draw minimal 2-point line
+          if (s.best && s.last) {
+            pts.push({ rating: s.best.rating, date: s.best.date });
+            pts.push({ rating: s.last.rating, date: s.last.date });
+            pts.sort((a,b) => a.date - b.date);
+          } else if (s.last) {
+            pts.push({ rating: s.last.rating, date: s.last.date });
+          }
+          _sparklineData[t] = pts;
+        });
+        // Try to get richer data from recent games
+        const thisMonth = results[0];
+        if (thisMonth && Array.isArray(thisMonth.games)) {
+          ['chess_bullet','chess_blitz','chess_rapid'].forEach((t, ti) => {
+            const shortType = ['bullet','blitz','rapid'][ti];
+            const filtered = thisMonth.games
+              .filter(g => g.time_class === shortType)
+              .map(g => {
+                const isWhite = (g.white?.username||'').toLowerCase() === username.toLowerCase();
+                const me = isWhite ? g.white : g.black;
+                return { rating: me?.rating, date: g.end_time };
+              })
+              .filter(g => g.rating)
+              .sort((a,b) => a.date - b.date);
+            if (filtered.length >= 2) _sparklineData[t] = filtered;
+          });
+        }
+        drawSparkline(_activeSparkType);
+        document.querySelectorAll('.rating-type-tab').forEach(btn => {
+          btn.addEventListener('click', function() {
+            document.querySelectorAll('.rating-type-tab').forEach(b => b.classList.remove('active'));
+            this.classList.add('active');
+            _activeSparkType = this.dataset.type;
+            drawSparkline(_activeSparkType);
+          });
+        });
+      } catch(e) {
+        if (wrap) wrap.innerHTML = '<p class="profile-no-data">Could not load rating history.</p>';
+      }
+    }
+
+    // ── Chess.com profile + ratings ─────────────────────────────────────
+    async function loadChessComProfile(username) {
+      const nameEl = document.getElementById('profileName');
+      const avatarWrap = document.getElementById('profileAvatarWrap');
+      const ratingRow = document.getElementById('profileRatingRow');
+      try {
+        const [profRes, statsRes] = await Promise.all([
+          fetchWithTimeout(`https://api.chess.com/pub/player/${encodeURIComponent(username)}`),
+          fetchWithTimeout(`https://api.chess.com/pub/player/${encodeURIComponent(username)}/stats`)
+        ]);
+        const prof = profRes.ok ? await profRes.json() : null;
+        const stats = statsRes.ok ? await statsRes.json() : null;
+
+        if (prof && prof.avatar) {
+          avatarWrap.innerHTML = `<img src="${escapeHtml(prof.avatar)}" alt="${escapeHtml(username)} avatar">`;
+        }
+        if (prof && prof.name) nameEl.textContent = prof.name;
+        else nameEl.textContent = username;
+
+        // Also try Supabase registration name
+        supabaseClient.from('registrations').select('full_name').ilike('chess_username', username)
+          .eq('status','accepted').limit(1).maybeSingle()
+          .then(({data}) => { if (data && data.full_name && nameEl.textContent === username) nameEl.textContent = data.full_name; });
+
+        const chips = [];
+        if (stats) {
+          const types = [
+            { key:'chess_bullet', label:'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 20" width="12" height="15" style="vertical-align:middle;margin-right:3px;flex-shrink:0;" aria-label="Bullet"><ellipse cx="8" cy="6" rx="5" ry="6" fill="#f5b800"/><rect x="3" y="6" width="10" height="5" fill="#e0a000"/><polygon points="3,11 5,18 8,20 11,18 13,11" fill="#f5b800"/></svg> Bullet' },
+            { key:'chess_blitz',  label:'⚡ Blitz'  },
+            { key:'chess_rapid',  label:'🕐 Rapid'  },
+          ];
+          types.forEach(({key,label}) => {
+            const last = stats[key]?.last;
+            const best = stats[key]?.best;
+            if (last?.rating) {
+              const isPB = best && best.rating === last.rating;
+              chips.push(`<span class="profile-rating-chip">${label} <strong>${last.rating}</strong>${isPB ? ' <span style="font-size:10px;color:#e8a000;font-weight:900;">PB</span>' : ''}</span>`);
+            }
+          });
+        }
+        ratingRow.innerHTML = chips.length ? chips.join('') : '<span class="profile-no-data">No rating data</span>';
+      } catch(e) {
+        ratingRow.innerHTML = '<span class="profile-no-data">Could not load Chess.com profile</span>';
+      }
+    }
+
+    // ── Workbook parsing helpers (mirrors tournaments.html exactly) ─────
+    function findBestSheetName(sheetNames, season) {
+      const names = Array.isArray(sheetNames) ? sheetNames : [];
+      const exactTarget = String(season.sheetName || season.sheet_name || '').trim().toLowerCase();
+      const hints = Array.isArray(season.sheetHints) ? season.sheetHints
+        : (() => { try { return JSON.parse(season.sheet_hints||'[]'); } catch{ return []; } })();
+      if (exactTarget) {
+        const exact = names.find(n => n.trim().toLowerCase() === exactTarget);
+        if (exact) return exact;
+      }
+      for (const h of hints) {
+        const hn = String(h||'').trim().toLowerCase(); if (!hn) continue;
+        const m = names.find(n => n.trim().toLowerCase() === hn); if (m) return m;
+      }
+      for (const h of hints) {
+        const hn = String(h||'').trim().toLowerCase(); if (!hn) continue;
+        const m = names.find(n => n.toLowerCase().includes(hn)); if (m) return m;
+      }
+      if (season.label) {
+        const lh = season.label.trim().toLowerCase();
+        const m = names.find(n => n.toLowerCase().includes(lh)); if (m) return m;
+      }
+      return names[0] || null;
+    }
+
+    function parseNamedBlock(rows, blockName) {
+      let labelIndex = -1, headerIndex = -1;
+      for (let i = 0; i < rows.length; i++) {
+        const row = rows[i].map(v => String(v).trim());
+        if (row.includes(blockName)) { labelIndex = i; break; }
+      }
+      if (labelIndex === -1) return { headers: [], players: [] };
+      for (let i = labelIndex + 1; i < rows.length; i++) {
+        const row = rows[i].map(v => String(v).trim());
+        if (row.includes('Player') && row.includes('Chess.com Username') && row.includes('Total Score')) {
+          headerIndex = i; break;
+        }
+      }
+      if (headerIndex === -1) return { headers: [], players: [] };
+      const headers = rows[headerIndex].map(v => String(v).trim());
+      const players = []; const seen = new Set();
+      for (let i = headerIndex + 1; i < rows.length; i++) {
+        const rawRow = rows[i].map(v => String(v).trim());
+        if (rawRow.every(c => c === '')) continue;
+        if (['Total Rank','Total Points','Total Bullet Rank','Total Bullet Points',
+             'Total Blitz Rank','Total Blitz Points','Total Rapid Rank','Total Rapid Points']
+             .some(b => rawRow.includes(b))) break;
+        const player = {}; headers.forEach((h,idx) => { player[h] = rawRow[idx] ?? ''; });
+        const name = String(player['Player']||'').trim();
+        const uname = String(player['Chess.com Username']||'').trim();
+        if (!name || !uname || name === 'Player') continue;
+        const key = `${name}__${uname}`; if (seen.has(key)) continue; seen.add(key);
+        players.push(player);
+      }
+      return { headers, players };
+    }
+
+    // ── Fallback season (mirrors tournaments.html) ──────────────────────
+    const FALLBACK_SEASON = {
+      season_key: '2026-season',
+      season_label: '2026 Season',
+      file_path: 'latest/season-standings.xlsx',
+      sheet_name: '2026 Season',
+      sheet_hints: JSON.stringify(['2026 Season','2026']),
+      round_count: 6
+    };
+
+    // ── Workbook data: stats, round history, H2H, season games ──────────
+    async function loadWorkbookData(username) {
+      try {
+        // 1. Get latest season — fall back to FALLBACK_SEASON if table empty/missing
+        const { data: seasons, error: seasonErr } = await supabaseClient
+          .from('season_settings').select('*')
+          .order('registration_opens_at',{ascending:false, nullsFirst:false});
+        // Pick the most recent season that has already started (same logic as home + tournaments)
+        const now = new Date();
+        const started = (seasons||[]).filter(s => s.registration_opens_at && new Date(s.registration_opens_at) <= now);
+        let season = started[0] || (seasons && seasons[0]) || null;
+        if (!season) {
+          console.warn('season_settings empty or error, using fallback:', seasonErr?.message);
+          season = FALLBACK_SEASON;
+        }
+
+        // 2. Get signed workbook URL — use file_path or default
+        const filePath = String(season.file_path || WORKBOOK_PATH).trim();
+        const { data: signed, error: signErr } = await supabaseClient.storage.from(BUCKET).createSignedUrl(filePath, 10800);
+        if (signErr || !signed?.signedUrl) { showNoData('Could not get workbook URL: ' + (signErr?.message||'unknown')); return; }
+
+        // 3. Fetch + parse workbook (same as tournaments.html)
+        const resp = await fetchWithTimeout(signed.signedUrl);
+        if (!resp.ok) { showNoData('Workbook fetch failed: HTTP ' + resp.status); return; }
+        const buf = await resp.arrayBuffer();
+        const wb = XLSX.read(buf, { type: 'array' });
+
+        // Normalise season shape so findBestSheetName works with both Supabase rows and fallback
+        const seasonNorm = {
+          sheetName:  season.sheet_name  || season.sheetName  || '',
+          sheetHints: (() => { try { return JSON.parse(season.sheet_hints||'[]'); } catch{ return season.sheetHints||[]; } })(),
+          label: season.season_label || season.label || ''
+        };
+        const sheetName = findBestSheetName(wb.SheetNames, seasonNorm);
+        if (!sheetName) { showNoData('Sheet not found. Available: ' + wb.SheetNames.join(', ')); return; }
+        const sheet = wb.Sheets[sheetName];
+        const rows = XLSX.utils.sheet_to_json(sheet, { header: 1, defval: '' });
+        if (!rows.length) { showNoData('Workbook is empty.'); return; }
+
+        const pointsBlock = parseNamedBlock(rows, 'Total Points');
+        const rankBlock   = parseNamedBlock(rows, 'Total Rank');
+
+        // Get round keys from points block (same logic as tournaments.html)
+        const allowedRoundCount = Number(season.round_count || season.roundCount || Object.keys(season.roundDates||{}).length || 12);
+        const roundKeys = (pointsBlock.headers||[])
+          .map(h => String(h||'').trim())
+          .filter(h => /^R\s*\d+/i.test(h))
+          .sort((a,b) => Number((a.match(/R\s*(\d+)/i)||[0,0])[1]) - Number((b.match(/R\s*(\d+)/i)||[0,0])[1]))
+          .filter(h => { const n = Number((h.match(/R\s*(\d+)/i)||[0,0])[1]); return n>=1 && n<=allowedRoundCount; });
+
+        // Round format cycle: R1=bullet, R2=blitz, R3=rapid, repeating
+        const FORMAT_CYCLE = ['bullet','blitz','rapid'];
+        const FORMAT_ICONS = { bullet: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 20" width="11" height="14" style="vertical-align:middle;" aria-label="Bullet"><ellipse cx="8" cy="6" rx="5" ry="6" fill="#f5b800"/><rect x="3" y="6" width="10" height="5" fill="#e0a000"/><polygon points="3,11 5,18 8,20 11,18 13,11" fill="#f5b800"/></svg>', blitz: '⚡', rapid: '🕐' };
+
+        // 4. Find this player in pointsBlock
+        const userLower = username.toLowerCase();
+        const playerRow = pointsBlock.players.find(p => String(p['Chess.com Username']||'').trim().toLowerCase() === userLower);
+        const rankRow   = rankBlock.players.find(p => String(p['Chess.com Username']||'').trim().toLowerCase() === userLower);
+
+        if (!playerRow) {
+          showNoData('Player "@' + username + '" not found in the season standings workbook.');
+          return;
+        }
+
+        const totalScore = parseFloat(playerRow['Total Score']||0)||0;
+        const rank = rankRow ? (rankRow['Rank']||rankRow['Total Rank']||'—') : (playerRow['Rank']||'—');
+        const brilliants = parseInt(playerRow['Brilliants']||'0',10)||0;
+
+        let roundsPlayed = 0, maxScore = 0;
+        const roundScores = roundKeys.map((rk, idx) => {
+          const raw = String(playerRow[rk]||'').trim();
+          const rawUp = raw.toUpperCase();
+          const isAtt = rawUp === 'ATT';
+          const num = isAtt ? 5 : parseFloat(raw);
+          const valid = isAtt || (!isNaN(num) && raw !== '' && !['dns','cxl','dnf','dsq'].includes(rawUp.toLowerCase()));
+          if (valid) { roundsPlayed++; if (num > maxScore) maxScore = num; }
+          const format = FORMAT_CYCLE[idx % 3];
+          return { key: rk, raw, num: valid ? num : null, isAtt, format };
+        });
+
+        // 5. Stats grid
+        document.getElementById('profileStatsGrid').innerHTML = `
+          <div class="profile-stat-card"><span class="profile-stat-num">#${escapeHtml(String(rank))}</span><span class="profile-stat-label">Season rank</span></div>
+          <div class="profile-stat-card"><span class="profile-stat-num">${totalScore}</span><span class="profile-stat-label">Total points</span></div>
+          <div class="profile-stat-card"><span class="profile-stat-num">${roundsPlayed}</span><span class="profile-stat-label">Rounds played</span></div>
+          <div class="profile-stat-card"><span class="profile-stat-num">${brilliants > 0 ? '✨'+brilliants : '0'}</span><span class="profile-stat-label">Brilliants</span></div>
+        `;
+
+        // 6. Round history bars
+        if (roundScores.length) {
+          document.getElementById('profileRoundList').innerHTML = roundScores.map(({key,raw,num,isAtt,format}) => {
+            const roundNum = (key.match(/\d+/)||[''])[0];
+            const isBest = num !== null && num === maxScore && maxScore > 0;
+            const barPct = maxScore > 0 && num !== null ? Math.round((num/maxScore)*100) : 0;
+            const displayVal = isAtt ? 'ATT · 5 pts' : (num !== null ? num : (raw||'—'));
+            const barStyle = isAtt ? 'background:linear-gradient(90deg,#6dbf6d,#a8d8a8);' : '';
+            const icon = FORMAT_ICONS[format] || '';
+            return `<div class="round-history-row${isBest?' rh-row--best':''}">
+              <span class="rh-label">${icon} R${escapeHtml(roundNum)}</span>
+              <div class="rh-bar-wrap"><div class="rh-bar" style="width:${barPct}%;${barStyle}"></div></div>
+              <span class="rh-score">${escapeHtml(String(displayVal))}</span>
+              <span class="rh-rank">${isBest?'🏆 Best':''}</span>
+            </div>`;
+          }).join('');
+        } else {
+          document.getElementById('profileRoundList').innerHTML = '<p class="profile-no-data">No round data found.</p>';
+        }
+
+        // 7. Activity heatmap — all players' rows for cross-reference
+        renderHeatmap(roundScores, pointsBlock.players, roundKeys, FORMAT_CYCLE, FORMAT_ICONS);
+
+        // 8. Load H2H + season games from Chess.com
+        loadSeasonGames(username, season);
+
+      } catch(e) {
+        showNoData('Error: ' + e.message);
+      }
+    }
+
+    // ── Activity Heatmap ─────────────────────────────────────────────────
+    function renderHeatmap(roundScores, allPlayers, roundKeys, FORMAT_CYCLE, FORMAT_ICONS) {
+      const el = document.getElementById('profileHeatmapContent');
+      if (!roundScores.length) {
+        el.innerHTML = '<p class="profile-no-data">No round data available.</p>';
+        return;
+      }
+
+      // Build one row per round showing participation status
+      // Also compute format-level summary: pts earned per format
+      const formatSummary = { bullet: { pts: 0, rounds: 0 }, blitz: { pts: 0, rounds: 0 }, rapid: { pts: 0, rounds: 0 } };
+      roundScores.forEach(({ num, isAtt, format }) => {
+        if (num !== null) {
+          formatSummary[format].pts += num;
+          formatSummary[format].rounds++;
+        }
+      });
+
+      // Build heatmap grid — one row per round
+      const totalRounds = roundScores.length;
+      const colTemplate = `grid-template-columns: 60px repeat(${totalRounds}, 1fr);`;
+
+      const headerCells = roundScores.map(({key, format}) => {
+        const roundNum = (key.match(/\d+/)||[''])[0];
+        const icon = FORMAT_ICONS[format] || '';
+        return `<div style="text-align:center;font-size:11px;font-weight:800;color:var(--muted);">${icon} R${escapeHtml(roundNum)}</div>`;
+      }).join('');
+
+      const statusCells = roundScores.map(({num, isAtt, raw}) => {
+        if (isAtt) {
+          return `<div class="heatmap-cell heatmap-cell--att" title="Attended (5 pts)">ATT</div>`;
+        } else if (num !== null) {
+          return `<div class="heatmap-cell heatmap-cell--present" title="${num} pts">${num}</div>`;
+        } else {
+          const label = raw && raw !== '' ? escapeHtml(raw) : '—';
+          return `<div class="heatmap-cell heatmap-cell--absent" title="Did not play">${label}</div>`;
+        }
+      }).join('');
+
+      // Format summary chips
+      const fmtChips = Object.entries(formatSummary).map(([fmt, s]) => {
+        const icon = FORMAT_ICONS[fmt] || '';
+        const color = s.rounds > 0 ? 'color:var(--primary);' : 'color:var(--muted);';
+        return `<div style="display:inline-flex;align-items:center;gap:6px;padding:6px 14px;border-radius:999px;border:1.5px solid var(--line);background:var(--surface-soft);font-size:13px;font-weight:800;${color}">
+          ${icon} ${fmt.charAt(0).toUpperCase()+fmt.slice(1)}: <strong style="margin-left:2px;">${s.pts} pts</strong> <span style="font-size:11px;font-weight:700;color:var(--muted);">(${s.rounds} rounds)</span>
+        </div>`;
+      }).join('');
+
+      el.innerHTML = `
+        <div style="margin-bottom:14px;display:flex;flex-wrap:wrap;gap:8px;">${fmtChips}</div>
+        <div class="heatmap-grid">
+          <div class="heatmap-row" style="${colTemplate}">
+            <div class="heatmap-row-label" style="font-size:11px;color:var(--muted);font-weight:800;text-transform:uppercase;letter-spacing:0.5px;">Round</div>
+            ${headerCells}
+          </div>
+          <div class="heatmap-row" style="${colTemplate}">
+            <div class="heatmap-row-label">This player</div>
+            ${statusCells}
+          </div>
+        </div>
+        <div class="heatmap-legend">
+          <div class="heatmap-legend-item"><div class="heatmap-legend-dot" style="background:linear-gradient(135deg,var(--primary),var(--primary-2));"></div>Played</div>
+          <div class="heatmap-legend-item"><div class="heatmap-legend-dot" style="background:linear-gradient(135deg,#6dbf6d,#a8d8a8);"></div>Attended (ATT · 5 pts)</div>
+          <div class="heatmap-legend-item"><div class="heatmap-legend-dot" style="background:var(--surface-soft);border:1.5px solid var(--line);"></div>Did not play</div>
+        </div>`;
+    }
+
+    function showNoData(reason) {
+      const msg = reason ? `<p class="profile-no-data">${escapeHtml(reason)}</p>` : '<p class="profile-no-data">Season data not available. Make sure the workbook is uploaded.</p>';
+      document.getElementById('profileStatsGrid').innerHTML = msg;
+      document.getElementById('profileRoundList').innerHTML = '';
+      document.getElementById('profileH2HContent').innerHTML = '<p class="profile-no-data">No season data.</p>';
+      document.getElementById('profileGamesList').innerHTML = '<p class="profile-no-data">No games found.</p>';
+      document.getElementById('profileHeatmapContent').innerHTML = '';
+      document.getElementById('profileOpeningsContent').innerHTML = '<p class="profile-no-data">No opening data.</p>';
+    }
+
+    // ── Opening performance rendering ──────────────────────────────────
+    function renderOpenings(side) {
+      const el = document.getElementById('profileOpeningsContent');
+      const data = side === 'white' ? _openingsWhite : _openingsBlack;
+      if (!data.length) {
+        el.innerHTML = '<p class="profile-no-data">No games found as ' + (side==='white'?'White':'Black') + ' with ECO data.</p>';
+        return;
+      }
+      // Sort by games played descending
+      const sorted = [...data].sort((a,b) => b.games - a.games).slice(0, 10);
+      const maxGames = sorted[0].games || 1;
+
+      el.innerHTML = `
+        <div class="opening-header-labels">
+          <span>Opening</span>
+          <span>Games</span>
+          <span>Win%</span>
+          <span>W·D·L</span>
+        </div>
+        ${sorted.map(o => {
+          const winPct = o.games > 0 ? Math.round((o.wins / o.games) * 100) : 0;
+          const barPct = Math.round((o.games / maxGames) * 100);
+          const winColor = winPct >= 60 ? '#1a7a44' : winPct >= 40 ? '#8a6800' : '#a83a3a';
+          return `<div class="opening-row">
+            <div>
+              <div class="opening-row-name">${escapeHtml(o.name)}</div>
+              <div class="opening-row-eco">${escapeHtml(o.eco)}</div>
+            </div>
+            <div class="opening-row-stat">${o.games}</div>
+            <div class="opening-row-stat opening-win-rate" style="color:${winColor};">${winPct}%</div>
+            <div class="opening-row-stat" style="font-size:12px;">${o.wins}·${o.draws}·${o.losses}</div>
+            <div class="opening-row-bar-wrap"><div class="opening-row-bar" style="width:${barPct}%;"></div></div>
+          </div>`;
+        }).join('')}`;
+    }
+
+    // ── Season games from Chess.com tournament API ───────────────────────
+    async function loadSeasonGames(username, season) {
+      const h2hEl = document.getElementById('profileH2HContent');
+      const gamesEl = document.getElementById('profileGamesList');
+      const openingsEl = document.getElementById('profileOpeningsContent');
+      try {
+        // Get tournament links for this season
+        const seasonKey = String(season.season_key || season.label || '').trim();
+        const { data: links } = await supabaseClient.from('round_tournament_links').select('*')
+          .eq('season_key', seasonKey).order('round_number',{ascending:true});
+
+        if (!links || !links.length) {
+          h2hEl.innerHTML = '<p class="profile-no-data">No tournament links configured for this season yet.</p>';
+          gamesEl.innerHTML = '<p class="profile-no-data">No tournament links configured.</p>';
+          openingsEl.innerHTML = '<p class="profile-no-data">No tournament links configured.</p>';
+          renderAnalytics([], userLower);
+          return;
+        }
+
+        const userLower = username.toLowerCase();
+        const allGames = [];
+
+        // Fetch all rounds in parallel
+        await Promise.all(links.filter(l=>l.tournament_url_id).map(async (link) => {
+          try {
+            const tid = String(link.tournament_url_id).trim();
+            const infoRes = await fetchWithTimeout(`https://api.chess.com/pub/tournament/${tid}`);
+            if (!infoRes.ok) return;
+            const info = await infoRes.json();
+            const totalRounds = info.settings?.total_rounds || 1;
+            const roundFetches = [];
+            for (let i = 1; i <= totalRounds; i++) {
+              roundFetches.push(
+                fetchWithTimeout(`https://api.chess.com/pub/tournament/${tid}/${i}/1`)
+                  .then(r=>r.ok?r.json():null).catch(()=>null)
+              );
+            }
+            const roundResults = await Promise.all(roundFetches);
+            roundResults.forEach(rd => {
+              if (rd && Array.isArray(rd.games)) {
+                rd.games.forEach(g => {
+                  const wUser = (g.white?.username||'').toLowerCase();
+                  const bUser = (g.black?.username||'').toLowerCase();
+                  if (wUser === userLower || bUser === userLower) {
+                    allGames.push({ ...g, _seasonRound: link.round_number });
+                  }
+                });
+              }
+            });
+          } catch(_){}
+        }));
+
+        if (!allGames.length) {
+          h2hEl.innerHTML = '<p class="profile-no-data">No games found for this player in the tournament data.</p>';
+          gamesEl.innerHTML = '<p class="profile-no-data">No games played yet.</p>';
+          openingsEl.innerHTML = '<p class="profile-no-data">No games found.</p>';
+          renderAnalytics([], userLower);
+          return;
+        }
+
+        // ── Opening analytics from PGN headers ──────────────────────────
+        // We compute ECO/name from each game's pgn field if present
+        const openingMapWhite = new Map(); // eco -> { name, eco, games, wins, draws, losses }
+        const openingMapBlack = new Map();
+
+        allGames.forEach(g => {
+          const isWhite = (g.white?.username||'').toLowerCase() === userLower;
+          const pgn = g.pgn || '';
+          const ecoMatch = pgn.match(/\[ECO\s+"([^"]+)"\]/);
+          const nameMatch = pgn.match(/\[Opening\s+"([^"]+)"\]/) || pgn.match(/\[ECOUrl\s+"([^"]+)"\]/);
+          const eco = ecoMatch ? ecoMatch[1] : '?';
+          let openingName = nameMatch ? nameMatch[1] : '';
+          // If ECOUrl used, extract last path segment as a readable name
+          if (nameMatch && nameMatch[0].startsWith('[ECOUrl')) {
+            openingName = openingName.split('/').pop().replace(/-/g,' ').replace(/\b\w/g,c=>c.toUpperCase());
+          }
+          if (!openingName) openingName = eco !== '?' ? `ECO ${eco}` : 'Unknown';
+
+          const meRes = mapResult(isWhite ? g.white?.result : g.black?.result);
+          const map = isWhite ? openingMapWhite : openingMapBlack;
+          if (!map.has(eco)) map.set(eco, { eco, name: openingName, games:0, wins:0, draws:0, losses:0 });
+          const entry = map.get(eco);
+          entry.games++;
+          if (meRes === 'win') entry.wins++;
+          else if (meRes === 'loss') entry.losses++;
+          else entry.draws++;
+        });
+
+        _openingsWhite = Array.from(openingMapWhite.values());
+        _openingsBlack = Array.from(openingMapBlack.values());
+
+        // Wire up opening tabs
+        document.querySelectorAll('.opening-tab').forEach(btn => {
+          btn.addEventListener('click', function() {
+            document.querySelectorAll('.opening-tab').forEach(b => b.classList.remove('active'));
+            this.classList.add('active');
+            _activeOpeningSide = this.dataset.side;
+            renderOpenings(_activeOpeningSide);
+          });
+        });
+        renderOpenings(_activeOpeningSide);
+
+        // ── H2H ──────────────────────────────────────────────────────────
+        // Look up real names from registrations
+        let regNames = {};
+        try {
+          const { data: regData } = await supabaseClient
+            .from('registrations').select('chess_username, full_name');
+          if (Array.isArray(regData)) {
+            regData.forEach(r => { if (r.chess_username) regNames[r.chess_username.toLowerCase()] = r.full_name || r.chess_username; });
+          }
+        } catch(_) {}
+
+        const h2h = new Map();
+        allGames.forEach(g => {
+          const isWhite = (g.white?.username||'').toLowerCase() === userLower;
+          const opp = isWhite ? (g.black?.username||'?') : (g.white?.username||'?');
+          const myResult = mapResult(isWhite ? g.white?.result : g.black?.result);
+          if (!h2h.has(opp)) h2h.set(opp, {w:0,d:0,l:0,games:[]});
+          const r = h2h.get(opp);
+          if (myResult==='win') r.w++; else if (myResult==='loss') r.l++; else r.d++;
+          if (g.url) r.games.push({ url: g.url, result: myResult });
+        });
+        const h2hRows = Array.from(h2h.entries()).sort((a,b)=>(b[1].w+b[1].d+b[1].l)-(a[1].w+a[1].d+a[1].l));
+        h2hEl.innerHTML = `
+          <table class="h2h-table">
+            <thead><tr><th>Opponent</th><th>W</th><th>D</th><th>L</th><th>Overall</th></tr></thead>
+            <tbody>
+              ${h2hRows.map(([opp,r]) => {
+                const total = r.w+r.d+r.l;
+                let pill, pillClass;
+                if (r.w > r.l) { pill='Winning'; pillClass='h2h-pill--win'; }
+                else if (r.l > r.w) { pill='Losing'; pillClass='h2h-pill--loss'; }
+                else if (r.d === total) { pill='All draws'; pillClass='h2h-pill--draw'; }
+                else { pill='Even'; pillClass='h2h-pill--even'; }
+                const displayName = regNames[opp.toLowerCase()] || opp;
+                return `<tr>
+                  <td><a href="player.html?username=${encodeURIComponent(opp)}" style="color:var(--primary);font-weight:700;">${escapeHtml(displayName)}</a><br><span style="font-size:11px;color:var(--muted);">@${escapeHtml(opp)}</span></td>
+                  <td class="h2h-win" style="font-weight:800;">${r.w}</td>
+                  <td class="h2h-draw" style="font-weight:800;">${r.d}</td>
+                  <td class="h2h-loss" style="font-weight:800;">${r.l}</td>
+                  <td><span class="h2h-pill ${pillClass}">${pill}</span></td>
+                </tr>`;
+              }).join('')}
+            </tbody>
+          </table>`;
+
+        // ── Season games list ─────────────────────────────────────────────
+        gamesEl.innerHTML = allGames.map(g => {
+          const isWhite = (g.white?.username||'').toLowerCase() === userLower;
+          const me = isWhite ? g.white : g.black;
+          const opp = isWhite ? g.black : g.white;
+          const result = mapResult(me?.result);
+          const resultLabel = result==='win'?'W':result==='loss'?'L':'D';
+          const oppName = opp?.username||'?';
+          const oppRating = opp?.rating ? ` (${opp.rating})` : '';
+          const side = isWhite ? '♙ White' : '♟ Black';
+          const tc = g.time_class ? g.time_class.charAt(0).toUpperCase()+g.time_class.slice(1) : '';
+          return `
+            <div class="season-game-card">
+              <div class="sgc-result sgc-result--${result}">${resultLabel}</div>
+              <div class="sgc-info">
+                <span class="sgc-opp">vs <a href="player.html?username=${encodeURIComponent(oppName)}" style="color:var(--text);">${escapeHtml(oppName)}</a>${escapeHtml(oppRating)}</span>
+                <span class="sgc-meta">${escapeHtml(side)} · ${escapeHtml(tc)} · Round ${escapeHtml(String(g._seasonRound))}</span>
+              </div>
+              <div style="display:flex;flex-direction:column;gap:5px;align-items:flex-end;">
+                <button class="sgc-replay-btn" onclick='openReplayer(${JSON.stringify(g.url||"")}, ${JSON.stringify(String(g.uuid||""))}, ${JSON.stringify(oppName)}, ${JSON.stringify(resultLabel)}, ${JSON.stringify(g.pgn||"")})'>▶ Replay</button>
+                <a class="sgc-link" href="${escapeHtml(g.url||'#')}" target="_blank" rel="noopener noreferrer">Analyse →</a>
+              </div>
+            </div>`;
+        }).join('');
+
+        // ── Analytics — render after all game data is available ──────────
+        renderAnalytics(allGames, userLower);
+
+      } catch(e) {
+        h2hEl.innerHTML = '<p class="profile-no-data">Could not load match data.</p>';
+        gamesEl.innerHTML = '<p class="profile-no-data">Could not load games.</p>';
+        document.getElementById('profileOpeningsContent').innerHTML = '<p class="profile-no-data">Could not load opening data.</p>';
+        renderAnalytics([], userLower);
+      }
+    }
+
+    // ── Brilliant moves — with signed URLs ───────────────────────────────
+    async function loadBrilliants(username) {
+      const wrap = document.getElementById('profileBrilliantsList');
+      try {
+        const { data, error } = await supabaseClient.from('brilliant_moves').select('*')
+          .ilike('chess_username', username).order('created_at',{ascending:false});
+        if (error) throw error;
+        const items = Array.isArray(data) ? data : [];
+        if (!items.length) { wrap.innerHTML = '<p class="profile-no-data">No brilliant moves recorded yet.</p>'; return; }
+
+        // Generate signed URLs for all screenshots in parallel
+        const signedUrls = await Promise.all(items.map(async item => {
+          if (!item.screenshot_url) return null;
+          // screenshot_url is a storage path (e.g. "brilliants/abc.png"), get signed URL
+          try {
+            const { data: signed } = await supabaseClient.storage.from(BUCKET).createSignedUrl(item.screenshot_url, 10800);
+            return signed?.signedUrl || null;
+          } catch(_) { return null; }
+        }));
+
+        wrap.innerHTML = items.map((item, idx) => {
+          const imgUrl = signedUrls[idx];
+          const hasReplay = !!item.game_link;
+          const gameUrl = item.game_link || '';
+          // Extract game UUID from game_link for replayer
+          const uuidMatch = gameUrl.match(/\/game\/(?:live|daily)\/(\d+)/);
+          const gameUuid = uuidMatch ? uuidMatch[1] : '';
+          return `
+          <div class="brilliant-card" style="margin-bottom:14px;">
+            <div class="brilliant-round-badge">Season ${escapeHtml(item.season_key||'')} · Round ${escapeHtml(String(item.round_number||''))}</div>
+            <div class="brilliant-player">${escapeHtml(item.player_name||'')} <span style="color:var(--muted);font-size:13px;">@${escapeHtml(item.chess_username||'')}</span></div>
+            ${item.match_desc ? `<div class="brilliant-match">${escapeHtml(item.match_desc)}</div>` : ''}
+            ${item.caption ? `<div class="brilliant-caption">${escapeHtml(item.caption)}</div>` : ''}
+            ${imgUrl ? `<img class="brilliant-card-img" src="${escapeHtml(imgUrl)}" alt="Brilliant move screenshot" loading="lazy">` : ''}
+            <div style="margin-top:8px;display:flex;flex-wrap:wrap;align-items:center;gap:6px;">
+              ${hasReplay ? `<button class="brilliant-replay-btn" onclick='openReplayer(${JSON.stringify(gameUrl)}, ${JSON.stringify(gameUuid)}, ${JSON.stringify(item.player_name||username)}, '✨')'>▶ Replay game</button>` : ''}
+              ${hasReplay ? `<a href="${escapeHtml(gameUrl)}" target="_blank" rel="noopener noreferrer" style="color:var(--primary);font-size:13px;font-weight:700;">View on Chess.com →</a>` : ''}
+            </div>
+          </div>`;
+        }).join('');
+      } catch(_) { wrap.innerHTML = '<p class="profile-no-data">Could not load brilliant moves.</p>'; }
+    }
+
+    // ── Analytics tab switching ─────────────────────────────────────────
+    document.addEventListener('DOMContentLoaded', function() {
+      document.querySelectorAll('.analytics-tab').forEach(function(btn) {
+        btn.addEventListener('click', function() {
+          document.querySelectorAll('.analytics-tab').forEach(function(b) { b.classList.remove('active'); });
+          document.querySelectorAll('.analytics-panel').forEach(function(p) { p.classList.remove('active'); });
+          btn.classList.add('active');
+          var panel = document.getElementById('analyticsTab-' + btn.dataset.tab);
+          if (panel) panel.classList.add('active');
+        });
+      });
+    });
+
+    // ── Analytics rendering — called from loadSeasonGames with allGames ──
+    function renderAnalytics(allGames, userLower) {
+      if (!allGames || !allGames.length) {
+        var empty = '<p class="profile-no-data">No games available for analysis.</p>';
+        ['analyticsOverviewContent','analyticsResultsContent','analyticsOpeningsContent',
+         'analyticsRatingContent','analyticsTimeContent','analyticsCastlingContent']
+          .forEach(function(id) { var el = document.getElementById(id); if (el) el.innerHTML = empty; });
+        return;
+      }
+
+      var wins = 0, draws = 0, losses = 0;
+      var accValues = []; // per-game accuracy for this player
+      var oppRatingBands = {}; // band -> {w,d,l}
+      var hourBuckets = new Array(24).fill(null).map(function() { return {w:0,d:0,l:0}; });
+
+      // Termination categories
+      var winTypes  = { checkmate:0, resignation:0, timeout:0, abandoned:0, other:0 };
+      var lossTypes = { checkmate:0, resignation:0, timeout:0, abandoned:0, other:0 };
+      var drawTypes = { stalemate:0, agreement:0, repetition:0, fifty_move:0, insufficient:0, other:0 };
+
+      // Castling
+      var castleStats = { none:{w:0,d:0,l:0}, kingside:{w:0,d:0,l:0}, queenside:{w:0,d:0,l:0} };
+
+      // Accuracy by time control
+      var tcAcc = {}; // tc -> [acc, ...]
+
+      allGames.forEach(function(g) {
+        var isWhite = (g.white && g.white.username || '').toLowerCase() === userLower;
+        var me = isWhite ? g.white : g.black;
+        var opp = isWhite ? g.black : g.white;
+        var resultCode = me && me.result ? me.result.toLowerCase() : '';
+        var result = mapResult(resultCode);
+
+        if (result === 'win') wins++;
+        else if (result === 'loss') losses++;
+        else draws++;
+
+        // Accuracy
+        if (g.accuracies) {
+          var acc = isWhite ? g.accuracies.white : g.accuracies.black;
+          if (typeof acc === 'number' && acc > 0) {
+            accValues.push(acc);
+            var tc = g.time_class || 'other';
+            if (!tcAcc[tc]) tcAcc[tc] = [];
+            tcAcc[tc].push(acc);
+          }
+        }
+
+        // Opponent rating bands (200-pt buckets)
+        if (opp && opp.rating) {
+          var r = Math.floor(opp.rating / 200) * 200;
+          var band = r + '–' + (r + 199);
+          if (!oppRatingBands[band]) oppRatingBands[band] = {w:0,d:0,l:0,min:r};
+          if (result === 'win') oppRatingBands[band].w++;
+          else if (result === 'loss') oppRatingBands[band].l++;
+          else oppRatingBands[band].d++;
+        }
+
+        // Hour of day (HKT = UTC+8)
+        if (g.end_time) {
+          var hkt = new Date(g.end_time * 1000);
+          var hour = (hkt.getUTCHours() + 8) % 24;
+          var hb = hourBuckets[hour];
+          if (result === 'win') hb.w++;
+          else if (result === 'loss') hb.l++;
+          else hb.d++;
+        }
+
+        // Termination type from result code
+        function classifyTerm(code, bucket) {
+          if (code === 'checkmated' || code === 'kingofthehill' || code === 'threecheck') bucket.checkmate++;
+          else if (code === 'resigned') bucket.resignation++;
+          else if (code === 'timeout' || code === 'timevsinsufficient') bucket.timeout++;
+          else if (code === 'abandoned') bucket.abandoned++;
+          else bucket.other++;
+        }
+        function classifyDraw(code) {
+          if (code === 'stalemate') drawTypes.stalemate++;
+          else if (code === 'agreed') drawTypes.agreement++;
+          else if (code === 'repetition') drawTypes.repetition++;
+          else if (code === '50move') drawTypes.fifty_move++;
+          else if (code === 'insufficient') drawTypes.insufficient++;
+          else drawTypes.other++;
+        }
+        if (result === 'win') {
+          var lRes = (opp && opp.result ? opp.result.toLowerCase() : '');
+          classifyTerm(lRes, winTypes);
+        } else if (result === 'loss') {
+          classifyTerm(resultCode, lossTypes);
+        } else {
+          classifyDraw(resultCode);
+        }
+
+        // Castling from PGN
+        if (g.pgn) {
+          var pgn = g.pgn;
+          var hasCastle = false;
+          var castleType = 'none';
+          // Find moves section (after headers)
+          var movesSection = pgn.replace(/\[[^\]]*\]/g, '');
+          // Check for castling moves — need to match player's moves
+          // Odd move numbers = white, even = black
+          // Simplified: just check if O-O-O or O-O appears
+          var kingsideRe = isWhite
+            ? /\d+\.\s*O-O(?!-O)/
+            : /\d+\.\.\.\s*O-O(?!-O)|\d+\.\s*[^\s]+\s+O-O(?!-O)/;
+          var queensideRe = isWhite
+            ? /\d+\.\s*O-O-O/
+            : /\d+\.\.\.\s*O-O-O|\d+\.\s*[^\s]+\s+O-O-O/;
+          if (queensideRe.test(movesSection)) castleType = 'queenside';
+          else if (kingsideRe.test(movesSection)) castleType = 'kingside';
+          var cs = castleStats[castleType];
+          if (result === 'win') cs.w++;
+          else if (result === 'loss') cs.l++;
+          else cs.d++;
+        }
+      });
+
+      var totalGames = wins + draws + losses;
+      var avgAcc = accValues.length
+        ? (accValues.reduce(function(a,b){return a+b;},0) / accValues.length).toFixed(1)
+        : null;
+
+      function pct(n) { return totalGames > 0 ? Math.round((n/totalGames)*100) : 0; }
+      function accColor(v) {
+        if (v >= 90) return 'acc-great'; if (v >= 80) return 'acc-good';
+        if (v >= 70) return 'acc-ok'; if (v >= 55) return 'acc-low'; return 'acc-poor';
+      }
+      function barFill(pct, color) {
+        return 'width:' + pct + '%;background:' + color + ';';
+      }
+
+      // ── OVERVIEW ───────────────────────────────────────────────────────
+      var ov = document.getElementById('analyticsOverviewContent');
+      if (ov) {
+        var wPct = pct(wins), dPct = pct(draws), lPct = pct(losses);
+        var accHtml = avgAcc
+          ? '<span class="an-acc-badge ' + accColor(parseFloat(avgAcc)) + '">' + avgAcc + '</span><div class="an-acc-sub">Avg accuracy (' + accValues.length + ' reviewed games)</div>'
+          : '<span style="font-size:18px;color:var(--muted);font-weight:700;">Accuracy data unavailable</span><div class="an-acc-sub">Run a game review on Chess.com to see accuracy</div>';
+
+        var tcRows = Object.entries(tcAcc).map(function(e) {
+          var tc = e[0], vals = e[1];
+          var avg = (vals.reduce(function(a,b){return a+b;},0)/vals.length).toFixed(1);
+          var label = tc.charAt(0).toUpperCase()+tc.slice(1);
+          return '<div class="an-bar-row"><span class="an-bar-label">' + label + '</span>' +
+            '<div class="an-bar-track"><div class="an-bar-fill" style="' + barFill(parseFloat(avg), 'var(--primary)') + '"></div></div>' +
+            '<span class="an-bar-val ' + accColor(parseFloat(avg)) + '">' + avg + '</span></div>';
+        }).join('');
+
+        ov.innerHTML =
+          '<div class="an-kpi-row">' +
+            '<div class="an-kpi"><span class="an-kpi-num">' + totalGames + '</span><span class="an-kpi-label">Games</span></div>' +
+            '<div class="an-kpi"><span class="an-kpi-num" style="color:#1a7a44;">' + wins + '</span><span class="an-kpi-label">Wins</span></div>' +
+            '<div class="an-kpi"><span class="an-kpi-num" style="color:var(--muted);">' + draws + '</span><span class="an-kpi-label">Draws</span></div>' +
+            '<div class="an-kpi"><span class="an-kpi-num" style="color:#c0392b;">' + losses + '</span><span class="an-kpi-label">Losses</span></div>' +
+            '<div class="an-kpi"><span class="an-kpi-num">' + wPct + '%</span><span class="an-kpi-label">Win rate</span></div>' +
+          '</div>' +
+          '<div style="text-align:center;padding:12px 0 16px;">' + accHtml + '</div>' +
+          '<div class="an-tri-bar">' +
+            '<div class="an-tri-bar-w" style="width:' + wPct + '%"></div>' +
+            '<div class="an-tri-bar-d" style="width:' + dPct + '%"></div>' +
+            '<div class="an-tri-bar-l" style="width:' + lPct + '%"></div>' +
+          '</div>' +
+          '<div class="an-tri-legend">' +
+            '<div class="an-tri-legend-item"><div class="an-tri-dot" style="background:#1a7a44;"></div><span class="an-tri-w">' + wins + ' Wins</span></div>' +
+            '<div class="an-tri-legend-item"><div class="an-tri-dot" style="background:#8a8a8a;"></div><span class="an-tri-d">' + draws + ' Draws</span></div>' +
+            '<div class="an-tri-legend-item"><div class="an-tri-dot" style="background:#c0392b;"></div><span class="an-tri-l">' + losses + ' Losses</span></div>' +
+          '</div>' +
+          (tcRows ? '<hr class="an-divider"><p class="an-section-head">Avg accuracy by time control</p><div class="an-bar-chart">' + tcRows + '</div>' : '');
+      }
+
+      // ── RESULTS BREAKDOWN ──────────────────────────────────────────────
+      var rr = document.getElementById('analyticsResultsContent');
+      if (rr) {
+        function termRows(data, color, label) {
+          var entries = Object.entries(data).filter(function(e){return e[1]>0;});
+          if (!entries.length) return '<p class="profile-no-data" style="margin:0;">No ' + label + ' this season.</p>';
+          var total = entries.reduce(function(a,e){return a+e[1];},0);
+          return entries.sort(function(a,b){return b[1]-a[1];}).map(function(e) {
+            var name = e[0].replace(/_/g,' ').replace(/\b\w/g,function(c){return c.toUpperCase();});
+            var barPct = total > 0 ? Math.round((e[1]/total)*100) : 0;
+            return '<div class="an-bar-row"><span class="an-bar-label">' + name + '</span>' +
+              '<div class="an-bar-track"><div class="an-bar-fill" style="width:' + barPct + '%;background:' + color + ';"></div></div>' +
+              '<span class="an-bar-val">' + e[1] + '</span></div>';
+          }).join('');
+        }
+        rr.innerHTML =
+          '<p class="an-section-head">✅ Wins by type</p>' +
+          '<div class="an-bar-chart">' + termRows(winTypes, '#1a7a44', 'wins') + '</div>' +
+          '<hr class="an-divider">' +
+          '<p class="an-section-head">❌ Losses by type</p>' +
+          '<div class="an-bar-chart">' + termRows(lossTypes, '#c0392b', 'losses') + '</div>' +
+          (draws > 0 ?
+            '<hr class="an-divider">' +
+            '<p class="an-section-head">➖ Draws by type</p>' +
+            '<div class="an-bar-chart">' + termRows(drawTypes, '#8a8a8a', 'draws') + '</div>'
+          : '');
+      }
+
+      // ── OPENINGS (advanced) ────────────────────────────────────────────
+      var oa = document.getElementById('analyticsOpeningsContent');
+      if (oa) {
+        // Re-use _openingsWhite / _openingsBlack already computed in loadSeasonGames
+        function openingAdvRows(data, side) {
+          if (!data || !data.length) return '<p class="profile-no-data">No opening data as ' + side + '.</p>';
+          var sorted = data.slice().sort(function(a,b){return b.games-a.games;}).slice(0,10);
+          return sorted.map(function(o) {
+            var winPct = o.games > 0 ? Math.round((o.wins/o.games)*100) : 0;
+            var drawPct = o.games > 0 ? Math.round((o.draws/o.games)*100) : 0;
+            var lossPct = 100 - winPct - drawPct;
+            var col = winPct >= 60 ? '#1a7a44' : winPct >= 40 ? '#8a6800' : '#c0392b';
+            return '<div style="margin-bottom:14px;">' +
+              '<div style="display:flex;align-items:baseline;justify-content:space-between;margin-bottom:4px;">' +
+                '<span style="font-weight:800;font-size:13px;color:var(--text);">' + escapeHtml(o.name) + '</span>' +
+                '<span style="font-size:11px;color:var(--muted);font-weight:700;">' + o.games + ' games</span>' +
+              '</div>' +
+              '<div class="an-tri-bar" style="height:10px;">' +
+                '<div class="an-tri-bar-w" style="width:' + winPct + '%"></div>' +
+                '<div class="an-tri-bar-d" style="width:' + drawPct + '%"></div>' +
+                '<div class="an-tri-bar-l" style="width:' + lossPct + '%"></div>' +
+              '</div>' +
+              '<div style="display:flex;gap:12px;font-size:11px;font-weight:700;margin-top:3px;">' +
+                '<span style="color:' + col + ';">' + winPct + '% W</span>' +
+                '<span style="color:var(--muted);">' + drawPct + '% D</span>' +
+                '<span style="color:#c0392b;">' + lossPct + '% L</span>' +
+              '</div>' +
+            '</div>';
+          }).join('');
+        }
+        oa.innerHTML =
+          '<p class="an-section-head">As White</p>' + openingAdvRows(_openingsWhite, 'White') +
+          '<hr class="an-divider">' +
+          '<p class="an-section-head">As Black</p>' + openingAdvRows(_openingsBlack, 'Black');
+      }
+
+      // ── VS OPPONENT RATING ─────────────────────────────────────────────
+      var vr = document.getElementById('analyticsRatingContent');
+      if (vr) {
+        var sortedBands = Object.entries(oppRatingBands).sort(function(a,b){return a[1].min-b[1].min;});
+        if (!sortedBands.length) {
+          vr.innerHTML = '<p class="profile-no-data">No opponent rating data available.</p>';
+        } else {
+          var maxBandTotal = Math.max.apply(null, sortedBands.map(function(e){return e[1].w+e[1].d+e[1].l;}));
+          var cols = sortedBands.map(function(e) {
+            var band = e[0], bd = e[1];
+            var total = bd.w+bd.d+bd.l;
+            var wH = maxBandTotal > 0 ? Math.round((bd.w/maxBandTotal)*50) : 0;
+            var dH = maxBandTotal > 0 ? Math.round((bd.d/maxBandTotal)*50) : 0;
+            var lH = maxBandTotal > 0 ? Math.round((bd.l/maxBandTotal)*50) : 0;
+            var winPct = total > 0 ? Math.round((bd.w/total)*100) : 0;
+            return '<div class="an-rating-col">' +
+              '<div class="an-rating-col-label">' + escapeHtml(band) + '</div>' +
+              '<div class="an-rating-bar-stack" style="height:' + (wH+dH+lH+4) + 'px;">' +
+                (lH ? '<div class="an-rating-bar-stack-l" style="height:' + lH + 'px;"></div>' : '') +
+                (dH ? '<div class="an-rating-bar-stack-d" style="height:' + dH + 'px;"></div>' : '') +
+                (wH ? '<div class="an-rating-bar-stack-w" style="height:' + wH + 'px;"></div>' : '') +
+              '</div>' +
+              '<div class="an-rating-total">' + total + ' <span style="font-size:9px;">' + winPct + '%W</span></div>' +
+            '</div>';
+          }).join('');
+          vr.innerHTML =
+            '<div class="an-tri-legend" style="margin-bottom:14px;">' +
+              '<div class="an-tri-legend-item"><div class="an-tri-dot" style="background:#1a7a44;"></div><span>Wins</span></div>' +
+              '<div class="an-tri-legend-item"><div class="an-tri-dot" style="background:#8a8a8a;"></div><span>Draws</span></div>' +
+              '<div class="an-tri-legend-item"><div class="an-tri-dot" style="background:#c0392b;"></div><span>Losses</span></div>' +
+            '</div>' +
+            '<div class="an-rating-grid">' + cols + '</div>';
+        }
+      }
+
+      // ── TIME OF DAY ────────────────────────────────────────────────────
+      var td = document.getElementById('analyticsTimeContent');
+      if (td) {
+        var hasTimeData = hourBuckets.some(function(b){return b.w+b.d+b.l > 0;});
+        if (!hasTimeData) {
+          td.innerHTML = '<p class="profile-no-data">No time data available.</p>';
+        } else {
+          var maxHour = Math.max.apply(null, hourBuckets.map(function(b){return b.w+b.d+b.l;}));
+          // Best win-rate hour
+          var bestHour = -1, bestWr = -1;
+          hourBuckets.forEach(function(b, i) {
+            var tot = b.w+b.d+b.l;
+            if (tot >= 2) { var wr = b.w/tot; if (wr > bestWr) { bestWr = wr; bestHour = i; } }
+          });
+          var cells = hourBuckets.map(function(b, h) {
+            var tot = b.w+b.d+b.l;
+            if (tot === 0) return '<div class="an-hour-cell"><div class="an-hour-bar-wrap"><div class="an-hour-bar" style="height:2px;background:var(--line);"></div></div><div class="an-hour-label">' + h + '</div></div>';
+            var pctH = maxHour > 0 ? Math.max(6, Math.round((tot/maxHour)*50)) : 6;
+            var winR = b.w/tot;
+            var col = winR >= 0.6 ? '#1a7a44' : winR >= 0.4 ? '#c0a000' : '#c0392b';
+            var label = h + ':00';
+            var title = h + ':00 HKT — ' + tot + ' games, ' + Math.round(winR*100) + '% win';
+            return '<div class="an-hour-cell" title="' + title + '">' +
+              '<div class="an-hour-bar-wrap"><div class="an-hour-bar" style="height:' + pctH + 'px;background:' + col + ';"></div></div>' +
+              '<div class="an-hour-label">' + h + '</div>' +
+            '</div>';
+          }).join('');
+          var bestNote = bestHour >= 0
+            ? '<div style="margin-top:10px;font-size:13px;font-weight:700;color:var(--text);">Your best hour: <strong style="color:var(--primary);">' + bestHour + ':00 HKT</strong> (' + Math.round(bestWr*100) + '% win rate)</div>'
+            : '';
+          td.innerHTML =
+            '<p class="an-section-head" style="margin-bottom:8px;">Win rate by hour (HKT) — bar colour: green → winning, yellow → even, red → losing</p>' +
+            '<div class="an-hour-row">' + cells + '</div>' + bestNote;
+        }
+      }
+
+      // ── CASTLING STATS ─────────────────────────────────────────────────
+      var cs = document.getElementById('analyticsCastlingContent');
+      if (cs) {
+        var castleEntries = [['Kingside (O-O)', castleStats.kingside], ['Queenside (O-O-O)', castleStats.queenside], ['No castling', castleStats.none]];
+        var castleRows = castleEntries.map(function(e) {
+          var label = e[0], s = e[1];
+          var tot = s.w+s.d+s.l;
+          if (tot === 0) return '';
+          var wPct = tot > 0 ? Math.round((s.w/tot)*100) : 0;
+          var dPct = tot > 0 ? Math.round((s.d/tot)*100) : 0;
+          var lPct = 100-wPct-dPct;
+          var col = wPct >= 60 ? '#1a7a44' : wPct >= 40 ? '#c0a000' : '#c0392b';
+          return '<div style="margin-bottom:14px;">' +
+            '<div style="display:flex;align-items:baseline;justify-content:space-between;margin-bottom:5px;">' +
+              '<span style="font-weight:800;font-size:14px;color:var(--text);">' + label + '</span>' +
+              '<span style="font-size:13px;font-weight:900;color:' + col + ';">' + wPct + '% win</span>' +
+            '</div>' +
+            '<div class="an-tri-bar">' +
+              '<div class="an-tri-bar-w" style="width:' + wPct + '%"></div>' +
+              '<div class="an-tri-bar-d" style="width:' + dPct + '%"></div>' +
+              '<div class="an-tri-bar-l" style="width:' + lPct + '%"></div>' +
+            '</div>' +
+            '<div style="display:flex;gap:14px;font-size:12px;font-weight:700;margin-top:4px;">' +
+              '<span style="color:#1a7a44;">' + s.w + ' W</span>' +
+              '<span style="color:var(--muted);">' + s.d + ' D</span>' +
+              '<span style="color:#c0392b;">' + s.l + ' L</span>' +
+              '<span style="color:var(--muted);font-weight:600;">(' + tot + ' games)</span>' +
+            '</div>' +
+          '</div>';
+        }).filter(Boolean).join('');
+        cs.innerHTML = castleRows ||
+          '<p class="profile-no-data">No castling data (no PGN available in tournament data).</p>';
+      }
+    }
+
+    if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', initPlayerPage);
+    else initPlayerPage();
+  </script>
+
+  <!-- ── Dark mode toggle ── -->
+  <script>
+    (function() {
+      const btn = document.getElementById('darkToggle');
+      if (btn) {
+        btn.textContent = document.documentElement.classList.contains('dark') ? '☀️' : '🌙';
+        btn.addEventListener('click', function() {
+          const d = document.documentElement.classList.toggle('dark');
+          safeSetStorage('spkc-dark', d?'1':'0');
+          btn.textContent = d ? '☀️' : '🌙';
+        });
+      }
+    })();
+  </script>
+
+  <!-- ── Inline Game Replayer ── -->
+  <script>
+    // ── Replayer state (plain script — always accessible from onclick attrs) ──
+    window._replayer = {
+      board:       null,
+      chess:       null,
+      moves:       [],
+      cursor:      0,
+      perspective: 'white',   // 'white' | 'black'
+    };
+
+    // _cmReady is set synchronously by cm-chessboard-bundle.js — this resolves immediately
+    function _getCM() {
+      if (window._cmReady) return Promise.resolve();
+      return new Promise(function(resolve) {
+        document.addEventListener('cm-ready', resolve, { once: true });
+      });
+    }
+
+    function _rBtn(id) { return document.getElementById(id); }
+
+    function _updateNavBtns() {
+      const R = window._replayer;
+      _rBtn('rBtnStart').disabled = R.cursor === 0;
+      _rBtn('rBtnPrev').disabled  = R.cursor === 0;
+      _rBtn('rBtnNext').disabled  = R.cursor >= R.moves.length;
+      _rBtn('rBtnEnd').disabled   = R.cursor >= R.moves.length;
+    }
+
+    function _renderMoveList() {
+      const R = window._replayer;
+      const el = _rBtn('replayerMoveList');
+      if (!el) return;
+      if (!R.moves.length) { el.textContent = 'No moves'; return; }
+      let html = '';
+      for (let i = 0; i < R.moves.length; i += 2) {
+        const n = Math.floor(i / 2) + 1;
+        const w = R.moves[i] || '', b = R.moves[i+1] || '';
+        const wA = R.cursor === i + 1, bA = R.cursor === i + 2;
+        html += `<span style="color:var(--muted);margin-right:3px;">${n}.</span>`;
+        html += `<span style="margin-right:6px;font-weight:${wA?900:400};color:${wA?'var(--primary)':'inherit'};">${w}</span>`;
+        if (b) html += `<span style="margin-right:10px;font-weight:${bA?900:400};color:${bA?'var(--primary)':'inherit'};">${b}</span>`;
+      }
+      el.innerHTML = html;
+      el.scrollLeft = el.scrollWidth;
+    }
+
+    function _updateStatus() {
+      const R = window._replayer;
+      const el = _rBtn('replayerStatus');
+      if (!el || !R.chess) return;
+      const label = R.cursor === 0 ? 'Starting position' : `Move ${R.cursor} of ${R.moves.length}`;
+      let suffix = '';
+      if (R.chess.in_checkmate()) suffix = ' · Checkmate';
+      else if (R.chess.in_check()) suffix = ' · Check';
+      else if (R.chess.in_draw()) suffix = ' · Draw';
+      else if (R.cursor === R.moves.length) suffix = ' · Game over';
+      el.textContent = label + suffix;
+    }
+
+    async function _goToMove(target) {
+      const R = window._replayer;
+      if (!R.chess || !R.board) return;
+      R.chess.reset();
+      for (let i = 0; i < target; i++) R.chess.move(R.moves[i]);
+      R.cursor = target;
+      await R.board.setPosition(R.chess.fen(), true);
+      _updateNavBtns();
+      _renderMoveList();
+      _updateStatus();
+    }
+
+    function _closeReplayer() {
+      document.getElementById('replayerBg').classList.remove('open');
+    }
+
+    // ── Main entry point — called from onclick attrs ────────────────────
+    window.openReplayer = async function(gameUrl, gameUuid, oppName, resultLabel, cachedPgn) {
+      const R = window._replayer;
+      const bg      = document.getElementById('replayerBg');
+      const metaEl  = document.getElementById('replayerMeta');
+      const statEl  = document.getElementById('replayerStatus');
+      const extLink = document.getElementById('replayerExtLink');
+
+      // Show modal straight away
+      bg.classList.add('open');
+      if (metaEl)  metaEl.textContent  = 'Loading game…';
+      if (statEl)  statEl.textContent  = '';
+      if (extLink) extLink.href        = gameUrl || '#';
+      const mlEl = _rBtn('replayerMoveList');
+      if (mlEl) mlEl.textContent = '';
+
+      R.moves = []; R.cursor = 0;
+
+      // _cmReady already true (set synchronously by cm-chessboard-bundle.js)
+      try { await _getCM(); } catch(e) {
+        if (statEl) statEl.textContent = 'Could not load board library: ' + e.message;
+        return;
+      }
+      let Chessboard = window.Chessboard, FEN = window.CHESS_FEN, COLOR = window.CHESS_COLOR;
+
+      // Init or reset board
+      if (!R.board) {
+        R.board = await new Chessboard(document.getElementById('replayerBoard'), {
+          position: FEN.start,
+          orientation: COLOR.white,
+          assetsUrl: '',
+          assetsCache: false,
+          style: { pieces: { file: '' } }
+        });
+        R._COLOR = COLOR; R._FEN = FEN; // stash for flip button
+      } else {
+        await R.board.setPosition(R._FEN.start, false);
+      }
+      _updateNavBtns();
+
+      // ── PGN: use cached value first, fall back to Chess.com API ────────────
+      let pgn = (typeof cachedPgn === 'string' && cachedPgn.trim()) ? cachedPgn : null;
+
+      if (!pgn) {
+        try {
+          let apiUrl = '';
+          const cleanUuid = String(gameUuid || '').trim();
+          if (cleanUuid && cleanUuid !== 'undefined') {
+            apiUrl = `https://api.chess.com/pub/game/live/${cleanUuid}`;
+          } else if (gameUrl) {
+            const m = String(gameUrl).match(/\/game\/(?:live|daily)\/(\d+)/);
+            if (m) apiUrl = `https://api.chess.com/pub/game/live/${m[1]}`;
+          }
+          if (apiUrl) {
+            const res = await fetch(apiUrl);
+            if (res.ok) { const d = await res.json(); pgn = d.pgn || null; }
+          }
+        } catch(e) { console.warn('Replayer PGN fetch:', e); }
+      }
+
+      if (!pgn) {
+        if (metaEl) metaEl.textContent = oppName ? `vs ${oppName}` : 'Game';
+        if (statEl) statEl.textContent = window.location.protocol === 'file:'
+          ? 'PGN not cached yet — go to Admin → Sync PGNs, then reopen.'
+          : 'Could not load PGN — use "Open on Chess.com" to analyse.';
+        _updateNavBtns();
+        return;
+      }
+
+      // ── Parse PGN with chess.js ──────────────────────────────────────
+      try {
+        if (typeof Chess === 'undefined') {
+          if (statEl) statEl.textContent = 'chess.js not ready — refresh and try again.';
+          return;
+        }
+        R.chess = new Chess();
+        if (!R.chess.load_pgn(pgn)) throw new Error('PGN parse failed');
+        R.moves  = R.chess.history();
+        R.chess.reset();
+        R.cursor = 0;
+
+        // Meta header
+        const hdr   = typeof R.chess.header === 'function' ? R.chess.header() : {};
+        const white = hdr.White || '';
+        const black = hdr.Black || '';
+        const res   = hdr.Result || '';
+        if (metaEl) metaEl.textContent =
+          (white && black) ? `${white} vs ${black}  —  ${res}`
+                           : (oppName ? `vs ${oppName}  (${resultLabel})` : 'Game');
+
+        // Auto-flip: show board from this profile player's perspective
+        const profileUser = (new URLSearchParams(window.location.search).get('username') || '').trim().toLowerCase();
+        R.perspective = (black && profileUser && black.toLowerCase() === profileUser) ? 'black' : 'white';
+        await R.board.setOrientation(R.perspective === 'black' ? R._COLOR.black : R._COLOR.white, false);
+        await R.board.setPosition(R._FEN.start, false);
+
+        _updateNavBtns();
+        _renderMoveList();
+        _updateStatus();
+      } catch(e) {
+        if (metaEl) metaEl.textContent = oppName ? `vs ${oppName}` : 'Game';
+        if (statEl) statEl.textContent = 'Could not parse moves: ' + e.message;
+      }
+    };
+
+    // ── Button wiring (safe to run immediately — buttons exist in DOM) ──
+    document.getElementById('rBtnStart').addEventListener('click', () => _goToMove(0));
+    document.getElementById('rBtnPrev').addEventListener('click',  () => { const R=window._replayer; if(R.cursor>0) _goToMove(R.cursor-1); });
+    document.getElementById('rBtnNext').addEventListener('click',  () => { const R=window._replayer; if(R.cursor<R.moves.length) _goToMove(R.cursor+1); });
+    document.getElementById('rBtnEnd').addEventListener('click',   () => _goToMove(window._replayer.moves.length));
+
+    document.getElementById('rBtnFlip').addEventListener('click', async () => {
+      const R = window._replayer;
+      if (!R.board || !R._COLOR) return;
+      R.perspective = R.perspective === 'white' ? 'black' : 'white';
+      await R.board.setOrientation(R.perspective === 'black' ? R._COLOR.black : R._COLOR.white, true);
+    });
+
+    document.getElementById('replayerClose').addEventListener('click', _closeReplayer);
+    document.getElementById('replayerBg').addEventListener('click', function(e) {
+      if (e.target === this) _closeReplayer();
+    });
+
+    document.addEventListener('keydown', function(e) {
+      if (!document.getElementById('replayerBg').classList.contains('open')) return;
+      const R = window._replayer;
+      if (e.key === 'ArrowLeft')  { e.preventDefault(); if(R.cursor>0) _goToMove(R.cursor-1); }
+      if (e.key === 'ArrowRight') { e.preventDefault(); if(R.cursor<R.moves.length) _goToMove(R.cursor+1); }
+      if (e.key === 'Escape')     { _closeReplayer(); }
+    });
+  </script>
+</body>
+</html>

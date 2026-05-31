@@ -1,0 +1,1318 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Club Openings — SPKC Chess Club</title>
+  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="assets/chessboard.css">
+  <style>
+    /* ══════════════════════════════════════════════════════
+       Season selector bar (re-uses .ma-selector-bar pattern)
+       ══════════════════════════════════════════════════════ */
+    .op-selector-bar {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 16px;
+      padding: 14px 20px;
+      background: var(--surface);
+      border: 1.5px solid var(--line);
+      border-radius: var(--radius-md);
+      margin-bottom: 24px;
+    }
+    html.dark .op-selector-bar { background: #141e2e; border-color: #1e3050; }
+    .op-selector-label {
+      font-size: 11px; font-weight: 800; color: var(--muted);
+      text-transform: uppercase; letter-spacing: 1.2px; white-space: nowrap;
+    }
+
+    /* ══════════════════════════════════════════════════════
+       Side-by-side White / Black analytics
+       ══════════════════════════════════════════════════════ */
+    .op-split-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+    }
+    @media (max-width: 720px) { .op-split-grid { grid-template-columns: 1fr; } }
+
+    .op-side-panel {
+      background: var(--surface-soft);
+      border: 1.5px solid var(--line);
+      border-radius: var(--radius-lg);
+      padding: 18px 20px;
+    }
+    html.dark .op-side-panel { background: #1a2738; border-color: #1e3050; }
+    .op-side-header {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 16px;
+    }
+    .op-side-piece {
+      font-size: 30px;
+      line-height: 1;
+    }
+    .op-side-title {
+      font-size: 15px;
+      font-weight: 900;
+      color: var(--text);
+    }
+    .op-side-count {
+      margin-left: auto;
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--muted);
+      background: var(--surface);
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      padding: 2px 10px;
+    }
+    html.dark .op-side-count { background: #141e2e; border-color: #1e3050; }
+
+    /* Opening bar rows */
+    .op-bar-list { display: flex; flex-direction: column; gap: 10px; }
+    .op-bar-row {
+      display: grid;
+      grid-template-columns: auto 1fr auto;
+      align-items: center;
+      gap: 10px;
+      cursor: pointer;
+      padding: 6px 0;
+      border-radius: 8px;
+      transition: 0.15s;
+    }
+    .op-bar-row:hover { background: rgba(35,74,145,0.04); }
+    html.dark .op-bar-row:hover { background: rgba(91,158,248,0.06); }
+    .op-bar-name {
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--text);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      max-width: 180px;
+    }
+    .op-bar-eco {
+      font-size: 9px;
+      font-weight: 900;
+      background: var(--primary);
+      color: #fff;
+      border-radius: 4px;
+      padding: 2px 5px;
+      letter-spacing: 0.4px;
+      flex-shrink: 0;
+    }
+    .op-bar-wrap {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .op-bar-bg {
+      flex: 1;
+      height: 10px;
+      background: var(--line);
+      border-radius: 999px;
+      overflow: hidden;
+      min-width: 60px;
+    }
+    .op-bar-fill {
+      height: 100%;
+      border-radius: 999px;
+      background: linear-gradient(90deg, var(--primary), var(--primary-2));
+      transition: width 0.6s ease;
+    }
+    .op-bar-fill.killer { background: linear-gradient(90deg, #c00, #e44); }
+    .op-bar-fill.white-bar { background: linear-gradient(90deg, #555, #888); }
+    html.dark .op-bar-fill.white-bar { background: linear-gradient(90deg, #aaa, #ddd); }
+    .op-bar-stats {
+      display: flex;
+      gap: 4px;
+      align-items: center;
+      flex-shrink: 0;
+      font-size: 12px;
+      font-weight: 700;
+    }
+    .op-stat-pill {
+      padding: 2px 7px;
+      border-radius: 999px;
+      font-size: 11px;
+      font-weight: 800;
+    }
+    .op-stat-pill.games { background: #eef3fc; color: var(--primary); border: 1px solid var(--line); }
+    .op-stat-pill.win   { background: #dcf5e8; color: #1a7a44; border: 1px solid #9fdabb; }
+    .op-stat-pill.draw  { background: #fdf6e0; color: #8a6800; border: 1px solid #e8d090; }
+    .op-stat-pill.loss  { background: #fde8e8; color: #a83a3a; border: 1px solid #f5b3b3; }
+    html.dark .op-stat-pill.games { background: #1a2b40; border-color: #1e3050; }
+    html.dark .op-stat-pill.win  { background: #0d2a1a; color: #50c080; border-color: #1a5030; }
+    html.dark .op-stat-pill.draw { background: #221800; color: #e8c040; border-color: #503800; }
+    html.dark .op-stat-pill.loss { background: #2a0d0d; color: #ff7070; border-color: #501a1a; }
+
+    /* No-data inside a side panel */
+    .op-no-data { color: var(--muted); font-size: 13px; padding: 8px 0; }
+
+    /* ══════════════════════════════════════════════════════
+       Club Killers callout section
+       ══════════════════════════════════════════════════════ */
+    .killers-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+      gap: 14px;
+      margin-top: 4px;
+    }
+    .killer-card {
+      background: var(--surface);
+      border: 1.5px solid var(--line);
+      border-radius: var(--radius-md);
+      padding: 16px 18px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      position: relative;
+      overflow: hidden;
+      transition: 0.18s;
+    }
+    .killer-card::before {
+      content: '';
+      position: absolute;
+      left: 0; top: 0; bottom: 0; width: 4px;
+      background: linear-gradient(180deg, #c00, rgba(200,0,0,0.3));
+      border-radius: 4px 0 0 4px;
+    }
+    .killer-card:hover { transform: translateY(-2px); border-color: #c00; box-shadow: 0 6px 20px rgba(200,0,0,0.08); }
+    html.dark .killer-card { background: #141e2e; border-color: #1e3050; }
+    html.dark .killer-card:hover { border-color: #dd4444; }
+    .killer-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      background: #fff0f0;
+      border: 1px solid #f5c0c0;
+      color: #a83a3a;
+      font-size: 10px;
+      font-weight: 800;
+      padding: 2px 9px;
+      border-radius: 999px;
+      letter-spacing: 0.8px;
+      text-transform: uppercase;
+      width: fit-content;
+    }
+    html.dark .killer-badge { background: #2a0d0d; border-color: #501a1a; color: #ff9090; }
+    .killer-opening-name { font-size: 15px; font-weight: 800; color: var(--text); }
+    .killer-eco { font-size: 11px; color: var(--muted); font-weight: 700; }
+    .killer-stat-row {
+      display: flex;
+      gap: 6px;
+      flex-wrap: wrap;
+      margin-top: 2px;
+    }
+    .killer-win-rate {
+      font-size: 20px;
+      font-weight: 900;
+      color: #c00;
+    }
+    html.dark .killer-win-rate { color: #ff6060; }
+    .killer-sub { font-size: 12px; color: var(--muted); margin-top: 2px; }
+    .killer-preview-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      padding: 7px 14px;
+      border-radius: 10px;
+      border: 1.5px solid var(--line);
+      background: var(--surface-soft);
+      color: var(--primary);
+      font-size: 12px;
+      font-weight: 800;
+      cursor: pointer;
+      transition: 0.15s;
+      margin-top: auto;
+    }
+    .killer-preview-btn:hover { background: var(--primary); color: #fff; border-color: var(--primary); }
+    html.dark .killer-preview-btn { background: #1a2738; border-color: #1e3050; }
+
+    /* ══════════════════════════════════════════════════════
+       Theory Flashcards
+       ══════════════════════════════════════════════════════ */
+    .flashcard-tabs {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-bottom: 20px;
+    }
+    .flashcard-tab {
+      padding: 8px 16px;
+      border-radius: 999px;
+      border: 1.5px solid var(--line);
+      background: var(--surface-soft);
+      color: var(--muted);
+      font-weight: 700;
+      font-size: 12px;
+      cursor: pointer;
+      transition: 0.18s;
+    }
+    .flashcard-tab.active { background: var(--primary); color: #fff; border-color: var(--primary); }
+    .flashcard-tab:hover:not(.active) { border-color: var(--primary); color: var(--primary); }
+    html.dark .flashcard-tab { background: #1a2b40; color: var(--muted); border-color: #1e3050; }
+    html.dark .flashcard-tab.active { background: var(--primary); color: #fff; }
+
+    .flashcard-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      gap: 16px;
+    }
+    .flashcard {
+      background: var(--surface);
+      border: 1.5px solid var(--line);
+      border-radius: var(--radius-lg);
+      padding: 0;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      transition: 0.18s;
+      cursor: pointer;
+    }
+    .flashcard:hover { transform: translateY(-3px); border-color: var(--primary); box-shadow: 0 8px 24px rgba(35,74,145,0.1); }
+    html.dark .flashcard { background: #141e2e; border-color: #1e3050; }
+    html.dark .flashcard:hover { border-color: var(--primary-2); }
+    .flashcard-board-wrap {
+      width: 100%;
+      aspect-ratio: 1;
+      background: var(--line);
+      position: relative;
+      overflow: hidden;
+    }
+    .flashcard-board-inner {
+      width: 100%;
+      height: 100%;
+      position: relative;
+    }
+    .flashcard-body { padding: 14px 16px; flex: 1; display: flex; flex-direction: column; gap: 6px; }
+    .flashcard-opening-name { font-size: 15px; font-weight: 800; color: var(--text); margin: 0; }
+    .flashcard-eco-row { display: flex; align-items: center; gap: 6px; }
+    .flashcard-eco {
+      font-size: 10px; font-weight: 900; background: var(--primary); color: #fff;
+      border-radius: 5px; padding: 2px 6px; letter-spacing: 0.4px;
+    }
+    .flashcard-format-pill {
+      font-size: 11px; font-weight: 700; padding: 2px 8px; border-radius: 999px;
+      border: 1px solid var(--line); color: var(--muted); background: var(--surface-soft);
+    }
+    html.dark .flashcard-format-pill { background: #1a2738; border-color: #1e3050; }
+    .flashcard-moves {
+      font-size: 12px;
+      font-family: monospace;
+      color: var(--muted);
+      line-height: 1.7;
+      background: var(--surface-soft);
+      border-radius: 8px;
+      padding: 6px 10px;
+      margin-top: 2px;
+    }
+    html.dark .flashcard-moves { background: #1a2738; }
+    .flashcard-description { font-size: 12px; color: var(--muted); line-height: 1.6; margin: 0; }
+    .flashcard-stats-row {
+      display: flex;
+      gap: 6px;
+      flex-wrap: wrap;
+      margin-top: 4px;
+    }
+    .flashcard-replay-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      padding: 7px 14px;
+      border-radius: 10px;
+      background: linear-gradient(135deg, var(--primary), var(--primary-2));
+      color: #fff;
+      font-size: 12px;
+      font-weight: 800;
+      cursor: pointer;
+      border: none;
+      transition: 0.15s;
+      margin-top: 8px;
+      width: fit-content;
+    }
+    .flashcard-replay-btn:hover { opacity: 0.88; transform: translateY(-1px); }
+
+    /* Club stats in the header */
+    .op-hero-board {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      justify-content: center;
+      font-size: 72px;
+      line-height: 1;
+      opacity: 0.9;
+    }
+
+    /* Shimmer */
+    .op-shimmer {
+      height: 48px;
+      border-radius: var(--radius-md);
+      background: linear-gradient(90deg, var(--surface-soft) 25%, var(--line) 50%, var(--surface-soft) 75%);
+      background-size: 200% 100%;
+      animation: shimmer 1.4s infinite;
+      margin-bottom: 8px;
+    }
+    html.dark .op-shimmer {
+      background: linear-gradient(90deg, #1a2738 25%, #253548 50%, #1a2738 75%);
+      background-size: 200% 100%;
+    }
+    .op-shimmer-tall { height: 80px; }
+
+    /* Opening preview mini-board modal (re-uses replayer modal shell) */
+    .preview-modal-bg {
+      display: none;
+      position: fixed; inset: 0; z-index: 2000;
+      background: rgba(0,0,0,0.55); backdrop-filter: blur(6px);
+      align-items: center; justify-content: center;
+    }
+    .preview-modal-bg.open { display: flex; }
+    .preview-modal {
+      background: var(--surface);
+      border: 1.5px solid var(--line);
+      border-radius: var(--radius-lg);
+      padding: 24px 20px 20px;
+      width: min(94vw, 460px);
+      box-shadow: var(--shadow);
+      position: relative;
+      animation: modalIn 0.18s ease;
+    }
+    html.dark .preview-modal { background: #141e2e; border-color: #1e3050; }
+    @keyframes modalIn { from { opacity: 0; transform: scale(0.96) translateY(8px); } to { opacity: 1; transform: none; } }
+    .preview-modal-close {
+      position: absolute; top: 12px; right: 14px;
+      background: none; border: none; font-size: 22px; cursor: pointer;
+      color: var(--muted); line-height: 1;
+    }
+    .preview-modal-close:hover { color: var(--text); }
+    .preview-modal-title {
+      font-size: 15px; font-weight: 800; color: var(--text);
+      text-align: center; margin: 0 0 6px;
+    }
+    .preview-modal-eco {
+      text-align: center; margin-bottom: 12px;
+      font-size: 12px; color: var(--muted); font-weight: 700;
+    }
+    #previewBoard {
+      width: 100%; aspect-ratio: 1;
+      border-radius: 10px; overflow: hidden; margin-bottom: 12px;
+    }
+    .preview-moves-list {
+      font-size: 12px; font-family: monospace; color: var(--muted);
+      background: var(--surface-soft); border-radius: 8px;
+      padding: 6px 10px; margin-bottom: 12px; line-height: 1.8;
+      max-height: 60px; overflow-y: auto;
+    }
+    html.dark .preview-moves-list { background: #1a2738; }
+    .preview-controls { display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 8px; }
+    .preview-btn {
+      padding: 8px 0; border: 1.5px solid var(--line); border-radius: 10px;
+      background: var(--surface-soft); color: var(--text);
+      font-size: 14px; font-weight: 800; cursor: pointer; transition: 0.15s; text-align: center;
+    }
+    .preview-btn:hover:not(:disabled) { background: var(--primary); color: #fff; border-color: var(--primary); }
+    .preview-btn:disabled { opacity: 0.35; cursor: not-allowed; }
+    html.dark .preview-btn { background: #1a2738; border-color: #1e3050; }
+    .preview-description {
+      font-size: 12px; color: var(--muted); line-height: 1.6;
+      border-top: 1px solid var(--line); padding-top: 10px; margin-top: 10px;
+    }
+    html.dark .preview-description { border-color: #1e3050; }
+  </style>
+</head>
+<body>
+<!-- Inline SVG sprite: piece symbols loaded directly into DOM, no XHR needed -->
+<svg xmlns="http://www.w3.org/2000/svg" style="display:none" aria-hidden="true">
+  <g id="wk" stroke-linecap="round" stroke-linejoin="round" transform="translate(5,5)" stroke="#000" stroke-width="1.5"><line x1="15" y1="4.968" x2="15" y2="0"/><line x1="12.857" y1="1.765" x2="17.143" y2="1.765"/><path d="M17.571,7.5 C17.571,7.5 16.714,5.294 15,5.294 C13.286,5.294 12.429,7.5 12.429,7.5 C11.143,10.147 15,16.765 15,16.765 C15,16.765 18.857,10.147 17.571,7.5 Z" fill="#fff"/><path d="M5.571,27.353 C10.286,30.441 18.857,30.441 23.571,27.353 L23.571,21.176 C23.571,21.176 31.286,17.206 28.714,11.912 C25.286,6.176 17.143,8.824 15,15.441 L15,18.529 L15,15.441 C12,8.824 3.857,6.176 1.286,11.912 C-1.286,17.206 5.571,20.735 5.571,20.735 L5.571,27.353 Z" fill="#fff"/><path d="M5.571,21.176 C10.286,18.529 18.857,18.529 23.571,21.176" fill-opacity="0"/><path d="M5.571,24.265 C10.286,21.618 18.857,21.618 23.571,24.265" fill-opacity="0" stroke-linecap="square"/><path d="M5.571,27.353 C10.286,24.706 18.857,24.706 23.571,27.353" fill-opacity="0"/></g>
+  <g id="wq" stroke-linecap="round" stroke-linejoin="round" transform="translate(4,5)" stroke="#000" stroke-width="1.5"><path d="M3.459,6.2 C3.459,7.178 2.685,7.971 1.73,7.971 C0.774,7.971 0,7.178 0,6.2 C0,5.222 0.774,4.429 1.73,4.429 C2.685,4.429 3.459,5.222 3.459,6.2 Z" fill="#fff"/><path d="M17.73,2.214 C17.73,3.193 16.955,3.986 16,3.986 C15.045,3.986 14.27,3.193 14.27,2.214 C14.27,1.236 15.045,0.443 16,0.443 C16.955,0.443 17.73,1.236 17.73,2.214 Z" fill="#fff"/><path d="M32,6.2 C32,7.178 31.226,7.971 30.27,7.971 C29.315,7.971 28.541,7.178 28.541,6.2 C28.541,5.222 29.315,4.429 30.27,4.429 C31.226,4.429 32,5.222 32,6.2 Z" fill="#fff"/><path d="M10.378,3.1 C10.378,4.078 9.604,4.871 8.649,4.871 C7.693,4.871 6.919,4.078 6.919,3.1 C6.919,2.122 7.693,1.329 8.649,1.329 C9.604,1.329 10.378,2.122 10.378,3.1 Z" fill="#fff"/><path d="M25.081,3.543 C25.081,4.521 24.307,5.314 23.351,5.314 C22.396,5.314 21.622,4.521 21.622,3.543 C21.622,2.565 22.396,1.771 23.351,1.771 C24.307,1.771 25.081,2.565 25.081,3.543 Z" fill="#fff"/><path d="M4.324,18.6 C11.676,17.271 22.486,17.271 27.676,18.6 L29.405,7.971 L23.351,17.714 L23.351,5.314 L18.595,17.271 L16,3.986 L13.405,17.271 L8.649,4.871 L8.649,17.714 L2.595,7.971 L4.324,18.6 Z" fill="#fff"/><path d="M4.324,18.6 C4.324,20.371 5.622,20.371 6.486,22.143 C7.351,23.471 7.351,23.029 6.919,25.243 C5.622,26.129 5.622,27.457 5.622,27.457 C4.324,28.786 6.054,29.671 6.054,29.671 C11.676,30.557 20.324,30.557 25.946,29.671 C25.946,29.671 27.243,28.786 25.946,27.457 C25.946,27.457 26.378,26.129 25.081,25.243 C24.649,23.029 24.649,23.471 25.514,22.143 C26.378,20.371 27.676,20.371 27.676,18.6 C20.324,17.271 11.676,17.271 4.324,18.6 Z" fill="#fff"/><path d="M6.486,22.143 C9.514,21.257 22.486,21.257 25.514,22.143"/><path d="M6.919,25.243 C12.108,24.357 19.892,24.357 25.081,25.243"/></g>
+  <g id="wb" stroke-linecap="round" stroke-linejoin="round" transform="translate(6,5)" stroke="#000" stroke-width="1.5"><g fill="#fff"><path d="M2.545,27.353 C5.422,26.497 11.124,27.732 14,25.588 C16.876,27.732 22.578,26.497 25.455,27.353 C25.455,27.353 26.855,27.829 28,29.118 C27.423,29.974 26.6,29.991 25.455,29.559 C22.578,28.703 16.876,29.965 14,28.676 C11.124,29.965 5.422,28.703 2.545,29.559 C1.397,29.991 0.574,29.974 0,29.118 C1.149,27.406 2.545,27.353 2.545,27.353 Z"/><path d="M7.636,23.824 C9.758,26.029 18.242,26.029 20.364,23.824 C20.788,22.5 20.364,22.059 20.364,22.059 C20.364,19.853 18.242,18.529 18.242,18.529 C22.909,17.206 23.333,8.382 14,4.853 C4.667,8.382 5.091,17.206 9.758,18.529 C9.758,18.529 7.636,19.853 7.636,22.059 C7.636,22.059 7.212,22.5 7.636,23.824 Z"/><path d="M16.121,2.647 C16.121,3.865 15.172,4.853 14,4.853 C12.828,4.853 11.879,3.865 11.879,2.647 C11.879,1.429 12.828,0.441 14,0.441 C15.172,0.441 16.121,1.429 16.121,2.647 Z"/></g><path d="M9.758,18.529 L18.242,18.529 M7.636,22.059 L20.364,22.059 M14,9.265 L14,13.676 M11.879,11.471 L16.121,11.471"/></g>
+  <g id="wn" stroke-linecap="round" stroke-linejoin="round" transform="translate(6,6)" stroke="#000"><path d="M13.576,2.625 C22.485,3.5 27.576,9.625 27.152,28 L7.636,28 C7.636,20.125 16.121,22.313 14.424,9.625" stroke-width="1.5" fill="#fff"/><path d="M15.273,9.625 C15.595,12.171 10.564,16.074 8.485,17.5 C5.939,19.25 6.092,21.298 4.242,21 C3.358,20.178 5.439,18.34 4.242,18.375 C3.394,18.375 4.404,19.451 3.394,20.125 C2.545,20.125 -0.003,21 0,16.625 C0,14.875 5.091,6.125 5.091,6.125 C5.091,6.125 6.695,4.463 6.788,3.063 C6.168,2.193 6.364,1.313 6.364,0.438 C7.212,-0.438 8.909,2.625 8.909,2.625 L10.606,2.625 C10.606,2.625 11.268,0.882 12.727,0 C13.576,0 13.576,2.625 13.576,2.625" stroke-width="1.5" fill="#fff"/><path d="M2.97,16.188 C2.97,16.429 2.78,16.625 2.545,16.625 C2.311,16.625 2.121,16.429 2.121,16.188 C2.121,15.946 2.311,15.75 2.545,15.75 C2.78,15.75 2.97,15.946 2.97,16.188 Z" stroke-width="1.5" fill="#000"/><path d="M7.636,7.438 C7.636,8.162 7.446,8.75 7.212,8.75 C6.978,8.75 6.788,8.162 6.788,7.438 C6.788,6.713 6.978,6.125 7.212,6.125 C7.446,6.125 7.636,6.713 7.636,7.438 Z" stroke-width="1.5" fill="#000" transform="translate(7.212,7.438) rotate(30) translate(-7.212,-7.438)"/></g>
+  <g id="wr" stroke-linecap="round" stroke-linejoin="round" transform="translate(9,8)" stroke="#000" stroke-width="1.5"><polygon fill="#fff" points="0 26 22 26 22 23.4 0 23.4"/><polygon fill="#fff" points="2.444 23.4 2.444 19.933 19.556 19.933 19.556 23.4"/><polyline fill="#fff" points="1.63 4.333 1.63 0 4.889 0 4.889 1.733 8.963 1.733 8.963 0 13.037 0 13.037 1.733 17.111 1.733 17.111 0 20.37 0 20.37 4.333"/><polyline fill="#fff" points="20.37 4.333 17.926 6.933 4.074 6.933 1.63 4.333"/><polyline fill="#fff" points="17.926 6.933 17.926 17.767 4.074 17.767 4.074 6.933"/><polyline fill="#fff" points="17.926 17.767 19.148 19.933 2.852 19.933 4.074 17.767"/><line x1="1.63" y1="4.333" x2="20.37" y2="4.333"/></g>
+  <g id="wp" transform="translate(10,9)" fill="#fff" stroke="#000" stroke-linecap="round" stroke-width="1.5"><path d="M10,0 C8.158,0 6.667,1.501 6.667,3.355 C6.667,4.101 6.908,4.789 7.317,5.351 C5.692,6.29 4.583,8.043 4.583,10.065 C4.583,11.767 5.367,13.285 6.592,14.283 C4.092,15.172 0.417,18.938 0.417,25.581 L19.583,25.581 C19.583,18.938 15.908,15.172 13.408,14.283 C14.633,13.285 15.417,11.767 15.417,10.065 C15.417,8.043 14.308,6.29 12.683,5.351 C13.092,4.789 13.333,4.101 13.333,3.355 C13.333,1.501 11.842,0 10,0 Z"/></g>
+  <g id="bk" stroke-linecap="round" stroke-linejoin="round" transform="translate(5,5)" stroke-width="1.5"><line x1="15" y1="4.968" x2="15" y2="0" stroke="#000"/><path d="M15,16.765 C15,16.765 18.857,10.147 17.571,7.5 C17.571,7.5 16.714,5.294 15,5.294 C13.286,5.294 12.429,7.5 12.429,7.5 C11.143,10.147 15,16.765 15,16.765" stroke="#000" fill="#000"/><path d="M5.571,27.353 C10.286,30.441 18.857,30.441 23.571,27.353 L23.571,21.176 C23.571,21.176 31.286,17.206 28.714,11.912 C25.286,6.176 17.143,8.824 15,15.441 L15,18.529 L15,15.441 C12,8.824 3.857,6.176 1.286,11.912 C-1.286,17.206 5.571,20.735 5.571,20.735 L5.571,27.353 Z" stroke="#000" fill="#000"/><line x1="12.857" y1="1.765" x2="17.143" y2="1.765" stroke="#000"/><path d="M23.143,20.735 C23.143,20.735 30.429,17.206 28.311,12.221 C24.986,7.059 17.143,10.588 15,16.324 L15.009,18.176 L15,16.324 C12.857,10.588 4.205,7.059 1.712,12.221 C-0.429,17.206 5.871,20.162 5.871,20.162" stroke="#fff"/><path d="M5.571,21.176 C10.286,18.529 18.857,18.529 23.571,21.176 M5.571,24.265 C10.286,21.618 18.857,21.618 23.571,24.265 M5.571,27.353 C10.286,24.706 18.857,24.706 23.571,27.353" stroke="#fff"/></g>
+  <g id="bq" stroke-linecap="round" stroke-linejoin="round" transform="translate(3,4)"><g fill="#000"><ellipse cx="2.615" cy="6.222" rx="2.397" ry="2.444"/><ellipse cx="9.59" cy="3.556" rx="2.397" ry="2.444"/><ellipse cx="17" cy="2.667" rx="2.397" ry="2.444"/><ellipse cx="24.41" cy="3.556" rx="2.397" ry="2.444"/><ellipse cx="31.385" cy="6.222" rx="2.397" ry="2.444"/></g><path d="M5.231,18.667 C12.641,17.333 23.538,17.333 28.769,18.667 L30.949,7.556 L24.41,17.778 L24.149,5.244 L19.615,17.333 L17,4.444 L14.385,17.333 L9.851,5.244 L9.59,17.778 L3.051,7.556 L5.231,18.667 Z" stroke="#000" stroke-width="1.5" fill="#000"/><path d="M5.231,18.667 C5.231,20.444 6.538,20.444 7.41,22.222 C8.282,23.556 8.282,23.111 7.846,25.333 C6.538,26.222 6.538,27.556 6.538,27.556 C5.231,28.889 6.974,29.778 6.974,29.778 C12.641,30.667 21.359,30.667 27.026,29.778 C27.026,29.778 28.333,28.889 27.026,27.556 C27.026,27.556 27.462,26.222 26.154,25.333 C25.718,23.111 25.718,23.556 26.59,22.222 C27.462,20.444 28.769,20.444 28.769,18.667 C21.359,17.333 12.641,17.333 5.231,18.667 Z" stroke="#000" stroke-width="1.5" fill="#000"/><path d="M6.974,29.778 C13.467,32.081 20.533,32.081 27.026,29.778" stroke="#000" stroke-width="1.5"/><path d="M6.974,21.333 C13.467,19.03 20.533,19.03 27.026,21.333" stroke="#fff" stroke-width="1.5"/><line x1="8.282" y1="23.556" x2="25.718" y2="23.556" stroke="#fff" stroke-width="1.5"/><path d="M7.41,26.222 C13.637,28.324 20.363,28.324 26.59,26.222" stroke="#fff" stroke-width="1.5"/><path d="M6.538,28.889 C13.295,31.403 20.705,31.403 27.462,28.889" stroke="#fff" stroke-width="1.5"/></g>
+  <g id="bb" stroke-linecap="round" stroke-linejoin="round" transform="translate(6,5)" stroke-width="1.5"><g fill="#000" stroke="#000"><path d="M2.545,27.353 C5.422,26.497 11.124,27.732 14,25.588 C16.876,27.732 22.578,26.497 25.455,27.353 C25.455,27.353 26.855,27.829 28,29.118 C27.423,29.974 26.6,29.991 25.455,29.559 C22.578,28.703 16.876,29.965 14,28.676 C11.124,29.965 5.422,28.703 2.545,29.559 C1.397,29.991 0.574,29.974 0,29.118 C1.149,27.406 2.545,27.353 2.545,27.353 Z"/><path d="M7.636,23.824 C9.758,26.029 18.242,26.029 20.364,23.824 C20.788,22.5 20.364,22.059 20.364,22.059 C20.364,19.853 18.242,18.529 18.242,18.529 C22.909,17.206 23.333,8.382 14,4.853 C4.667,8.382 5.091,17.206 9.758,18.529 C9.758,18.529 7.636,19.853 7.636,22.059 C7.636,22.059 7.212,22.5 7.636,23.824 Z"/><path d="M16.121,2.647 C16.121,3.865 15.172,4.853 14,4.853 C12.828,4.853 11.879,3.865 11.879,2.647 C11.879,1.429 12.828,0.441 14,0.441 C15.172,0.441 16.121,1.429 16.121,2.647 Z"/></g><path d="M9.758,18.529 L18.242,18.529 M7.636,22.059 L20.364,22.059 M14,9.265 L14,13.676 M11.879,11.471 L16.121,11.471" stroke="#fff"/></g>
+  <g id="bn" stroke-linecap="round" stroke-linejoin="round" transform="translate(6,6)"><path d="M13.576,2.636 C22.485,3.515 27.576,9.667 27.152,28.121 L7.636,28.121 C7.636,20.212 16.121,22.409 14.424,9.667" stroke="#000" stroke-width="1.5" fill="#000"/><path d="M15.273,9.667 C15.595,12.224 10.564,16.143 8.485,17.576 C5.939,19.333 6.092,21.39 4.242,21.091 C3.358,20.265 5.439,18.419 4.242,18.455 C3.394,18.455 4.404,19.535 3.394,20.212 C2.545,20.212 -0.003,21.091 0,16.697 C0,14.939 5.091,6.152 5.091,6.152 C5.091,6.152 6.695,4.482 6.788,3.076 C6.168,2.202 6.364,1.318 6.364,0.439 C7.212,-0.439 8.909,2.636 8.909,2.636 L10.606,2.636 C10.606,2.636 11.268,0.886 12.727,0 C13.576,0 13.576,2.636 13.576,2.636" stroke="#000" stroke-width="1.5" fill="#000"/><path d="M2.97,16.258 C2.97,16.5 2.78,16.697 2.545,16.697 C2.311,16.697 2.121,16.5 2.121,16.258 C2.121,16.015 2.311,15.818 2.545,15.818 C2.78,15.818 2.97,16.015 2.97,16.258 Z" stroke="#fff" stroke-width="1.5" fill="#fff"/><path d="M7.636,7.47 C7.636,8.198 7.446,8.788 7.212,8.788 C6.978,8.788 6.788,8.198 6.788,7.47 C6.788,6.742 6.978,6.152 7.212,6.152 C7.446,6.152 7.636,6.742 7.636,7.47 Z" stroke="#fff" stroke-width="1.5" fill="#fff" transform="translate(7.212,7.47) rotate(30) translate(-7.212,-7.47)"/><path d="M15.739,2.988 L15.358,4.262 L15.782,4.394 C18.455,5.273 20.576,6.582 22.485,10.326 C24.394,14.069 25.242,19.386 24.818,28.121 L24.776,28.561 L26.685,28.561 L26.727,28.121 C27.152,19.281 25.981,13.314 23.97,9.368 C21.959,5.422 19.057,3.533 16.172,3.076 L15.739,2.988 Z" fill="#fff"/></g>
+  <g id="br" stroke-linecap="round" stroke-linejoin="round" transform="translate(9,8)"><polygon stroke="#000" stroke-width="1.5" fill="#000" points="0 26 22 26 22 23.4 0 23.4"/><polygon stroke="#000" stroke-width="1.5" fill="#000" points="2.852 19.933 4.074 17.767 17.926 17.767 19.148 19.933"/><polygon stroke="#000" stroke-width="1.5" fill="#000" points="2.444 23.4 2.444 19.933 19.556 19.933 19.556 23.4"/><polygon stroke="#000" stroke-width="1.5" fill="#000" points="4.074 17.767 4.074 6.5 17.926 6.5 17.926 17.767"/><polygon stroke="#000" stroke-width="1.5" fill="#000" points="4.074 6.5 1.63 4.333 20.37 4.333 17.926 6.5"/><polygon stroke="#000" stroke-width="1.5" fill="#000" points="1.63 4.333 1.63 0 4.889 0 4.889 1.733 8.963 1.733 8.963 0 13.037 0 13.037 1.733 17.111 1.733 17.111 0 20.37 0 20.37 4.333"/><polyline stroke="#fff" points="2.444 22.967 19.556 22.967"/><line x1="3.259" y1="19.5" x2="18.741" y2="19.5" stroke="#fff"/><line x1="4.074" y1="17.767" x2="17.926" y2="17.767" stroke="#fff"/><line x1="4.074" y1="6.5" x2="17.926" y2="6.5" stroke="#fff"/><line x1="1.63" y1="4.333" x2="20.37" y2="4.333" stroke="#fff"/></g>
+  <g id="bp" transform="translate(10,8)" fill="#000" stroke="#000" stroke-linecap="round" stroke-width="1.5"><path d="M10,0 C8.158,0 6.667,1.501 6.667,3.355 C6.667,4.101 6.908,4.789 7.317,5.351 C5.692,6.29 4.583,8.043 4.583,10.065 C4.583,11.767 5.367,13.285 6.592,14.283 C4.092,15.172 0.417,18.938 0.417,25.581 L19.583,25.581 C19.583,18.938 15.908,15.172 13.408,14.283 C14.633,13.285 15.417,11.767 15.417,10.065 C15.417,8.043 14.308,6.29 12.683,5.351 C13.092,4.789 13.333,4.101 13.333,3.355 C13.333,1.501 11.842,0 10,0 Z"/></g>
+</svg>
+
+  <!-- ── localStorage safety wrappers — MUST be first ── -->
+  <script>
+    function safeGetStorage(k) { try { return localStorage.getItem(k); } catch(e) { return null; } }
+    function safeSetStorage(k,v) { try { localStorage.setItem(k,v); } catch(e) {} }
+    (function() {
+      try {
+        if (safeGetStorage('spkc-dark') === '1') document.documentElement.classList.add('dark');
+        else if (window.matchMedia && window.matchMedia('(prefers-color-scheme:dark)').matches && safeGetStorage('spkc-dark') !== '0') document.documentElement.classList.add('dark');
+      } catch(e) {}
+    })();
+  </script>
+
+  <div class="page-shell">
+    <header class="hero" style="padding-bottom:0;">
+      <nav class="nav" aria-label="Primary">
+        <a href="index.html">Home</a>
+        <a href="join.html">Join</a>
+        <a href="tournaments.html">Tournaments</a>
+        <a href="rules.html">Rules</a>
+        <a href="brilliants.html">Brilliants</a>
+        <a href="matches.html">Matches</a>
+        <a href="history.html">History</a>
+        <a href="openings.html" class="active">Openings</a>
+        <button class="dark-toggle" id="darkToggle" aria-label="Toggle dark mode">🌙</button>
+      </nav>
+
+      <div class="hero-layout" style="padding-bottom:28px;">
+        <div class="hero-copy">
+          <p class="eyebrow">SPKC Chess Club</p>
+          <h1>Opening Compendium</h1>
+          <p class="hero-text">Live analytics from club tournament games — most-played openings, win-rate killers, and theory flashcards to sharpen your prep.</p>
+        </div>
+        <div class="hero-side" style="display:flex;align-items:center;justify-content:center;">
+          <div class="op-hero-board">♜♞♝♛♚♝♞♜</div>
+        </div>
+      </div>
+
+      <!-- Hero stats -->
+      <div class="hero-stats">
+        <div class="stat-card">
+          <span class="stat-number" id="statGamesAnalysed">—</span>
+          <span class="stat-label">Games analysed</span>
+        </div>
+        <div class="stat-card">
+          <span class="stat-number" id="statUniqueOpenings">—</span>
+          <span class="stat-label">Unique openings</span>
+        </div>
+        <div class="stat-card">
+          <span class="stat-number" id="statClubWinRate">—</span>
+          <span class="stat-label">Club win rate</span>
+        </div>
+      </div>
+    </header>
+
+    <main class="content-grid" style="padding-top:28px;">
+
+      <!-- ── Season selector ── -->
+      <div class="span-12" style="grid-column:1/-1;">
+        <div class="op-selector-bar">
+          <span class="op-selector-label">Season</span>
+          <select class="ma-season-select" id="seasonSelect" aria-label="Select season">
+            <option value="">Loading seasons…</option>
+          </select>
+          <span class="op-selector-label" style="margin-left:8px;">Round</span>
+          <select class="ma-season-select" id="roundSelect" aria-label="Select round">
+            <option value="">All rounds</option>
+          </select>
+          <span id="loadingIndicator" style="font-size:12px;color:var(--muted);font-weight:700;display:none;">Scanning games…</span>
+          <span id="errorMsg" style="font-size:12px;color:#a83a3a;font-weight:700;display:none;"></span>
+        </div>
+      </div>
+
+      <!-- ══════════════════════════════════════
+           Section 1: Analytics Engine (White/Black split)
+           ══════════════════════════════════════ -->
+      <section class="panel span-12">
+        <div class="section-head" style="margin-bottom:20px;">
+          <h2 class="section-title">Most-Played Openings</h2>
+          <span class="section-badge" id="analyticsBadge">Loading…</span>
+        </div>
+        <div class="op-split-grid" id="splitGrid">
+          <!-- White side -->
+          <div class="op-side-panel">
+            <div class="op-side-header">
+              <span class="op-side-piece">♙</span>
+              <span class="op-side-title">As White</span>
+              <span class="op-side-count" id="whiteGameCount">0 games</span>
+            </div>
+            <div class="op-bar-list" id="whiteOpeningsList">
+              <div class="op-shimmer"></div>
+              <div class="op-shimmer"></div>
+              <div class="op-shimmer"></div>
+            </div>
+          </div>
+          <!-- Black side -->
+          <div class="op-side-panel">
+            <div class="op-side-header">
+              <span class="op-side-piece">♟</span>
+              <span class="op-side-title">As Black</span>
+              <span class="op-side-count" id="blackGameCount">0 games</span>
+            </div>
+            <div class="op-bar-list" id="blackOpeningsList">
+              <div class="op-shimmer"></div>
+              <div class="op-shimmer"></div>
+              <div class="op-shimmer"></div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ══════════════════════════════════════
+           Section 2: Club Killers
+           ══════════════════════════════════════ -->
+      <section class="panel span-12">
+        <div class="section-head" style="margin-bottom:20px;">
+          <h2 class="section-title">Club Killers</h2>
+          <span class="section-badge" id="killersBadge">Lines with highest win rate</span>
+        </div>
+        <p style="color:var(--muted);font-size:14px;margin:0 0 20px;">
+          Openings where SPKC players perform best in tournament games — lines worth adding to your prep.
+        </p>
+        <div class="killers-grid" id="killersGrid">
+          <div class="op-shimmer op-shimmer-tall"></div>
+          <div class="op-shimmer op-shimmer-tall"></div>
+          <div class="op-shimmer op-shimmer-tall"></div>
+        </div>
+      </section>
+
+      <!-- ══════════════════════════════════════
+           Section 3: Theory Flashcards
+           ══════════════════════════════════════ -->
+      <section class="panel span-12">
+        <div class="section-head" style="margin-bottom:20px;">
+          <h2 class="section-title">Theory Flashcards</h2>
+          <span class="section-badge">Study your mainlines</span>
+        </div>
+        <p style="color:var(--muted);font-size:14px;margin:0 0 16px;">
+          Key mainlines from openings your club actually plays — click any card to step through the moves on a live board.
+        </p>
+        <!-- Format filter tabs -->
+        <div class="flashcard-tabs" id="flashcardTabs">
+          <button class="flashcard-tab active" data-format="all">All</button>
+          <button class="flashcard-tab" data-format="bullet">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 20" width="9" height="11" style="display:inline;vertical-align:middle;margin-right:3px;" aria-hidden="true"><ellipse cx="8" cy="6" rx="5" ry="6" fill="currentColor"/><rect x="3" y="6" width="10" height="5" fill="currentColor" opacity="0.7"/><polygon points="3,11 5,18 8,20 11,18 13,11" fill="currentColor"/></svg>
+            Bullet
+          </button>
+          <button class="flashcard-tab" data-format="blitz">⚡ Blitz</button>
+          <button class="flashcard-tab" data-format="rapid">🕐 Rapid</button>
+        </div>
+        <div class="flashcard-grid" id="flashcardGrid">
+          <div class="op-shimmer op-shimmer-tall" style="height:320px;border-radius:20px;"></div>
+          <div class="op-shimmer op-shimmer-tall" style="height:320px;border-radius:20px;"></div>
+          <div class="op-shimmer op-shimmer-tall" style="height:320px;border-radius:20px;"></div>
+        </div>
+      </section>
+
+    </main>
+    <footer>SPKC Chess Club — Opening Compendium</footer>
+  </div>
+
+  <!-- ── Opening Preview Modal ── -->
+  <div class="preview-modal-bg" id="previewBg" role="dialog" aria-modal="true" aria-label="Opening preview">
+    <div class="preview-modal">
+      <button class="preview-modal-close" id="previewClose" aria-label="Close">×</button>
+      <div class="preview-modal-title" id="previewTitle">Loading…</div>
+      <div class="preview-modal-eco" id="previewEco"></div>
+      <div id="previewBoard"></div>
+      <div class="preview-moves-list" id="previewMovesList"></div>
+      <div class="preview-controls">
+        <button class="preview-btn" id="pBtnStart" title="Start">⏮</button>
+        <button class="preview-btn" id="pBtnPrev"  title="Prev">◄</button>
+        <button class="preview-btn" id="pBtnNext"  title="Next">►</button>
+        <button class="preview-btn" id="pBtnEnd"   title="End">⏭</button>
+      </div>
+      <div class="preview-description" id="previewDesc"></div>
+    </div>
+  </div>
+
+  <!-- chess.js v0.13.4 UMD -->
+  <script src="lib/chess.min.js"></script>
+  <!-- Supabase -->
+  <script src="lib/supabase.min.js"></script>
+
+  <!-- cm-chessboard: self-contained IIFE bundle (no ES module, works via file://) -->
+  <script src="cm-chessboard-bundle.js"></script>
+
+  <script>
+    // ── Config ───────────────────────────────────────────────────────────
+    const SUPABASE_URL      = 'https://qoczwxslhygakivfgxdy.supabase.co';
+    const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFvY3p3eHNsaHlnYWtpdmZneGR5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk2MTAwNzMsImV4cCI6MjA5NTE4NjA3M30.J5I0IR5Ra_JePDzJYHpzstbNRCo667B201iVhjbDZjs';
+    const CHESS_CLUB_ID     = 'spkc-international-chess-club-1';
+    const FORMAT_CYCLE      = ['bullet', 'blitz', 'rapid']; // R1=bullet, R2=blitz, R3=rapid, repeating
+    const SPKC_MEMBERS      = new Set([
+      'cat_vs_tic','ooecan','an_extraterrestrial_life',
+      'bestfaliz01','rickywkkam','penguinthe2nd','person6965'
+    ]);
+
+    const { createClient } = supabase;
+    const sb = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+    function escapeHtml(v) {
+      return String(v ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+    }
+
+    // ── Season helpers ────────────────────────────────────────────────────
+    let _seasons    = [];
+    let _currentSeason = null;
+    let _allGames   = [];  // parsed game objects for current selection
+    let _roundLinks = {};  // round_number → chess.com tournament ID
+
+    async function loadSeasons() {
+      const { data, error } = await sb.from('season_settings').select('*')
+        .order('registration_opens_at', { ascending: false, nullsFirst: false });
+      if (error) throw error;
+      const now = new Date();
+      _seasons = (data || []).filter(s => s.registration_opens_at && new Date(s.registration_opens_at) <= now);
+      return _seasons;
+    }
+
+    async function loadRoundLinks(seasonKey) {
+      _roundLinks = {};
+      const { data } = await sb.from('round_tournament_links')
+        .select('round_number, tournament_id')
+        .eq('season_key', seasonKey);
+      (data || []).forEach(r => { _roundLinks[r.round_number] = r.tournament_id; });
+    }
+
+    function formatForRound(roundNumber) {
+      return FORMAT_CYCLE[(roundNumber - 1) % FORMAT_CYCLE.length];
+    }
+
+    // ── Chess.com API fetch helpers ───────────────────────────────────────
+    async function fetchTournamentGames(tournamentId) {
+      // Chess.com arena tournament endpoint
+      const url = `https://api.chess.com/pub/tournament/${tournamentId}/1/1`;
+      try {
+        const r = await fetch(url);
+        if (!r.ok) return [];
+        const d = await r.json();
+        return d.games || [];
+      } catch { return []; }
+    }
+
+    async function fetchRoundGames(roundNumber) {
+      const tournId = _roundLinks[roundNumber];
+      if (!tournId) return [];
+      return fetchTournamentGames(tournId);
+    }
+
+    // Extract opening from PGN headers
+    function extractOpening(pgn) {
+      if (!pgn) return { eco: '', name: 'Unknown Opening' };
+      const eco  = (pgn.match(/\[ECO\s+"([^"]+)"\]/)   || [])[1] || '';
+      const name = (pgn.match(/\[Opening\s+"([^"]+)"\]/) || [])[1]
+                || (pgn.match(/\[ECOUrl\s+"([^"]+)"\]/)   || [])[1]?.split('/').pop()?.replace(/-/g,' ') || '';
+      return { eco, name: name || 'Unknown Opening' };
+    }
+
+    function parsePgnResult(pgn) {
+      // Returns 'white' | 'black' | 'draw' | null
+      const m = pgn && pgn.match(/\[Result\s+"([^"]+)"\]/);
+      if (!m) return null;
+      if (m[1] === '1-0') return 'white';
+      if (m[1] === '0-1') return 'black';
+      if (m[1] === '1/2-1/2') return 'draw';
+      return null;
+    }
+
+    function isSpkcMember(username) {
+      return username && SPKC_MEMBERS.has(String(username).toLowerCase());
+    }
+
+    // Parse game object from Chess.com into our normalised shape
+    function normaliseGame(g, roundNumber) {
+      const white    = String(g.white?.username || '').toLowerCase();
+      const black    = String(g.black?.username || '').toLowerCase();
+      const pgn      = g.pgn || '';
+      const opening  = extractOpening(pgn);
+      const result   = parsePgnResult(pgn);
+      const format   = formatForRound(roundNumber);
+
+      // Is white or black a club member?
+      const spkcIsWhite = isSpkcMember(white);
+      const spkcIsBlack = isSpkcMember(black);
+
+      // Win/draw/loss from SPKC perspective
+      let spkcResult = null;
+      if (spkcIsWhite && !spkcIsBlack) {
+        spkcResult = result === 'white' ? 'win' : result === 'black' ? 'loss' : result === 'draw' ? 'draw' : null;
+      } else if (spkcIsBlack && !spkcIsWhite) {
+        spkcResult = result === 'black' ? 'win' : result === 'white' ? 'loss' : result === 'draw' ? 'draw' : null;
+      }
+      // internal SPKC vs SPKC games excluded from directional stats
+
+      return { white, black, opening, result, format, spkcIsWhite, spkcIsBlack, spkcResult, pgn, roundNumber };
+    }
+
+    // ── Load all games for the current season/round selection ────────────
+    async function loadGames(seasonKey, roundFilter) {
+      const indicator = document.getElementById('loadingIndicator');
+      const errMsg    = document.getElementById('errorMsg');
+      indicator.style.display = 'inline';
+      errMsg.style.display    = 'none';
+
+      await loadRoundLinks(seasonKey);
+
+      const rounds = Object.keys(_roundLinks).map(Number).sort((a,b) => a-b);
+      const roundsToFetch = roundFilter ? [Number(roundFilter)] : rounds;
+
+      if (!roundsToFetch.length) {
+        indicator.style.display = 'none';
+        _allGames = [];
+        return;
+      }
+
+      const allGames = [];
+      await Promise.all(roundsToFetch.map(async rn => {
+        const games = await fetchRoundGames(rn);
+        games.forEach(g => { allGames.push(normaliseGame(g, rn)); });
+      }));
+
+      _allGames = allGames;
+      indicator.style.display = 'none';
+    }
+
+    // ── Analytics computations ────────────────────────────────────────────
+
+    // Build opening frequency + result map from games where SPKC plays a given side
+    function computeOpeningStats(games, side) {
+      // side = 'white' | 'black'
+      const map = {}; // ecoName → { eco, name, games, win, draw, loss }
+      games.forEach(g => {
+        const relevant = side === 'white' ? g.spkcIsWhite : g.spkcIsBlack;
+        if (!relevant) return;
+        // skip SPKC vs SPKC (both sides SPKC)
+        if (g.spkcIsWhite && g.spkcIsBlack) return;
+        const key = (g.opening.eco || '?') + '|' + (g.opening.name || 'Unknown');
+        if (!map[key]) map[key] = { eco: g.opening.eco, name: g.opening.name, games: 0, win: 0, draw: 0, loss: 0 };
+        map[key].games++;
+        if (g.spkcResult === 'win')  map[key].win++;
+        if (g.spkcResult === 'draw') map[key].draw++;
+        if (g.spkcResult === 'loss') map[key].loss++;
+      });
+      return Object.values(map).sort((a, b) => b.games - a.games);
+    }
+
+    // Best killers: min 2 games, sorted by win rate
+    function computeKillers(games, minGames = 2) {
+      const white = computeOpeningStats(games, 'white');
+      const black = computeOpeningStats(games, 'black');
+      const all   = [...white.map(o => ({...o, side:'white'})), ...black.map(o => ({...o, side:'black'}))];
+      return all
+        .filter(o => o.games >= minGames && o.win > 0)
+        .map(o => ({ ...o, winRate: o.win / o.games }))
+        .sort((a, b) => b.winRate - a.winRate)
+        .slice(0, 6);
+    }
+
+    // ── Hero stats ────────────────────────────────────────────────────────
+    function updateHeroStats(games) {
+      const relevant = games.filter(g => (g.spkcIsWhite || g.spkcIsBlack) && !(g.spkcIsWhite && g.spkcIsBlack));
+      const wins  = relevant.filter(g => g.spkcResult === 'win').length;
+      const openingSet = new Set(relevant.map(g => (g.opening.eco || '?') + '|' + g.opening.name));
+      document.getElementById('statGamesAnalysed').textContent  = relevant.length || '—';
+      document.getElementById('statUniqueOpenings').textContent = openingSet.size || '—';
+      const wr = relevant.length ? Math.round((wins / relevant.length) * 100) + '%' : '—';
+      document.getElementById('statClubWinRate').textContent = wr;
+    }
+
+    // ── Render helpers ────────────────────────────────────────────────────
+    function renderOpeningBars(containerId, countId, stats, side) {
+      const container = document.getElementById(containerId);
+      const countEl   = document.getElementById(countId);
+      const totalGames = stats.reduce((s, o) => s + o.games, 0);
+      if (countEl) countEl.textContent = totalGames + ' game' + (totalGames !== 1 ? 's' : '');
+
+      if (!stats.length) {
+        container.innerHTML = '<p class="op-no-data">No games found for this selection.</p>';
+        return;
+      }
+      const maxGames = stats[0].games;
+      const rows = stats.slice(0, 10).map(o => {
+        const pct     = maxGames ? Math.round((o.games / maxGames) * 100) : 0;
+        const winPct  = o.games ? Math.round((o.win  / o.games) * 100) : 0;
+        const drawPct = o.games ? Math.round((o.draw / o.games) * 100) : 0;
+        const lossPct = o.games ? Math.round((o.loss / o.games) * 100) : 0;
+        const fillClass = side === 'white' ? 'white-bar' : '';
+        const ecoHtml = o.eco ? `<span class="op-bar-eco">${escapeHtml(o.eco)}</span>` : '';
+        return `
+          <div class="op-bar-row" onclick='openPreview(${JSON.stringify(o.eco)}, ${JSON.stringify(o.name)}, "")'>
+            <div style="display:flex;align-items:center;gap:6px;min-width:0;">
+              ${ecoHtml}
+              <span class="op-bar-name" title="${escapeHtml(o.name)}">${escapeHtml(o.name)}</span>
+            </div>
+            <div class="op-bar-wrap">
+              <div class="op-bar-bg">
+                <div class="op-bar-fill ${fillClass}" style="width:${pct}%;"></div>
+              </div>
+            </div>
+            <div class="op-bar-stats">
+              <span class="op-stat-pill games">${o.games}g</span>
+              ${winPct  ? `<span class="op-stat-pill win">${winPct}%W</span>`  : ''}
+              ${drawPct ? `<span class="op-stat-pill draw">${drawPct}%D</span>` : ''}
+              ${lossPct ? `<span class="op-stat-pill loss">${lossPct}%L</span>` : ''}
+            </div>
+          </div>`;
+      }).join('');
+      container.innerHTML = rows;
+    }
+
+    function renderKillers(killers) {
+      const grid    = document.getElementById('killersGrid');
+      const badge   = document.getElementById('killersBadge');
+
+      if (!killers.length) {
+        grid.innerHTML = '<p class="op-no-data">Not enough games yet to calculate killers. Play more rounds!</p>';
+        badge.textContent = '0 killers';
+        return;
+      }
+      badge.textContent = killers.length + ' killer' + (killers.length !== 1 ? 's' : '');
+      grid.innerHTML = killers.map(k => {
+        const winPct = Math.round(k.winRate * 100);
+        const sideLabel = k.side === 'white' ? '♙ As White' : '♟ As Black';
+        return `
+          <div class="killer-card">
+            <span class="killer-badge">🔪 Club Killer</span>
+            <div class="killer-opening-name">${escapeHtml(k.name)}</div>
+            <div class="killer-eco">${k.eco ? escapeHtml(k.eco) + ' · ' : ''}${sideLabel}</div>
+            <div class="killer-win-rate">${winPct}% win rate</div>
+            <div class="killer-stat-row">
+              <span class="op-stat-pill games">${k.games}g</span>
+              <span class="op-stat-pill win">${k.win}W</span>
+              ${k.draw ? `<span class="op-stat-pill draw">${k.draw}D</span>` : ''}
+              <span class="op-stat-pill loss">${k.loss}L</span>
+            </div>
+            <p class="killer-sub">Club record in this opening</p>
+            <button class="killer-preview-btn" onclick='openPreview(${JSON.stringify(k.eco)}, ${JSON.stringify(k.name)}, "")'>
+              ♟ Preview moves
+            </button>
+          </div>`;
+      }).join('');
+    }
+
+    // ── Full analytics refresh ────────────────────────────────────────────
+    function refreshAnalytics() {
+      const games   = _allGames;
+      const whiteStats = computeOpeningStats(games, 'white');
+      const blackStats = computeOpeningStats(games, 'black');
+      const killers    = computeKillers(games, 2);
+      const totalGames = games.filter(g => (g.spkcIsWhite || g.spkcIsBlack) && !(g.spkcIsWhite && g.spkcIsBlack)).length;
+
+      document.getElementById('analyticsBadge').textContent =
+        totalGames + ' game' + (totalGames !== 1 ? 's' : '') + ' · ' +
+        (whiteStats.length + blackStats.length) + ' openings';
+
+      renderOpeningBars('whiteOpeningsList', 'whiteGameCount', whiteStats, 'white');
+      renderOpeningBars('blackOpeningsList', 'blackGameCount', blackStats, 'black');
+      renderKillers(killers);
+      updateHeroStats(games);
+      renderFlashcards(_currentFlashcardFormat);
+    }
+
+    // ── Flashcard section ─────────────────────────────────────────────────
+    // Flashcards are generated from openings the club actually plays,
+    // cross-referenced with a curated theory database below.
+    // Each entry has: eco, name, pgn (mainline), description, format affinity
+
+    const OPENING_THEORY = [
+      {
+        eco: 'B20', name: 'Sicilian Defense',
+        pgn: '1. e4 c5',
+        moves: '1.e4 c5',
+        description: 'Black immediately fights for the center asymmetrically. Leads to rich, complex positions — ideal for players who want to play for a win as Black.',
+        formats: ['bullet','blitz','rapid']
+      },
+      {
+        eco: 'B12', name: 'Caro-Kann Defense',
+        pgn: '1. e4 c6 2. d4 d5',
+        moves: '1.e4 c6 2.d4 d5',
+        description: 'Solid and reliable. Black builds a pawn chain and avoids the sharp lines of the Sicilian. Popular in rapid games for its structural soundness.',
+        formats: ['rapid','blitz']
+      },
+      {
+        eco: 'D00', name: "Queen's Pawn Opening",
+        pgn: '1. d4 d5',
+        moves: '1.d4 d5',
+        description: 'White controls the center with the d-pawn. A slower, more strategic game compared to 1.e4 — often leads to Queen\'s Gambit structures.',
+        formats: ['rapid','blitz','bullet']
+      },
+      {
+        eco: 'C00', name: 'French Defense',
+        pgn: '1. e4 e6 2. d4 d5',
+        moves: '1.e4 e6 2.d4 d5',
+        description: 'Black prepares ...d5 while keeping the pawn chain intact. Leads to closed, pawn-structure battles where Black typically counterattacks on the queenside.',
+        formats: ['rapid','blitz']
+      },
+      {
+        eco: 'C60', name: 'Ruy Lopez',
+        pgn: '1. e4 e5 2. Nf3 Nc6 3. Bb5',
+        moves: '1.e4 e5 2.Nf3 Nc6 3.Bb5',
+        description: 'One of the oldest and most respected openings. White puts immediate pressure on the knight defending e5. A cornerstone of classical chess.',
+        formats: ['rapid','blitz']
+      },
+      {
+        eco: 'C57', name: 'Two Knights Defense',
+        pgn: '1. e4 e5 2. Nf3 Nc6 3. Bc4 Nf6 4. Ng5',
+        moves: '1.e4 e5 2.Nf3 Nc6 3.Bc4 Nf6 4.Ng5',
+        description: 'Aggressive play from White — the Ng5 move attacks f7 immediately. Leads to sharp tactical complications that suit bullet and blitz formats.',
+        formats: ['bullet','blitz']
+      },
+      {
+        eco: 'A00', name: "King's Indian Attack",
+        pgn: '1. Nf3 d5 2. g3 c5 3. Bg2 Nc6 4. O-O',
+        moves: '1.Nf3 d5 2.g3 c5 3.Bg2 Nc6 4.O-O',
+        description: 'A flexible system for White that avoids early theory. White builds a fianchettoed structure and often attacks on the kingside in the middlegame.',
+        formats: ['bullet','blitz','rapid']
+      },
+      {
+        eco: 'E60', name: "King's Indian Defense",
+        pgn: '1. d4 Nf6 2. c4 g6 3. Nc3 Bg7',
+        moves: '1.d4 Nf6 2.c4 g6 3.Nc3 Bg7',
+        description: 'Black allows White to build a strong center, then strikes back with ...d6 and ...e5. Famous for dynamic counterplay and fierce kingside attacks.',
+        formats: ['bullet','blitz','rapid']
+      },
+      {
+        eco: 'D35', name: "Queen's Gambit Declined",
+        pgn: '1. d4 d5 2. c4 e6 3. Nc3 Nf6',
+        moves: '1.d4 d5 2.c4 e6 3.Nc3 Nf6',
+        description: 'Black declines the gambit and plays solid, classical chess. One of the most reliable responses to 1.d4 — used by world champions throughout history.',
+        formats: ['rapid']
+      },
+      {
+        eco: 'B01', name: 'Scandinavian Defense',
+        pgn: '1. e4 d5 2. exd5 Qxd5 3. Nc3 Qa5',
+        moves: '1.e4 d5 2.exd5 Qxd5 3.Nc3 Qa5',
+        description: 'Black immediately challenges the center with ...d5. After the queen retreats to a5, Black aims for quick development and counterplay. Effective in bullet.',
+        formats: ['bullet','blitz']
+      },
+      {
+        eco: 'C20', name: "King's Pawn Opening",
+        pgn: '1. e4 e5',
+        moves: '1.e4 e5',
+        description: 'The classical double king-pawn opening. Both sides fight for the center immediately. Most tactical openings (Ruy Lopez, Italian, King\'s Gambit) arise from here.',
+        formats: ['bullet','blitz','rapid']
+      },
+      {
+        eco: 'A45', name: 'Trompowsky Attack',
+        pgn: '1. d4 Nf6 2. Bg5',
+        moves: '1.d4 Nf6 2.Bg5',
+        description: 'White pins the knight early and avoids mainstream 1.d4 theory. Creates unbalanced positions early — a surprise weapon in bullet and blitz.',
+        formats: ['bullet','blitz']
+      }
+    ];
+
+    let _currentFlashcardFormat = 'all';
+    let _flashcardBoardMap = {}; // eco → board instance (for flashcard mini-boards)
+
+    function getPlayedEcoSet() {
+      const ecos = new Set();
+      _allGames.forEach(g => { if (g.opening.eco) ecos.add(g.opening.eco); });
+      return ecos;
+    }
+
+    function renderFlashcards(format) {
+      _currentFlashcardFormat = format;
+      const grid    = document.getElementById('flashcardGrid');
+      const playedEcos = getPlayedEcoSet();
+
+      // Match theory entries to played openings — played ones first, then all others
+      let cards = OPENING_THEORY.filter(t => format === 'all' || t.formats.includes(format));
+
+      // Sort: played by club first (based on eco prefix match)
+      cards.sort((a, b) => {
+        const aPlayed = playedEcos.has(a.eco) ? 0 : 1;
+        const bPlayed = playedEcos.has(b.eco) ? 0 : 1;
+        return aPlayed - bPlayed;
+      });
+
+      if (!cards.length) {
+        grid.innerHTML = '<p class="op-no-data">No theory flashcards for this format filter.</p>';
+        return;
+      }
+
+      const formatIcon = { bullet: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 20" width="9" height="11" style="display:inline;vertical-align:middle;" aria-hidden="true"><ellipse cx="8" cy="6" rx="5" ry="6" fill="currentColor"/><rect x="3" y="6" width="10" height="5" fill="currentColor" opacity="0.7"/><polygon points="3,11 5,18 8,20 11,18 13,11" fill="currentColor"/></svg>', blitz: '⚡', rapid: '🕐' };
+
+      grid.innerHTML = cards.map((t, idx) => {
+        const isPlayed = playedEcos.has(t.eco);
+        const stats    = isPlayed ? computeOpeningStats(_allGames, 'white').find(o => o.eco === t.eco)
+                                    || computeOpeningStats(_allGames, 'black').find(o => o.eco === t.eco) : null;
+        const statsHtml = stats ? `
+          <div class="flashcard-stats-row">
+            <span class="op-stat-pill games">${stats.games}g in club</span>
+            ${stats.win  ? `<span class="op-stat-pill win">${stats.win}W</span>`   : ''}
+            ${stats.draw ? `<span class="op-stat-pill draw">${stats.draw}D</span>` : ''}
+            ${stats.loss ? `<span class="op-stat-pill loss">${stats.loss}L</span>` : ''}
+          </div>` : '';
+        const playedBadge = isPlayed
+          ? `<span style="font-size:10px;font-weight:800;color:#1a7a44;background:#dcf5e8;border:1px solid #9fdabb;border-radius:999px;padding:2px 7px;">Played by club</span>`
+          : '';
+        const formatPills = t.formats.map(f => `<span class="flashcard-format-pill">${formatIcon[f] || ''} ${f}</span>`).join('');
+
+        return `
+          <div class="flashcard" id="flashcard${idx}" onclick='openPreview(${JSON.stringify(t.eco)}, ${JSON.stringify(t.name)}, ${JSON.stringify(t.description)}, ${JSON.stringify(t.moves)})'>
+            <div class="flashcard-board-wrap">
+              <div class="flashcard-board-inner" id="flashcardMiniBoard${idx}"></div>
+            </div>
+            <div class="flashcard-body">
+              <div class="flashcard-eco-row">
+                ${t.eco ? `<span class="flashcard-eco">${escapeHtml(t.eco)}</span>` : ''}
+                ${playedBadge}
+                ${formatPills}
+              </div>
+              <h3 class="flashcard-opening-name">${escapeHtml(t.name)}</h3>
+              <div class="flashcard-moves">${escapeHtml(t.moves)}</div>
+              <p class="flashcard-description">${escapeHtml(t.description)}</p>
+              ${statsHtml}
+              <button class="flashcard-replay-btn" onclick='event.stopPropagation(); openPreview(${JSON.stringify(t.eco)}, ${JSON.stringify(t.name)}, ${JSON.stringify(t.description)}, ${JSON.stringify(t.moves)})'>
+                ▶ Step through moves
+              </button>
+            </div>
+          </div>`;
+      }).join('');
+
+      // Mount mini boards async in background
+      setTimeout(() => mountMiniBoards(cards), 50);
+    }
+
+    // ── Flashcard filter tabs ─────────────────────────────────────────────
+    document.getElementById('flashcardTabs').addEventListener('click', function(e) {
+      const tab = e.target.closest('.flashcard-tab');
+      if (!tab) return;
+      document.querySelectorAll('.flashcard-tab').forEach(t => t.classList.remove('active'));
+      tab.classList.add('active');
+      renderFlashcards(tab.dataset.format);
+    });
+
+    // ── Season / Round selectors ──────────────────────────────────────────
+    async function populateSeasonSelect() {
+      const sel = document.getElementById('seasonSelect');
+      sel.innerHTML = '';
+      const now = new Date();
+      _seasons.forEach(s => {
+        const opt = document.createElement('option');
+        opt.value = s.season_key;
+        opt.textContent = s.season_label || s.season_key;
+        sel.appendChild(opt);
+      });
+      // Default to first started season (2026)
+      if (_seasons.length) {
+        const current = _seasons[0];
+        sel.value = current.season_key;
+        _currentSeason = current;
+      }
+    }
+
+    function populateRoundSelect(roundLinks) {
+      const sel = document.getElementById('roundSelect');
+      sel.innerHTML = '<option value="">All rounds</option>';
+      Object.keys(roundLinks).map(Number).sort((a,b)=>a-b).forEach(rn => {
+        const opt = document.createElement('option');
+        opt.value = rn;
+        const fmt = formatForRound(rn);
+        const fmtIcon = fmt === 'bullet' ? '🔸' : fmt === 'blitz' ? '⚡' : '🕐';
+        opt.textContent = `Round ${rn} — ${fmtIcon} ${fmt.charAt(0).toUpperCase()+fmt.slice(1)}`;
+        sel.appendChild(opt);
+      });
+    }
+
+    document.getElementById('seasonSelect').addEventListener('change', async function() {
+      const key = this.value;
+      _currentSeason = _seasons.find(s => s.season_key === key) || null;
+      await loadGames(key, '');
+      populateRoundSelect(_roundLinks);
+      document.getElementById('roundSelect').value = '';
+      refreshAnalytics();
+    });
+
+    document.getElementById('roundSelect').addEventListener('change', async function() {
+      const key = document.getElementById('seasonSelect').value;
+      await loadGames(key, this.value);
+      refreshAnalytics();
+    });
+
+    // ── Boot ─────────────────────────────────────────────────────────────
+    async function initOpenings() {
+      try {
+        await loadSeasons();
+        await populateSeasonSelect();
+        if (_seasons.length) {
+          const seasonKey = document.getElementById('seasonSelect').value;
+          await loadGames(seasonKey, '');
+          populateRoundSelect(_roundLinks);
+          refreshAnalytics();
+        } else {
+          document.getElementById('analyticsBadge').textContent = 'No seasons found';
+          ['whiteOpeningsList','blackOpeningsList','killersGrid'].forEach(id => {
+            const el = document.getElementById(id);
+            if (el) el.innerHTML = '<p class="op-no-data">No seasons found.</p>';
+          });
+        }
+      } catch(e) {
+        const errMsg = document.getElementById('errorMsg');
+        errMsg.textContent = '⚠ ' + e.message;
+        errMsg.style.display = 'inline';
+        console.error('Openings init error:', e);
+      }
+    }
+
+    if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', initOpenings);
+    else initOpenings();
+  </script>
+
+  <!-- Dark mode toggle -->
+  <script>
+    (function() {
+      const btn = document.getElementById('darkToggle');
+      if (btn) {
+        btn.textContent = document.documentElement.classList.contains('dark') ? '☀️' : '🌙';
+        btn.addEventListener('click', function() {
+          const d = document.documentElement.classList.toggle('dark');
+          safeSetStorage('spkc-dark', d ? '1' : '0');
+          btn.textContent = d ? '☀️' : '🌙';
+        });
+      }
+    })();
+  </script>
+
+  <!-- Opening preview modal + mini-board mounter -->
+  <script>
+    // ── cm-chessboard globals helper ─────────────────────────────────────────
+    // _cmReady is set synchronously by cm-chessboard-bundle.js — this resolves immediately
+    function _waitCM() {
+      if (window._cmReady) return Promise.resolve();
+      return new Promise(function(resolve) {
+        document.addEventListener('cm-ready', resolve, { once: true });
+      });
+    }
+
+    // ── Preview modal state ──────────────────────────────────────────────────
+    var _pBoard  = null;
+    var _pChess  = null;
+    var _pMoves  = [];
+    var _pCursor = 0;
+    var _pFEN    = null;
+    var _pCOLOR  = null;
+
+    function pBtn(id) { return document.getElementById(id); }
+
+    function pUpdateNavBtns() {
+      pBtn('pBtnStart').disabled = _pCursor === 0;
+      pBtn('pBtnPrev').disabled  = _pCursor === 0;
+      pBtn('pBtnNext').disabled  = _pCursor >= _pMoves.length;
+      pBtn('pBtnEnd').disabled   = _pCursor >= _pMoves.length;
+    }
+
+    function pRenderMoveList() {
+      var el = pBtn('previewMovesList');
+      if (!el || !_pMoves.length) { if (el) el.textContent = 'No moves'; return; }
+      var html = '';
+      for (var i = 0; i < _pMoves.length; i += 2) {
+        var n = Math.floor(i / 2) + 1;
+        var w = _pMoves[i] || '', b = _pMoves[i+1] || '';
+        var wa = _pCursor === i + 1, ba = _pCursor === i + 2;
+        html += '<span style="color:var(--muted);margin-right:3px;">' + n + '.</span>';
+        html += '<span style="margin-right:6px;font-weight:' + (wa?900:400) + ';color:' + (wa?'var(--primary)':'inherit') + ';">' + w + '</span>';
+        if (b) html += '<span style="margin-right:10px;font-weight:' + (ba?900:400) + ';color:' + (ba?'var(--primary)':'inherit') + ';">' + b + '</span>';
+      }
+      el.innerHTML = html;
+    }
+
+    async function pGoTo(target) {
+      if (!_pChess || !_pBoard) return;
+      _pChess.reset();
+      for (var i = 0; i < target; i++) _pChess.move(_pMoves[i]);
+      _pCursor = target;
+      await _pBoard.setPosition(_pChess.fen(), true);
+      pUpdateNavBtns();
+      pRenderMoveList();
+    }
+
+    function _pClose() { document.getElementById('previewBg').classList.remove('open'); }
+
+    // ── openPreview — called from onclick attrs ──────────────────────────────
+    window.openPreview = async function(eco, name, description, movesStr) {
+      var bg = document.getElementById('previewBg');
+      bg.classList.add('open');
+      pBtn('previewTitle').textContent = name || eco || 'Opening';
+      pBtn('previewEco').textContent   = eco  || '';
+      pBtn('previewDesc').textContent  = description || '';
+      _pMoves = []; _pCursor = 0;
+
+      try { await _waitCM(); } catch(e) { return; }
+      var Chessboard = window.Chessboard, FEN = window.CHESS_FEN, COLOR = window.CHESS_COLOR;
+      _pFEN = FEN; _pCOLOR = COLOR;
+
+      if (!_pBoard) {
+        _pBoard = await new Chessboard(document.getElementById('previewBoard'), {
+          position:    FEN.start,
+          orientation: COLOR.white,
+          assetsUrl:   '',
+          assetsCache: false,
+          style: { pieces: { file: '' } }
+        });
+      } else {
+        await _pBoard.setPosition(_pFEN.start, false);
+      }
+      pUpdateNavBtns();
+      if (pBtn('previewMovesList')) pBtn('previewMovesList').textContent = '';
+
+      if (movesStr && typeof Chess !== 'undefined') {
+        try {
+          _pChess = new Chess();
+          var stripped = movesStr.replace(/\d+\./g, ' ').replace(/\s+/g, ' ').trim();
+          var tokens = stripped.split(' ').filter(Boolean);
+          for (var i = 0; i < tokens.length; i++) { _pChess.move(tokens[i]); }
+          _pMoves  = _pChess.history();
+          _pChess.reset();
+          _pCursor = 0;
+          pUpdateNavBtns();
+          pRenderMoveList();
+        } catch(e) { console.warn('Preview: could not parse moves', e); }
+      }
+    };
+
+    // ── mountMiniBoards — called from renderFlashcards() ────────────────────
+    var _miniBoardMap = {};
+    window.mountMiniBoards = async function(cards) {
+      try { await _waitCM(); } catch(e) { return; }
+      var Chessboard = window.Chessboard, COLOR = window.CHESS_COLOR;
+
+      for (var idx = 0; idx < cards.length; idx++) {
+        var t  = cards[idx];
+        var el = document.getElementById('flashcardMiniBoard' + idx);
+        if (!el) continue;
+        if (_miniBoardMap[idx]) {
+          try { _miniBoardMap[idx].destroy && _miniBoardMap[idx].destroy(); } catch(e) {}
+          delete _miniBoardMap[idx];
+        }
+        try {
+          var ch = new Chess();
+          var stripped = (t.moves || '').replace(/\d+\./g, ' ').replace(/\s+/g, ' ').trim();
+          var tokens = stripped.split(' ').filter(Boolean);
+          for (var j = 0; j < tokens.length; j++) { try { ch.move(tokens[j]); } catch(e2) {} }
+          _miniBoardMap[idx] = await new Chessboard(el, {
+            position:    ch.fen(),
+            orientation: COLOR.white,
+            assetsUrl:   '',
+            assetsCache: false,
+            style: { pieces: { file: '' } }
+          });
+        } catch(e) { console.warn('Mini board failed for', t.name, e); }
+      }
+    };
+
+    // ── Button wiring ────────────────────────────────────────────────────────
+    document.getElementById('pBtnStart').addEventListener('click', function() { pGoTo(0); });
+    document.getElementById('pBtnPrev').addEventListener('click',  function() { if (_pCursor > 0) pGoTo(_pCursor - 1); });
+    document.getElementById('pBtnNext').addEventListener('click',  function() { if (_pCursor < _pMoves.length) pGoTo(_pCursor + 1); });
+    document.getElementById('pBtnEnd').addEventListener('click',   function() { pGoTo(_pMoves.length); });
+
+    document.getElementById('previewClose').addEventListener('click', _pClose);
+    document.getElementById('previewBg').addEventListener('click', function(e) {
+      if (e.target === document.getElementById('previewBg')) _pClose();
+    });
+
+    document.addEventListener('keydown', function(e) {
+      var bg = document.getElementById('previewBg');
+      if (!bg.classList.contains('open')) return;
+      if (e.key === 'ArrowLeft')  { e.preventDefault(); if (_pCursor > 0) pGoTo(_pCursor - 1); }
+      if (e.key === 'ArrowRight') { e.preventDefault(); if (_pCursor < _pMoves.length) pGoTo(_pCursor + 1); }
+      if (e.key === 'Escape')     { _pClose(); }
+    });
+  </script>
+
+</body>
+</html>

@@ -1,0 +1,1188 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Club History — SPKC Chess Club</title>
+  <link rel="stylesheet" href="style.css">
+  <!-- cm-chessboard: pure JS/CSS, no jQuery needed -->
+  <link rel="stylesheet" href="assets/chessboard.css">
+  <style>
+    /* ── Champions Podium ─────────────────────────────────────────── */
+    .podium-wrap {
+      display: flex;
+      align-items: flex-end;
+      justify-content: center;
+      gap: 16px;
+      margin: 24px 0 8px;
+      flex-wrap: wrap;
+    }
+    .podium-col {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 10px;
+      min-width: 100px;
+    }
+    .podium-avatar {
+      width: 64px;
+      height: 64px;
+      border-radius: 50%;
+      background: var(--line);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 28px;
+      font-weight: 900;
+      color: var(--muted);
+      border: 3px solid var(--line);
+      flex-shrink: 0;
+      overflow: hidden;
+      position: relative;
+    }
+    .podium-col--1 .podium-avatar {
+      width: 80px; height: 80px; font-size: 36px;
+      border-color: #c79a25;
+      box-shadow: 0 0 0 4px rgba(199,154,37,0.2);
+    }
+    .podium-col--2 .podium-avatar { border-color: #aab4c8; }
+    .podium-col--3 .podium-avatar { border-color: #c07840; }
+    .podium-avatar img { width: 100%; height: 100%; object-fit: cover; border-radius: 50%; }
+    .podium-name {
+      font-size: 14px; font-weight: 800; color: var(--text);
+      text-align: center; line-height: 1.3;
+    }
+    .podium-col--1 .podium-name { font-size: 16px; }
+    .podium-username { font-size: 11px; color: var(--muted); text-align: center; }
+    .podium-pts {
+      font-size: 12px; font-weight: 800; color: var(--primary);
+      background: #eef3fc; border: 1px solid var(--line);
+      border-radius: 999px; padding: 3px 10px;
+    }
+    html.dark .podium-pts { background: #1a2b40; }
+    .podium-block {
+      width: 100%;
+      border-radius: 10px 10px 0 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 22px;
+    }
+    .podium-col--1 .podium-block { height: 90px; background: linear-gradient(180deg, #fff8e0, #f5d060); border: 1.5px solid #e8d080; }
+    .podium-col--2 .podium-block { height: 68px; background: linear-gradient(180deg, #f0f2f5, #d8dde6); border: 1.5px solid #aab4c8; }
+    .podium-col--3 .podium-block { height: 52px; background: linear-gradient(180deg, #fff0e8, #e8c090); border: 1.5px solid #c07840; }
+    html.dark .podium-col--1 .podium-block { background: linear-gradient(180deg, #2a2010, #3a2c10); border-color: #8a6a10; }
+    html.dark .podium-col--2 .podium-block { background: linear-gradient(180deg, #1a2030, #1e2838); border-color: #3a4a60; }
+    html.dark .podium-col--3 .podium-block { background: linear-gradient(180deg, #241810, #2a1c12); border-color: #5a3020; }
+
+    /* Season champions list below podium */
+    .champions-list {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      margin-top: 20px;
+    }
+    .champion-row {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      padding: 12px 16px;
+      background: var(--surface-soft);
+      border: 1.5px solid var(--line);
+      border-radius: var(--radius-md);
+      transition: 0.18s;
+    }
+    .champion-row:hover { transform: translateY(-2px); border-color: var(--line-strong); }
+    html.dark .champion-row { background: #1a2738; border-color: #1e3050; }
+    .champion-row.gold-row { border-color: #c79a25; background: linear-gradient(135deg, rgba(255,248,224,0.7), rgba(255,240,192,0.4)); }
+    html.dark .champion-row.gold-row { background: linear-gradient(135deg, rgba(42,32,16,0.7), rgba(58,44,16,0.4)); border-color: #8a6a10; }
+    .champion-medal { font-size: 22px; flex-shrink: 0; line-height: 1; }
+    .champion-season {
+      font-size: 12px; font-weight: 800; color: var(--primary);
+      text-transform: uppercase; letter-spacing: 0.8px;
+      background: #eef3fc; border: 1px solid var(--line);
+      border-radius: 999px; padding: 2px 9px;
+      white-space: nowrap;
+    }
+    html.dark .champion-season { background: #1a2b40; }
+    .champion-name { font-size: 15px; font-weight: 800; color: var(--text); flex: 1; min-width: 0; }
+    .champion-sub { font-size: 12px; color: var(--muted); }
+    .champion-pts { font-size: 14px; font-weight: 900; color: var(--primary); white-space: nowrap; }
+
+    /* ── All-Time Records ─────────────────────────────────────────── */
+    .records-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+      gap: 14px;
+      margin-top: 4px;
+    }
+    .record-card {
+      background: var(--surface-soft);
+      border: 1.5px solid var(--line);
+      border-radius: var(--radius-md);
+      padding: 16px 18px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      transition: 0.18s;
+    }
+    .record-card:hover { transform: translateY(-3px); border-color: var(--line-strong); }
+    html.dark .record-card { background: #1a2738; border-color: #1e3050; }
+    .record-icon { font-size: 24px; line-height: 1; }
+    .record-label {
+      font-size: 11px; font-weight: 800; color: var(--gold);
+      text-transform: uppercase; letter-spacing: 0.9px;
+    }
+    .record-value { font-size: 22px; font-weight: 900; color: var(--primary); }
+    .record-holder { font-size: 13px; font-weight: 700; color: var(--text); }
+    .record-sub { font-size: 11px; color: var(--muted); }
+
+    /* ── Immortal Games ───────────────────────────────────────────── */
+    .immortal-grid {
+      display: grid;
+      gap: 14px;
+      margin-top: 4px;
+    }
+    .immortal-card {
+      background: var(--surface);
+      border: 1.5px solid var(--line);
+      border-radius: var(--radius-lg);
+      padding: 20px 22px;
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 12px;
+      align-items: start;
+      transition: 0.18s;
+      position: relative;
+      overflow: hidden;
+    }
+    .immortal-card::before {
+      content: '';
+      position: absolute;
+      left: 0; top: 0; bottom: 0; width: 4px;
+      background: linear-gradient(180deg, var(--gold), rgba(199,154,37,0.3));
+      border-radius: 4px 0 0 4px;
+    }
+    .immortal-card:hover { transform: translateY(-2px); border-color: var(--gold); box-shadow: 0 6px 24px rgba(199,154,37,0.1); }
+    html.dark .immortal-card { background: #141e2e; border-color: #1e3050; }
+    html.dark .immortal-card:hover { border-color: var(--gold); }
+    .immortal-badge {
+      display: inline-flex; align-items: center; gap: 5px;
+      background: linear-gradient(135deg, #fff8e0, #fff0c0);
+      border: 1px solid #e8d080; color: #8a6000;
+      font-size: 11px; font-weight: 800; padding: 3px 10px;
+      border-radius: 999px; letter-spacing: 0.5px; text-transform: uppercase;
+      width: fit-content; margin-bottom: 8px;
+    }
+    html.dark .immortal-badge { background: #2a2010; border-color: #8a6a10; color: #e8c040; }
+    .immortal-title { font-size: 16px; font-weight: 800; color: var(--text); margin: 0 0 4px; }
+    .immortal-players {
+      font-size: 13px; color: var(--muted); margin-bottom: 8px;
+      display: flex; flex-wrap: wrap; gap: 6px; align-items: center;
+    }
+    .immortal-player-pill {
+      background: #eef3fc; border: 1px solid var(--line);
+      border-radius: 999px; padding: 2px 9px; font-size: 12px;
+      font-weight: 700; color: var(--primary);
+    }
+    html.dark .immortal-player-pill { background: #1a2b40; border-color: #1e3050; }
+    .immortal-vs { color: var(--muted); font-size: 12px; }
+    .immortal-caption {
+      font-size: 13px; color: var(--muted); line-height: 1.6;
+      font-style: italic; margin: 6px 0 0;
+    }
+    .immortal-meta {
+      display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px;
+    }
+    .immortal-meta-pill {
+      font-size: 11px; font-weight: 700; color: var(--primary);
+      background: #eef3fc; border: 1px solid var(--line);
+      border-radius: 999px; padding: 2px 8px;
+    }
+    html.dark .immortal-meta-pill { background: #1a2b40; border-color: #1e3050; }
+    .immortal-actions {
+      display: flex; flex-direction: column; gap: 8px; align-items: flex-end;
+      flex-shrink: 0;
+    }
+    .immortal-replay-btn {
+      display: inline-flex; align-items: center; gap: 6px;
+      background: linear-gradient(135deg, var(--primary), var(--primary-2));
+      color: #fff; border: none; padding: 9px 16px; border-radius: 12px;
+      font-size: 13px; font-weight: 800; cursor: pointer; transition: 0.18s;
+      white-space: nowrap;
+    }
+    .immortal-replay-btn:hover { opacity: 0.88; transform: translateY(-1px); }
+    .immortal-ext-link {
+      font-size: 12px; font-weight: 700; color: var(--primary);
+      text-decoration: none; text-align: right; white-space: nowrap;
+    }
+    .immortal-ext-link:hover { text-decoration: underline; }
+
+    /* Shimmer for immortal loading */
+    .immortal-shimmer {
+      height: 100px;
+      border-radius: var(--radius-md);
+      background: linear-gradient(90deg, var(--surface-soft) 25%, var(--line) 50%, var(--surface-soft) 75%);
+      background-size: 200% 100%;
+      animation: shimmer 1.4s infinite;
+      margin-bottom: 10px;
+    }
+    html.dark .immortal-shimmer {
+      background: linear-gradient(90deg, #1a2738 25%, #253548 50%, #1a2738 75%);
+      background-size: 200% 100%;
+    }
+
+    /* ── Replayer Modal (same as player.html) ─────────────────────── */
+    .replayer-modal-bg {
+      display: none; position: fixed; inset: 0; z-index: 2000;
+      background: rgba(0,0,0,0.55); backdrop-filter: blur(6px);
+      align-items: center; justify-content: center;
+    }
+    .replayer-modal-bg.open { display: flex; }
+    .replayer-modal {
+      background: var(--surface); border: 1.5px solid var(--line);
+      border-radius: var(--radius-lg); padding: 24px 20px 20px;
+      width: min(94vw, 440px); box-shadow: var(--shadow); position: relative;
+      animation: modalIn 0.18s ease;
+    }
+    html.dark .replayer-modal { background: #141e2e; border-color: #1e3050; }
+    @keyframes modalIn { from { opacity: 0; transform: scale(0.96) translateY(8px); } to { opacity: 1; transform: none; } }
+    .replayer-close {
+      position: absolute; top: 12px; right: 14px;
+      background: none; border: none; font-size: 22px; cursor: pointer;
+      color: var(--muted); line-height: 1;
+    }
+    .replayer-close:hover { color: var(--text); }
+    .replayer-meta {
+      font-size: 13px; font-weight: 800; color: var(--text);
+      text-align: center; margin-bottom: 14px; min-height: 18px;
+    }
+    .replayer-status {
+      font-size: 12px; color: var(--muted); text-align: center;
+      margin-bottom: 10px; min-height: 16px;
+    }
+    #replayerBoard {
+      width: 100%; aspect-ratio: 1; border-radius: 10px; overflow: hidden;
+      margin-bottom: 14px;
+    }
+    .replayer-move-list {
+      max-height: 80px; overflow-y: auto; font-size: 12px;
+      font-family: monospace; color: var(--muted);
+      background: var(--surface-soft); border-radius: 8px;
+      padding: 6px 10px; margin-bottom: 12px; line-height: 1.8;
+    }
+    html.dark .replayer-move-list { background: #1a2738; }
+    .replayer-controls {
+      display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 8px;
+    }
+    .replayer-btn {
+      padding: 8px 0; border: 1.5px solid var(--line); border-radius: 10px;
+      background: var(--surface-soft); color: var(--text);
+      font-size: 14px; font-weight: 800; cursor: pointer; transition: 0.15s; text-align: center;
+    }
+    .replayer-btn:hover:not(:disabled) { background: var(--primary); color: #fff; border-color: var(--primary); }
+    .replayer-btn:disabled { opacity: 0.35; cursor: not-allowed; }
+    html.dark .replayer-btn { background: #1a2738; border-color: #1e3050; }
+    .replayer-external {
+      display: block; text-align: center; margin-top: 12px;
+      font-size: 12px; color: var(--primary); font-weight: 700; text-decoration: none;
+    }
+    .replayer-external:hover { text-decoration: underline; }
+    .replayer-flip-btn {
+      display: block; width: 100%; margin-top: 8px;
+      padding: 7px 0; border: 1.5px solid var(--line); border-radius: 10px;
+      background: var(--surface-soft); color: var(--muted);
+      font-size: 12px; font-weight: 800; cursor: pointer; transition: 0.15s; text-align: center;
+    }
+    .replayer-flip-btn:hover { background: var(--line); color: var(--text); }
+    html.dark .replayer-flip-btn { background: #1a2738; border-color: #1e3050; }
+
+    /* ── Misc ─────────────────────────────────────────────────────── */
+    .history-no-data { color: var(--muted); font-size: 14px; padding: 12px 0; }
+    .history-shimmer {
+      height: 80px; border-radius: var(--radius-md);
+      background: linear-gradient(90deg, var(--surface-soft) 25%, var(--line) 50%, var(--surface-soft) 75%);
+      background-size: 200% 100%; animation: shimmer 1.4s infinite; margin-bottom: 10px;
+    }
+    html.dark .history-shimmer {
+      background: linear-gradient(90deg, #1a2738 25%, #253548 50%, #1a2738 75%);
+      background-size: 200% 100%;
+    }
+
+    @media (max-width: 680px) {
+      .immortal-card { grid-template-columns: 1fr; }
+      .immortal-actions { flex-direction: row; align-items: center; }
+      .podium-col--1 .podium-avatar { width: 64px; height: 64px; font-size: 28px; }
+    }
+  </style>
+</head>
+<body>
+<!-- Inline SVG sprite: piece symbols loaded directly into DOM, no XHR needed -->
+<svg xmlns="http://www.w3.org/2000/svg" style="display:none" aria-hidden="true">
+  <g id="wk" stroke-linecap="round" stroke-linejoin="round" transform="translate(5,5)" stroke="#000" stroke-width="1.5"><line x1="15" y1="4.968" x2="15" y2="0"/><line x1="12.857" y1="1.765" x2="17.143" y2="1.765"/><path d="M17.571,7.5 C17.571,7.5 16.714,5.294 15,5.294 C13.286,5.294 12.429,7.5 12.429,7.5 C11.143,10.147 15,16.765 15,16.765 C15,16.765 18.857,10.147 17.571,7.5 Z" fill="#fff"/><path d="M5.571,27.353 C10.286,30.441 18.857,30.441 23.571,27.353 L23.571,21.176 C23.571,21.176 31.286,17.206 28.714,11.912 C25.286,6.176 17.143,8.824 15,15.441 L15,18.529 L15,15.441 C12,8.824 3.857,6.176 1.286,11.912 C-1.286,17.206 5.571,20.735 5.571,20.735 L5.571,27.353 Z" fill="#fff"/><path d="M5.571,21.176 C10.286,18.529 18.857,18.529 23.571,21.176" fill-opacity="0"/><path d="M5.571,24.265 C10.286,21.618 18.857,21.618 23.571,24.265" fill-opacity="0" stroke-linecap="square"/><path d="M5.571,27.353 C10.286,24.706 18.857,24.706 23.571,27.353" fill-opacity="0"/></g>
+  <g id="wq" stroke-linecap="round" stroke-linejoin="round" transform="translate(4,5)" stroke="#000" stroke-width="1.5"><path d="M3.459,6.2 C3.459,7.178 2.685,7.971 1.73,7.971 C0.774,7.971 0,7.178 0,6.2 C0,5.222 0.774,4.429 1.73,4.429 C2.685,4.429 3.459,5.222 3.459,6.2 Z" fill="#fff"/><path d="M17.73,2.214 C17.73,3.193 16.955,3.986 16,3.986 C15.045,3.986 14.27,3.193 14.27,2.214 C14.27,1.236 15.045,0.443 16,0.443 C16.955,0.443 17.73,1.236 17.73,2.214 Z" fill="#fff"/><path d="M32,6.2 C32,7.178 31.226,7.971 30.27,7.971 C29.315,7.971 28.541,7.178 28.541,6.2 C28.541,5.222 29.315,4.429 30.27,4.429 C31.226,4.429 32,5.222 32,6.2 Z" fill="#fff"/><path d="M10.378,3.1 C10.378,4.078 9.604,4.871 8.649,4.871 C7.693,4.871 6.919,4.078 6.919,3.1 C6.919,2.122 7.693,1.329 8.649,1.329 C9.604,1.329 10.378,2.122 10.378,3.1 Z" fill="#fff"/><path d="M25.081,3.543 C25.081,4.521 24.307,5.314 23.351,5.314 C22.396,5.314 21.622,4.521 21.622,3.543 C21.622,2.565 22.396,1.771 23.351,1.771 C24.307,1.771 25.081,2.565 25.081,3.543 Z" fill="#fff"/><path d="M4.324,18.6 C11.676,17.271 22.486,17.271 27.676,18.6 L29.405,7.971 L23.351,17.714 L23.351,5.314 L18.595,17.271 L16,3.986 L13.405,17.271 L8.649,4.871 L8.649,17.714 L2.595,7.971 L4.324,18.6 Z" fill="#fff"/><path d="M4.324,18.6 C4.324,20.371 5.622,20.371 6.486,22.143 C7.351,23.471 7.351,23.029 6.919,25.243 C5.622,26.129 5.622,27.457 5.622,27.457 C4.324,28.786 6.054,29.671 6.054,29.671 C11.676,30.557 20.324,30.557 25.946,29.671 C25.946,29.671 27.243,28.786 25.946,27.457 C25.946,27.457 26.378,26.129 25.081,25.243 C24.649,23.029 24.649,23.471 25.514,22.143 C26.378,20.371 27.676,20.371 27.676,18.6 C20.324,17.271 11.676,17.271 4.324,18.6 Z" fill="#fff"/><path d="M6.486,22.143 C9.514,21.257 22.486,21.257 25.514,22.143"/><path d="M6.919,25.243 C12.108,24.357 19.892,24.357 25.081,25.243"/></g>
+  <g id="wb" stroke-linecap="round" stroke-linejoin="round" transform="translate(6,5)" stroke="#000" stroke-width="1.5"><g fill="#fff"><path d="M2.545,27.353 C5.422,26.497 11.124,27.732 14,25.588 C16.876,27.732 22.578,26.497 25.455,27.353 C25.455,27.353 26.855,27.829 28,29.118 C27.423,29.974 26.6,29.991 25.455,29.559 C22.578,28.703 16.876,29.965 14,28.676 C11.124,29.965 5.422,28.703 2.545,29.559 C1.397,29.991 0.574,29.974 0,29.118 C1.149,27.406 2.545,27.353 2.545,27.353 Z"/><path d="M7.636,23.824 C9.758,26.029 18.242,26.029 20.364,23.824 C20.788,22.5 20.364,22.059 20.364,22.059 C20.364,19.853 18.242,18.529 18.242,18.529 C22.909,17.206 23.333,8.382 14,4.853 C4.667,8.382 5.091,17.206 9.758,18.529 C9.758,18.529 7.636,19.853 7.636,22.059 C7.636,22.059 7.212,22.5 7.636,23.824 Z"/><path d="M16.121,2.647 C16.121,3.865 15.172,4.853 14,4.853 C12.828,4.853 11.879,3.865 11.879,2.647 C11.879,1.429 12.828,0.441 14,0.441 C15.172,0.441 16.121,1.429 16.121,2.647 Z"/></g><path d="M9.758,18.529 L18.242,18.529 M7.636,22.059 L20.364,22.059 M14,9.265 L14,13.676 M11.879,11.471 L16.121,11.471"/></g>
+  <g id="wn" stroke-linecap="round" stroke-linejoin="round" transform="translate(6,6)" stroke="#000"><path d="M13.576,2.625 C22.485,3.5 27.576,9.625 27.152,28 L7.636,28 C7.636,20.125 16.121,22.313 14.424,9.625" stroke-width="1.5" fill="#fff"/><path d="M15.273,9.625 C15.595,12.171 10.564,16.074 8.485,17.5 C5.939,19.25 6.092,21.298 4.242,21 C3.358,20.178 5.439,18.34 4.242,18.375 C3.394,18.375 4.404,19.451 3.394,20.125 C2.545,20.125 -0.003,21 0,16.625 C0,14.875 5.091,6.125 5.091,6.125 C5.091,6.125 6.695,4.463 6.788,3.063 C6.168,2.193 6.364,1.313 6.364,0.438 C7.212,-0.438 8.909,2.625 8.909,2.625 L10.606,2.625 C10.606,2.625 11.268,0.882 12.727,0 C13.576,0 13.576,2.625 13.576,2.625" stroke-width="1.5" fill="#fff"/><path d="M2.97,16.188 C2.97,16.429 2.78,16.625 2.545,16.625 C2.311,16.625 2.121,16.429 2.121,16.188 C2.121,15.946 2.311,15.75 2.545,15.75 C2.78,15.75 2.97,15.946 2.97,16.188 Z" stroke-width="1.5" fill="#000"/><path d="M7.636,7.438 C7.636,8.162 7.446,8.75 7.212,8.75 C6.978,8.75 6.788,8.162 6.788,7.438 C6.788,6.713 6.978,6.125 7.212,6.125 C7.446,6.125 7.636,6.713 7.636,7.438 Z" stroke-width="1.5" fill="#000" transform="translate(7.212,7.438) rotate(30) translate(-7.212,-7.438)"/></g>
+  <g id="wr" stroke-linecap="round" stroke-linejoin="round" transform="translate(9,8)" stroke="#000" stroke-width="1.5"><polygon fill="#fff" points="0 26 22 26 22 23.4 0 23.4"/><polygon fill="#fff" points="2.444 23.4 2.444 19.933 19.556 19.933 19.556 23.4"/><polyline fill="#fff" points="1.63 4.333 1.63 0 4.889 0 4.889 1.733 8.963 1.733 8.963 0 13.037 0 13.037 1.733 17.111 1.733 17.111 0 20.37 0 20.37 4.333"/><polyline fill="#fff" points="20.37 4.333 17.926 6.933 4.074 6.933 1.63 4.333"/><polyline fill="#fff" points="17.926 6.933 17.926 17.767 4.074 17.767 4.074 6.933"/><polyline fill="#fff" points="17.926 17.767 19.148 19.933 2.852 19.933 4.074 17.767"/><line x1="1.63" y1="4.333" x2="20.37" y2="4.333"/></g>
+  <g id="wp" transform="translate(10,9)" fill="#fff" stroke="#000" stroke-linecap="round" stroke-width="1.5"><path d="M10,0 C8.158,0 6.667,1.501 6.667,3.355 C6.667,4.101 6.908,4.789 7.317,5.351 C5.692,6.29 4.583,8.043 4.583,10.065 C4.583,11.767 5.367,13.285 6.592,14.283 C4.092,15.172 0.417,18.938 0.417,25.581 L19.583,25.581 C19.583,18.938 15.908,15.172 13.408,14.283 C14.633,13.285 15.417,11.767 15.417,10.065 C15.417,8.043 14.308,6.29 12.683,5.351 C13.092,4.789 13.333,4.101 13.333,3.355 C13.333,1.501 11.842,0 10,0 Z"/></g>
+  <g id="bk" stroke-linecap="round" stroke-linejoin="round" transform="translate(5,5)" stroke-width="1.5"><line x1="15" y1="4.968" x2="15" y2="0" stroke="#000"/><path d="M15,16.765 C15,16.765 18.857,10.147 17.571,7.5 C17.571,7.5 16.714,5.294 15,5.294 C13.286,5.294 12.429,7.5 12.429,7.5 C11.143,10.147 15,16.765 15,16.765" stroke="#000" fill="#000"/><path d="M5.571,27.353 C10.286,30.441 18.857,30.441 23.571,27.353 L23.571,21.176 C23.571,21.176 31.286,17.206 28.714,11.912 C25.286,6.176 17.143,8.824 15,15.441 L15,18.529 L15,15.441 C12,8.824 3.857,6.176 1.286,11.912 C-1.286,17.206 5.571,20.735 5.571,20.735 L5.571,27.353 Z" stroke="#000" fill="#000"/><line x1="12.857" y1="1.765" x2="17.143" y2="1.765" stroke="#000"/><path d="M23.143,20.735 C23.143,20.735 30.429,17.206 28.311,12.221 C24.986,7.059 17.143,10.588 15,16.324 L15.009,18.176 L15,16.324 C12.857,10.588 4.205,7.059 1.712,12.221 C-0.429,17.206 5.871,20.162 5.871,20.162" stroke="#fff"/><path d="M5.571,21.176 C10.286,18.529 18.857,18.529 23.571,21.176 M5.571,24.265 C10.286,21.618 18.857,21.618 23.571,24.265 M5.571,27.353 C10.286,24.706 18.857,24.706 23.571,27.353" stroke="#fff"/></g>
+  <g id="bq" stroke-linecap="round" stroke-linejoin="round" transform="translate(3,4)"><g fill="#000"><ellipse cx="2.615" cy="6.222" rx="2.397" ry="2.444"/><ellipse cx="9.59" cy="3.556" rx="2.397" ry="2.444"/><ellipse cx="17" cy="2.667" rx="2.397" ry="2.444"/><ellipse cx="24.41" cy="3.556" rx="2.397" ry="2.444"/><ellipse cx="31.385" cy="6.222" rx="2.397" ry="2.444"/></g><path d="M5.231,18.667 C12.641,17.333 23.538,17.333 28.769,18.667 L30.949,7.556 L24.41,17.778 L24.149,5.244 L19.615,17.333 L17,4.444 L14.385,17.333 L9.851,5.244 L9.59,17.778 L3.051,7.556 L5.231,18.667 Z" stroke="#000" stroke-width="1.5" fill="#000"/><path d="M5.231,18.667 C5.231,20.444 6.538,20.444 7.41,22.222 C8.282,23.556 8.282,23.111 7.846,25.333 C6.538,26.222 6.538,27.556 6.538,27.556 C5.231,28.889 6.974,29.778 6.974,29.778 C12.641,30.667 21.359,30.667 27.026,29.778 C27.026,29.778 28.333,28.889 27.026,27.556 C27.026,27.556 27.462,26.222 26.154,25.333 C25.718,23.111 25.718,23.556 26.59,22.222 C27.462,20.444 28.769,20.444 28.769,18.667 C21.359,17.333 12.641,17.333 5.231,18.667 Z" stroke="#000" stroke-width="1.5" fill="#000"/><path d="M6.974,29.778 C13.467,32.081 20.533,32.081 27.026,29.778" stroke="#000" stroke-width="1.5"/><path d="M6.974,21.333 C13.467,19.03 20.533,19.03 27.026,21.333" stroke="#fff" stroke-width="1.5"/><line x1="8.282" y1="23.556" x2="25.718" y2="23.556" stroke="#fff" stroke-width="1.5"/><path d="M7.41,26.222 C13.637,28.324 20.363,28.324 26.59,26.222" stroke="#fff" stroke-width="1.5"/><path d="M6.538,28.889 C13.295,31.403 20.705,31.403 27.462,28.889" stroke="#fff" stroke-width="1.5"/></g>
+  <g id="bb" stroke-linecap="round" stroke-linejoin="round" transform="translate(6,5)" stroke-width="1.5"><g fill="#000" stroke="#000"><path d="M2.545,27.353 C5.422,26.497 11.124,27.732 14,25.588 C16.876,27.732 22.578,26.497 25.455,27.353 C25.455,27.353 26.855,27.829 28,29.118 C27.423,29.974 26.6,29.991 25.455,29.559 C22.578,28.703 16.876,29.965 14,28.676 C11.124,29.965 5.422,28.703 2.545,29.559 C1.397,29.991 0.574,29.974 0,29.118 C1.149,27.406 2.545,27.353 2.545,27.353 Z"/><path d="M7.636,23.824 C9.758,26.029 18.242,26.029 20.364,23.824 C20.788,22.5 20.364,22.059 20.364,22.059 C20.364,19.853 18.242,18.529 18.242,18.529 C22.909,17.206 23.333,8.382 14,4.853 C4.667,8.382 5.091,17.206 9.758,18.529 C9.758,18.529 7.636,19.853 7.636,22.059 C7.636,22.059 7.212,22.5 7.636,23.824 Z"/><path d="M16.121,2.647 C16.121,3.865 15.172,4.853 14,4.853 C12.828,4.853 11.879,3.865 11.879,2.647 C11.879,1.429 12.828,0.441 14,0.441 C15.172,0.441 16.121,1.429 16.121,2.647 Z"/></g><path d="M9.758,18.529 L18.242,18.529 M7.636,22.059 L20.364,22.059 M14,9.265 L14,13.676 M11.879,11.471 L16.121,11.471" stroke="#fff"/></g>
+  <g id="bn" stroke-linecap="round" stroke-linejoin="round" transform="translate(6,6)"><path d="M13.576,2.636 C22.485,3.515 27.576,9.667 27.152,28.121 L7.636,28.121 C7.636,20.212 16.121,22.409 14.424,9.667" stroke="#000" stroke-width="1.5" fill="#000"/><path d="M15.273,9.667 C15.595,12.224 10.564,16.143 8.485,17.576 C5.939,19.333 6.092,21.39 4.242,21.091 C3.358,20.265 5.439,18.419 4.242,18.455 C3.394,18.455 4.404,19.535 3.394,20.212 C2.545,20.212 -0.003,21.091 0,16.697 C0,14.939 5.091,6.152 5.091,6.152 C5.091,6.152 6.695,4.482 6.788,3.076 C6.168,2.202 6.364,1.318 6.364,0.439 C7.212,-0.439 8.909,2.636 8.909,2.636 L10.606,2.636 C10.606,2.636 11.268,0.886 12.727,0 C13.576,0 13.576,2.636 13.576,2.636" stroke="#000" stroke-width="1.5" fill="#000"/><path d="M2.97,16.258 C2.97,16.5 2.78,16.697 2.545,16.697 C2.311,16.697 2.121,16.5 2.121,16.258 C2.121,16.015 2.311,15.818 2.545,15.818 C2.78,15.818 2.97,16.015 2.97,16.258 Z" stroke="#fff" stroke-width="1.5" fill="#fff"/><path d="M7.636,7.47 C7.636,8.198 7.446,8.788 7.212,8.788 C6.978,8.788 6.788,8.198 6.788,7.47 C6.788,6.742 6.978,6.152 7.212,6.152 C7.446,6.152 7.636,6.742 7.636,7.47 Z" stroke="#fff" stroke-width="1.5" fill="#fff" transform="translate(7.212,7.47) rotate(30) translate(-7.212,-7.47)"/><path d="M15.739,2.988 L15.358,4.262 L15.782,4.394 C18.455,5.273 20.576,6.582 22.485,10.326 C24.394,14.069 25.242,19.386 24.818,28.121 L24.776,28.561 L26.685,28.561 L26.727,28.121 C27.152,19.281 25.981,13.314 23.97,9.368 C21.959,5.422 19.057,3.533 16.172,3.076 L15.739,2.988 Z" fill="#fff"/></g>
+  <g id="br" stroke-linecap="round" stroke-linejoin="round" transform="translate(9,8)"><polygon stroke="#000" stroke-width="1.5" fill="#000" points="0 26 22 26 22 23.4 0 23.4"/><polygon stroke="#000" stroke-width="1.5" fill="#000" points="2.852 19.933 4.074 17.767 17.926 17.767 19.148 19.933"/><polygon stroke="#000" stroke-width="1.5" fill="#000" points="2.444 23.4 2.444 19.933 19.556 19.933 19.556 23.4"/><polygon stroke="#000" stroke-width="1.5" fill="#000" points="4.074 17.767 4.074 6.5 17.926 6.5 17.926 17.767"/><polygon stroke="#000" stroke-width="1.5" fill="#000" points="4.074 6.5 1.63 4.333 20.37 4.333 17.926 6.5"/><polygon stroke="#000" stroke-width="1.5" fill="#000" points="1.63 4.333 1.63 0 4.889 0 4.889 1.733 8.963 1.733 8.963 0 13.037 0 13.037 1.733 17.111 1.733 17.111 0 20.37 0 20.37 4.333"/><polyline stroke="#fff" points="2.444 22.967 19.556 22.967"/><line x1="3.259" y1="19.5" x2="18.741" y2="19.5" stroke="#fff"/><line x1="4.074" y1="17.767" x2="17.926" y2="17.767" stroke="#fff"/><line x1="4.074" y1="6.5" x2="17.926" y2="6.5" stroke="#fff"/><line x1="1.63" y1="4.333" x2="20.37" y2="4.333" stroke="#fff"/></g>
+  <g id="bp" transform="translate(10,8)" fill="#000" stroke="#000" stroke-linecap="round" stroke-width="1.5"><path d="M10,0 C8.158,0 6.667,1.501 6.667,3.355 C6.667,4.101 6.908,4.789 7.317,5.351 C5.692,6.29 4.583,8.043 4.583,10.065 C4.583,11.767 5.367,13.285 6.592,14.283 C4.092,15.172 0.417,18.938 0.417,25.581 L19.583,25.581 C19.583,18.938 15.908,15.172 13.408,14.283 C14.633,13.285 15.417,11.767 15.417,10.065 C15.417,8.043 14.308,6.29 12.683,5.351 C13.092,4.789 13.333,4.101 13.333,3.355 C13.333,1.501 11.842,0 10,0 Z"/></g>
+</svg>
+
+  <!-- ── localStorage safety wrappers — MUST be first ── -->
+  <script>
+    function safeGetStorage(k) { try { return localStorage.getItem(k); } catch(e) { return null; } }
+    function safeSetStorage(k,v) { try { localStorage.setItem(k,v); } catch(e) {} }
+    // Apply dark mode before any paint to avoid flicker
+    (function() {
+      try {
+        if (safeGetStorage('spkc-dark') === '1') document.documentElement.classList.add('dark');
+        else if (window.matchMedia && window.matchMedia('(prefers-color-scheme:dark)').matches && safeGetStorage('spkc-dark') !== '0') document.documentElement.classList.add('dark');
+      } catch(e) {}
+    })();
+  </script>
+
+  <div class="page-shell">
+    <header class="hero" style="padding-bottom:0;">
+      <nav class="nav" aria-label="Primary">
+        <a href="index.html">Home</a>
+        <a href="join.html">Join</a>
+        <a href="tournaments.html">Tournaments</a>
+        <a href="rules.html">Rules</a>
+        <a href="brilliants.html">Brilliants</a>
+        <a href="matches.html">Matches</a>
+        <a href="history.html" class="active">History</a>
+        <a href="openings.html">Openings</a>
+        <button class="dark-toggle" id="darkToggle" aria-label="Toggle dark mode">🌙</button>
+      </nav>
+
+      <div class="hero-layout" style="padding-bottom: 28px;">
+        <div class="hero-copy">
+          <p class="eyebrow">SPKC Chess Club</p>
+          <h1>Club History</h1>
+          <p class="hero-text">Season champions, all-time records, and immortal games from the annals of SPKC chess.</p>
+        </div>
+        <div class="hero-side" style="display:flex;align-items:center;justify-content:center;">
+          <div style="font-size:88px;line-height:1;text-align:center;opacity:0.85;">🏆</div>
+        </div>
+      </div>
+
+      <!-- Quick hero stats -->
+      <div class="hero-stats">
+        <div class="stat-card">
+          <span class="stat-number" id="statSeasons">—</span>
+          <span class="stat-label">Seasons completed</span>
+        </div>
+        <div class="stat-card">
+          <span class="stat-number" id="statBrilliants">—</span>
+          <span class="stat-label">Total brilliants</span>
+        </div>
+        <div class="stat-card">
+          <span class="stat-number" id="statImmortal">—</span>
+          <span class="stat-label">Immortal games</span>
+        </div>
+      </div>
+    </header>
+
+    <main class="content-grid" style="padding-top:28px;">
+
+      <!-- ══════════════════════════════════════
+           Section 1: Champions Podium
+           ══════════════════════════════════════ -->
+      <section class="panel span-12" id="sectionPodium">
+        <div class="section-head">
+          <h2 class="section-title">Champions Podium</h2>
+          <span class="section-badge" id="podiumBadge">Loading…</span>
+        </div>
+
+        <!-- Podium visual -->
+        <div class="podium-wrap" id="podiumVisual">
+          <div class="history-shimmer" style="width:100%;height:160px;border-radius:16px;margin:0;"></div>
+        </div>
+
+        <!-- All seasons list -->
+        <div style="margin-top:28px;">
+          <h3 style="font-size:15px;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:1px;margin:0 0 14px;">All Seasons</h3>
+          <div class="champions-list" id="championsList">
+            <div class="history-shimmer"></div>
+            <div class="history-shimmer"></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ══════════════════════════════════════
+           Section 2: All-Time Club Records
+           ══════════════════════════════════════ -->
+      <section class="panel span-12" id="sectionRecords">
+        <div class="section-head">
+          <h2 class="section-title">All-Time Records</h2>
+          <span class="section-badge">From all completed seasons</span>
+        </div>
+        <div class="records-grid" id="recordsGrid">
+          <div class="history-shimmer" style="height:100px;"></div>
+          <div class="history-shimmer" style="height:100px;"></div>
+          <div class="history-shimmer" style="height:100px;"></div>
+          <div class="history-shimmer" style="height:100px;"></div>
+        </div>
+      </section>
+
+      <!-- ══════════════════════════════════════
+           Section 3: Immortal Games
+           ══════════════════════════════════════ -->
+      <section class="panel span-12" id="sectionImmortal">
+        <div class="section-head">
+          <h2 class="section-title">Immortal Games</h2>
+          <span class="section-badge" id="immortalBadge">Loading…</span>
+        </div>
+        <p style="color:var(--muted);font-size:14px;margin:0 0 18px;">
+          Hand-picked masterpieces from club history — games that defined a season.
+        </p>
+        <div class="immortal-grid" id="immortalGrid">
+          <div class="immortal-shimmer"></div>
+          <div class="immortal-shimmer"></div>
+        </div>
+      </section>
+
+    </main>
+    <footer>SPKC Chess Club — Club History</footer>
+  </div>
+
+  <!-- ── Game Replayer Modal ── -->
+  <div class="replayer-modal-bg" id="replayerBg" role="dialog" aria-modal="true" aria-label="Game replayer">
+    <div class="replayer-modal">
+      <button class="replayer-close" id="replayerClose" aria-label="Close">×</button>
+      <div class="replayer-meta" id="replayerMeta">Loading…</div>
+      <div class="replayer-status" id="replayerStatus"></div>
+      <div id="replayerBoard"></div>
+      <div class="replayer-move-list" id="replayerMoveList"></div>
+      <div class="replayer-controls">
+        <button class="replayer-btn" id="rBtnStart" title="Start">⏮</button>
+        <button class="replayer-btn" id="rBtnPrev" title="Previous">◄</button>
+        <button class="replayer-btn" id="rBtnNext" title="Next">►</button>
+        <button class="replayer-btn" id="rBtnEnd" title="End">⏭</button>
+      </div>
+      <button class="replayer-flip-btn" id="rBtnFlip">🔄 Flip board</button>
+      <a class="replayer-external" id="replayerExtLink" href="#" target="_blank" rel="noopener noreferrer">Open on Chess.com ↗</a>
+    </div>
+  </div>
+
+  <!-- chess.js v0.13.4 UMD (exposes global Chess) -->
+  <script src="lib/chess.min.js"></script>
+  <!-- SheetJS for workbook parsing -->
+  <script src="lib/xlsx.full.min.js"></script>
+  <!-- Supabase -->
+  <script src="lib/supabase.min.js"></script>
+
+  <!-- cm-chessboard: self-contained IIFE bundle (no ES module, works via file://) -->
+  <script src="cm-chessboard-bundle.js"></script>
+
+  <script>
+    // ── Config ───────────────────────────────────────────────────────────
+    const SUPABASE_URL      = 'https://qoczwxslhygakivfgxdy.supabase.co';
+    const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFvY3p3eHNsaHlnYWtpdmZneGR5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk2MTAwNzMsImV4cCI6MjA5NTE4NjA3M30.J5I0IR5Ra_JePDzJYHpzstbNRCo667B201iVhjbDZjs';
+    const BUCKET            = 'private_uploads';
+    const WORKBOOK_PATH     = 'latest/season-standings.xlsx';
+    const { createClient }  = supabase;
+    const sb                = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+    // ── Utilities ────────────────────────────────────────────────────────
+    function escapeHtml(v) {
+      return String(v ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+    }
+    function fetchWithTimeout(url, ms = 10000) {
+      return Promise.race([fetch(url), new Promise((_,r) => setTimeout(() => r(new Error('Timeout')), ms))]);
+    }
+
+    // ── Workbook helpers (mirrors tournaments.html exactly) ──────────────
+    function findBestSheetName(sheetNames, season) {
+      const names = Array.isArray(sheetNames) ? sheetNames : [];
+      const exactTarget = String(season.sheetName || season.sheet_name || '').trim().toLowerCase();
+      const hints = Array.isArray(season.sheetHints) ? season.sheetHints
+        : (() => { try { return JSON.parse(season.sheet_hints || '[]'); } catch { return []; } })();
+      if (exactTarget) {
+        const exact = names.find(n => n.trim().toLowerCase() === exactTarget);
+        if (exact) return exact;
+      }
+      for (const h of hints) {
+        const hn = String(h || '').trim().toLowerCase(); if (!hn) continue;
+        const m = names.find(n => n.trim().toLowerCase() === hn); if (m) return m;
+      }
+      for (const h of hints) {
+        const hn = String(h || '').trim().toLowerCase(); if (!hn) continue;
+        const m = names.find(n => n.toLowerCase().includes(hn)); if (m) return m;
+      }
+      if (season.label) {
+        const lh = season.label.trim().toLowerCase();
+        const m = names.find(n => n.toLowerCase().includes(lh)); if (m) return m;
+      }
+      return names[0] || null;
+    }
+
+    function parseNamedBlock(rows, blockName) {
+      let labelIndex = -1, headerIndex = -1;
+      for (let i = 0; i < rows.length; i++) {
+        const row = rows[i].map(v => String(v).trim());
+        if (row.includes(blockName)) { labelIndex = i; break; }
+      }
+      if (labelIndex === -1) return { headers: [], players: [] };
+      for (let i = labelIndex + 1; i < rows.length; i++) {
+        const row = rows[i].map(v => String(v).trim());
+        if (row.includes('Player') && row.includes('Chess.com Username') && row.includes('Total Score')) {
+          headerIndex = i; break;
+        }
+      }
+      if (headerIndex === -1) return { headers: [], players: [] };
+      const headers = rows[headerIndex].map(v => String(v).trim());
+      const players = []; const seen = new Set();
+      for (let i = headerIndex + 1; i < rows.length; i++) {
+        const rawRow = rows[i].map(v => String(v).trim());
+        if (rawRow.every(c => c === '')) continue;
+        if (['Total Rank','Total Points','Total Bullet Rank','Total Bullet Points',
+             'Total Blitz Rank','Total Blitz Points','Total Rapid Rank','Total Rapid Points']
+             .some(b => rawRow.includes(b))) break;
+        const player = {}; headers.forEach((h, idx) => { player[h] = rawRow[idx] ?? ''; });
+        const name = String(player['Player'] || '').trim();
+        const uname = String(player['Chess.com Username'] || '').trim();
+        if (!name || !uname || name === 'Player') continue;
+        const key = `${name}__${uname}`; if (seen.has(key)) continue; seen.add(key);
+        players.push(player);
+      }
+      return { headers, players };
+    }
+
+    // Compute total points for a player row (ATT = 5, etc.)
+    function computeTotal(player, roundKeys) {
+      let total = 0;
+      for (const rk of roundKeys) {
+        const raw = String(player[rk] || '').trim();
+        const rawUp = raw.toUpperCase();
+        if (rawUp === 'ATT') { total += 5; continue; }
+        const n = parseFloat(raw);
+        if (!isNaN(n) && raw !== '') total += n;
+      }
+      return total;
+    }
+
+    // ── Fetch & parse a season workbook → returns sorted player array ────
+    async function loadSeasonPlayers(season) {
+      const filePath = String(season.file_path || WORKBOOK_PATH).trim();
+      const { data: signed, error: signErr } = await sb.storage.from(BUCKET).createSignedUrl(filePath, 10800);
+      if (signErr || !signed?.signedUrl) throw new Error('Signed URL failed: ' + (signErr?.message || 'unknown'));
+      const resp = await fetchWithTimeout(signed.signedUrl);
+      if (!resp.ok) throw new Error('Workbook HTTP ' + resp.status);
+      const buf = await resp.arrayBuffer();
+      const wb = XLSX.read(buf, { type: 'array' });
+      const seasonNorm = {
+        sheetName:  season.sheet_name  || season.sheetName  || '',
+        sheetHints: (() => { try { return JSON.parse(season.sheet_hints || '[]'); } catch { return season.sheetHints || []; } })(),
+        label: season.season_label || season.label || ''
+      };
+      const sheetName = findBestSheetName(wb.SheetNames, seasonNorm);
+      if (!sheetName) throw new Error('Sheet not found. Available: ' + wb.SheetNames.join(', '));
+      const sheet = wb.Sheets[sheetName];
+      const rows = XLSX.utils.sheet_to_json(sheet, { header: 1, defval: '' });
+      const pointsBlock = parseNamedBlock(rows, 'Total Points');
+      if (!pointsBlock.players.length) throw new Error('No players in Total Points block');
+      const allowedRoundCount = Number(season.round_count || 12);
+      const roundKeys = (pointsBlock.headers || [])
+        .map(h => String(h || '').trim())
+        .filter(h => /^R\s*\d+/i.test(h))
+        .sort((a, b) => Number((a.match(/R\s*(\d+)/i) || [0,0])[1]) - Number((b.match(/R\s*(\d+)/i) || [0,0])[1]))
+        .filter(h => { const n = Number((h.match(/R\s*(\d+)/i) || [0,0])[1]); return n >= 1 && n <= allowedRoundCount; });
+      const players = pointsBlock.players.map(p => ({
+        name:      String(p['Player'] || '').trim(),
+        username:  String(p['Chess.com Username'] || '').trim().toLowerCase(),
+        total:     computeTotal(p, roundKeys),
+        brilliants: parseInt(p['Brilliants'] || '0', 10) || 0
+      }));
+      players.sort((a, b) => b.total - a.total);
+      return players;
+    }
+
+    // ── Main init ────────────────────────────────────────────────────────
+    async function initHistory() {
+      // Fire independent sections in parallel
+      loadChampionsSection();
+      loadRecordsSection();
+      loadImmortalsSection();
+    }
+
+    // ── Section 1: Champions ─────────────────────────────────────────────
+    async function loadChampionsSection() {
+      const podiumVisual  = document.getElementById('podiumVisual');
+      const championsList = document.getElementById('championsList');
+      const podiumBadge   = document.getElementById('podiumBadge');
+      const statSeasons   = document.getElementById('statSeasons');
+
+      try {
+        // Fetch all seasons, newest first
+        const { data: seasons, error } = await sb.from('season_settings').select('*')
+          .order('registration_opens_at', { ascending: false, nullsFirst: false });
+        if (error) throw error;
+
+        const now = new Date();
+        // Only show seasons that have started
+        const allSeasons = (seasons || []).filter(s => s.registration_opens_at && new Date(s.registration_opens_at) <= now);
+
+        if (!allSeasons.length) {
+          podiumVisual.innerHTML = '<p class="history-no-data">No seasons have started yet.</p>';
+          championsList.innerHTML = '<p class="history-no-data">No season history found.</p>';
+          podiumBadge.textContent = '0 seasons';
+          statSeasons.textContent = '0';
+          return;
+        }
+
+        // Fetch top 3 players from each season (parallel, best-effort)
+        const seasonResults = await Promise.all(allSeasons.map(async s => {
+          try {
+            const players = await loadSeasonPlayers(s);
+            return { season: s, players };
+          } catch(e) {
+            console.warn('History: could not load season', s.season_key, e.message);
+            return { season: s, players: [] };
+          }
+        }));
+
+        // Update hero stat
+        statSeasons.textContent = allSeasons.length;
+        podiumBadge.textContent = allSeasons.length + ' season' + (allSeasons.length !== 1 ? 's' : '');
+
+        // Most recent season with data → podium visual
+        const latestWithData = seasonResults.find(r => r.players.length >= 1);
+        if (latestWithData) {
+          renderPodium(podiumVisual, latestWithData.season, latestWithData.players);
+        } else {
+          podiumVisual.innerHTML = '<p class="history-no-data">Season data not yet available in workbook.</p>';
+        }
+
+        // Full champions list — one row per season
+        const rowsHtml = seasonResults.map(({ season: s, players }) => {
+          const label = escapeHtml(s.season_label || s.season_key);
+          const champion = players[0];
+          const runnerUp = players[1];
+          const third    = players[2];
+          const champName = champion ? escapeHtml(champion.name) : '—';
+          const champPts  = champion ? champion.total : '—';
+          const champUser = champion ? escapeHtml(champion.username) : '';
+          const sub = [
+            runnerUp ? `🥈 ${escapeHtml(runnerUp.name)}` : null,
+            third    ? `🥉 ${escapeHtml(third.name)}`    : null
+          ].filter(Boolean).join(' · ');
+          const isFirst = seasonResults[0].season.season_key === s.season_key;
+          return `
+            <div class="champion-row${isFirst ? ' gold-row' : ''}">
+              <span class="champion-medal">${isFirst ? '🏆' : '🏅'}</span>
+              <span class="champion-season">${label}</span>
+              <div style="flex:1;min-width:0;">
+                <div class="champion-name">
+                  ${champName}
+                  ${champUser ? `<span style="font-size:11px;font-weight:600;color:var(--muted);">@${champUser}</span>` : ''}
+                </div>
+                ${sub ? `<div class="champion-sub">${sub}</div>` : ''}
+              </div>
+              <span class="champion-pts">${champPts} pts</span>
+            </div>`;
+        }).join('');
+        championsList.innerHTML = rowsHtml || '<p class="history-no-data">No champion data found.</p>';
+
+      } catch(e) {
+        podiumVisual.innerHTML = `<p class="history-no-data">⚠ Could not load champions: ${escapeHtml(e.message)}</p>`;
+        championsList.innerHTML = '';
+        podiumBadge.textContent = 'Error';
+        console.error('Champions section error:', e);
+      }
+    }
+
+    function renderPodium(container, season, players) {
+      const top1 = players[0] || null;
+      const top2 = players[1] || null;
+      const top3 = players[2] || null;
+      const label = escapeHtml(season.season_label || season.season_key);
+
+      function podiumCol(place, player, cls) {
+        if (!player) return `
+          <div class="podium-col podium-col--${place}">
+            <div class="podium-avatar">♟</div>
+            <div class="podium-name" style="color:var(--muted);">—</div>
+            <div class="podium-block">${['🥇','🥈','🥉'][place-1]}</div>
+          </div>`;
+        return `
+          <div class="podium-col podium-col--${place}">
+            <div class="podium-avatar" id="podiumAvatar${place}">
+              <span>${place}</span>
+            </div>
+            <div class="podium-name">${escapeHtml(player.name)}</div>
+            <div class="podium-username">@${escapeHtml(player.username)}</div>
+            <div class="podium-pts">${player.total} pts</div>
+            <div class="podium-block">${['🥇','🥈','🥉'][place-1]}</div>
+          </div>`;
+      }
+
+      // Order: 2nd left, 1st center, 3rd right
+      container.innerHTML = `
+        <div style="text-align:center;margin-bottom:8px;">
+          <span style="font-size:12px;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:1px;">${label} — Season Champions</span>
+        </div>
+        <div style="display:flex;align-items:flex-end;justify-content:center;gap:16px;flex-wrap:wrap;">
+          ${podiumCol(2, top2, 'lb-silver')}
+          ${podiumCol(1, top1, 'lb-gold')}
+          ${podiumCol(3, top3, 'lb-bronze')}
+        </div>`;
+
+      // Load Chess.com avatars in background
+      [top1, top2, top3].forEach((p, i) => {
+        if (!p) return;
+        const place = i === 0 ? 1 : i === 1 ? 2 : 3;
+        const el = document.getElementById(`podiumAvatar${place}`);
+        if (!el) return;
+        fetch(`https://api.chess.com/pub/player/${encodeURIComponent(p.username)}`)
+          .then(r => r.ok ? r.json() : null)
+          .then(data => {
+            if (data?.avatar && el) {
+              el.innerHTML = `<img src="${escapeHtml(data.avatar)}" alt="${escapeHtml(p.username)} avatar">`;
+            }
+          }).catch(() => {});
+      });
+    }
+
+    // ── Section 2: All-Time Records ──────────────────────────────────────
+    async function loadRecordsSection() {
+      const grid = document.getElementById('recordsGrid');
+
+      try {
+        // Run these in parallel: brilliants from DB, seasons list for workbook scan
+        const [brilliantsRes, seasonsRes] = await Promise.all([
+          sb.from('brilliant_moves').select('chess_username, player_name, season_key'),
+          sb.from('season_settings').select('*')
+            .order('registration_opens_at', { ascending: false, nullsFirst: false })
+        ]);
+
+        const now = new Date();
+        const allSeasons = (seasonsRes.data || []).filter(s => s.registration_opens_at && new Date(s.registration_opens_at) <= now);
+        const brilliants = Array.isArray(brilliantsRes.data) ? brilliantsRes.data : [];
+
+        // -- Record: Most brilliants all-time --
+        const brilliantCounts = {};
+        brilliants.forEach(b => {
+          const u = String(b.chess_username || '').trim().toLowerCase();
+          const n = String(b.player_name || b.chess_username || '').trim();
+          if (!u) return;
+          if (!brilliantCounts[u]) brilliantCounts[u] = { name: n, count: 0 };
+          brilliantCounts[u].count++;
+        });
+        const topBrilliantEntry = Object.values(brilliantCounts).sort((a, b) => b.count - a.count)[0];
+
+        // Update hero stat
+        document.getElementById('statBrilliants').textContent = brilliants.length;
+
+        // -- Records from workbooks: Most career points, best season score --
+        let mostCareerPts = null, bestSingleSeasonPts = null;
+        const careerPoints = {}; // username → total across all seasons
+
+        for (const s of allSeasons) {
+          try {
+            const players = await loadSeasonPlayers(s);
+            const label = s.season_label || s.season_key;
+            players.forEach(p => {
+              if (!careerPoints[p.username]) careerPoints[p.username] = { name: p.name, total: 0 };
+              careerPoints[p.username].total += p.total;
+            });
+            if (players[0]) {
+              if (!bestSingleSeasonPts || players[0].total > bestSingleSeasonPts.score) {
+                bestSingleSeasonPts = { name: players[0].name, username: players[0].username, score: players[0].total, season: label };
+              }
+            }
+          } catch(e) {
+            console.warn('Records: skipping season', s.season_key, e.message);
+          }
+        }
+
+        const topCareer = Object.values(careerPoints).sort((a, b) => b.total - a.total)[0];
+        mostCareerPts = topCareer || null;
+
+        // -- Record: Most seasons with a brilliant --
+        const brilliantSeasons = {};
+        brilliants.forEach(b => {
+          const u = String(b.chess_username || '').trim().toLowerCase();
+          const n = String(b.player_name || b.chess_username || '').trim();
+          if (!u) return;
+          if (!brilliantSeasons[u]) brilliantSeasons[u] = { name: n, seasons: new Set() };
+          if (b.season_key) brilliantSeasons[u].seasons.add(b.season_key);
+        });
+        const topBrilliantSeasons = Object.values(brilliantSeasons)
+          .map(e => ({ ...e, seasonCount: e.seasons.size }))
+          .sort((a, b) => b.seasonCount - a.seasonCount)[0];
+
+        // Render record cards
+        const cards = [
+          {
+            icon: '⭐',
+            label: 'Most Career Points',
+            value: mostCareerPts ? mostCareerPts.total : '—',
+            holder: mostCareerPts ? mostCareerPts.name : 'N/A',
+            sub: mostCareerPts ? 'Across all seasons' : 'No data yet'
+          },
+          {
+            icon: '🏆',
+            label: 'Best Single Season',
+            value: bestSingleSeasonPts ? bestSingleSeasonPts.score : '—',
+            holder: bestSingleSeasonPts ? bestSingleSeasonPts.name : 'N/A',
+            sub: bestSingleSeasonPts ? bestSingleSeasonPts.season : 'No data yet'
+          },
+          {
+            icon: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 20" width="22" height="27" style="display:inline-block;vertical-align:middle;" aria-label="Bullet"><ellipse cx="8" cy="6" rx="5" ry="6" fill="#f5b800"/><rect x="3" y="6" width="10" height="5" fill="#e0a000"/><polygon points="3,11 5,18 8,20 11,18 13,11" fill="#f5b800"/></svg>',
+            label: 'Most Brilliants',
+            value: topBrilliantEntry ? topBrilliantEntry.count : '—',
+            holder: topBrilliantEntry ? topBrilliantEntry.name : 'N/A',
+            sub: topBrilliantEntry ? 'All-time brilliant count' : 'No brilliants yet'
+          },
+          {
+            icon: '✨',
+            label: 'Brilliant Seasons',
+            value: topBrilliantSeasons ? topBrilliantSeasons.seasonCount : '—',
+            holder: topBrilliantSeasons ? topBrilliantSeasons.name : 'N/A',
+            sub: topBrilliantSeasons ? 'Seasons with at least 1 brilliant' : 'No data yet'
+          }
+        ];
+
+        grid.innerHTML = cards.map(c => `
+          <div class="record-card">
+            <div class="record-icon">${c.icon}</div>
+            <div class="record-label">${escapeHtml(c.label)}</div>
+            <div class="record-value">${escapeHtml(String(c.value))}</div>
+            <div class="record-holder">${escapeHtml(c.holder)}</div>
+            <div class="record-sub">${escapeHtml(c.sub)}</div>
+          </div>`).join('');
+
+      } catch(e) {
+        grid.innerHTML = `<p class="history-no-data">⚠ Could not load records: ${escapeHtml(e.message)}</p>`;
+        console.error('Records section error:', e);
+      }
+    }
+
+    // ── Section 3: Immortal Games ────────────────────────────────────────
+    // Immortal games are brilliant_moves entries with a game_link present.
+    // Admin curates these naturally by adding entries to brilliant_moves.
+    // We show all brilliant_moves that have a game_link, ordered newest first.
+    async function loadImmortalsSection() {
+      const grid    = document.getElementById('immortalGrid');
+      const badge   = document.getElementById('immortalBadge');
+      const statEl  = document.getElementById('statImmortal');
+
+      try {
+        const { data, error } = await sb.from('brilliant_moves')
+          .select('*')
+          .not('game_link', 'is', null)
+          .order('created_at', { ascending: false });
+
+        if (error) throw error;
+
+        const items = (Array.isArray(data) ? data : []).filter(d => d.game_link && String(d.game_link).trim() !== '');
+        statEl.textContent  = items.length;
+        badge.textContent   = items.length + ' game' + (items.length !== 1 ? 's' : '');
+
+        if (!items.length) {
+          grid.innerHTML = `
+            <div style="text-align:center;padding:40px 24px;color:var(--muted);">
+              <div style="font-size:48px;margin-bottom:12px;">♟</div>
+              <p style="margin:0;font-size:15px;font-weight:700;">No immortal games yet.</p>
+              <p style="margin:8px 0 0;font-size:13px;">Admin can add them via the Brilliants section — any brilliant move with a game link appears here.</p>
+            </div>`;
+          return;
+        }
+
+        // Resolve signed screenshot URLs in the background
+        grid.innerHTML = items.map((item, idx) => {
+          const season = escapeHtml(item.season_key  || '');
+          const round  = escapeHtml(String(item.round_number || ''));
+          const player = escapeHtml(item.player_name || item.chess_username || '');
+          const matchDesc = escapeHtml(item.match_desc || '');
+          const caption   = escapeHtml(item.caption   || '');
+          const gameLink  = escapeHtml(item.game_link || '#');
+
+          // Parse White vs Black from match_desc (e.g. "Felix vs Lloyd")
+          let whitePill = '', blackPill = '';
+          if (item.match_desc) {
+            const parts = item.match_desc.split(/\s+vs\.?\s+/i);
+            if (parts.length >= 2) {
+              whitePill = `<span class="immortal-player-pill">♙ ${escapeHtml(parts[0].trim())}</span>`;
+              blackPill = `<span class="immortal-vs">vs</span><span class="immortal-player-pill">♟ ${escapeHtml(parts[1].trim())}</span>`;
+            }
+          }
+
+          const createdAt = item.created_at
+            ? new Date(item.created_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })
+            : '';
+
+          return `
+            <div class="immortal-card" data-idx="${idx}">
+              <div style="min-width:0;">
+                <div class="immortal-badge">
+                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 20" width="10" height="12" style="display:inline;vertical-align:middle;margin-right:3px;" aria-hidden="true"><ellipse cx="8" cy="6" rx="5" ry="6" fill="currentColor"/><rect x="3" y="6" width="10" height="5" fill="currentColor" opacity="0.7"/><polygon points="3,11 5,18 8,20 11,18 13,11" fill="currentColor"/></svg>
+                  Immortal Game
+                </div>
+                <h3 class="immortal-title">${matchDesc || player + '\'s Masterpiece'}</h3>
+                <div class="immortal-players">
+                  ${whitePill}${blackPill}
+                </div>
+                ${caption ? `<p class="immortal-caption">"${caption}"</p>` : ''}
+                ${item.screenshot_url ? `<img id="immortalImg${idx}" src="" alt="Game screenshot" style="width:100%;max-height:200px;object-fit:cover;border-radius:10px;border:1px solid var(--line);margin-top:12px;display:none;">` : ''}
+                <div class="immortal-meta">
+                  ${season ? `<span class="immortal-meta-pill">📅 ${season.replace('-season','').replace('-season-','·')}</span>` : ''}
+                  ${round  ? `<span class="immortal-meta-pill">Round ${round}</span>` : ''}
+                  ${createdAt ? `<span class="immortal-meta-pill">${createdAt}</span>` : ''}
+                </div>
+              </div>
+              <div class="immortal-actions">
+                <button class="immortal-replay-btn"
+                  onclick='openReplayer(${JSON.stringify(item.game_link || "")}, "", ${JSON.stringify(matchDesc || player)}, "")'>
+                  ▶ Replay
+                </button>
+                <a class="immortal-ext-link" href="${gameLink}" target="_blank" rel="noopener noreferrer">Analyse on Chess.com ↗</a>
+              </div>
+            </div>`;
+        }).join('');
+
+        // Load screenshots via signed URLs in background
+        items.forEach((item, idx) => {
+          if (!item.screenshot_url) return;
+          sb.storage.from(BUCKET).createSignedUrl(item.screenshot_url, 10800)
+            .then(({ data: signed }) => {
+              if (signed?.signedUrl) {
+                const img = document.getElementById(`immortalImg${idx}`);
+                if (img) { img.src = signed.signedUrl; img.style.display = 'block'; }
+              }
+            }).catch(() => {});
+        });
+
+      } catch(e) {
+        grid.innerHTML = `<p class="history-no-data">⚠ Could not load immortal games: ${escapeHtml(e.message)}</p>`;
+        badge.textContent = 'Error';
+        console.error('Immortals section error:', e);
+      }
+    }
+
+    // ── Boot ─────────────────────────────────────────────────────────────
+    if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', initHistory);
+    else initHistory();
+  </script>
+
+  <!-- ── Dark mode toggle ── -->
+  <script>
+    (function() {
+      const btn = document.getElementById('darkToggle');
+      if (btn) {
+        btn.textContent = document.documentElement.classList.contains('dark') ? '☀️' : '🌙';
+        btn.addEventListener('click', function() {
+          const d = document.documentElement.classList.toggle('dark');
+          safeSetStorage('spkc-dark', d ? '1' : '0');
+          btn.textContent = d ? '☀️' : '🌙';
+        });
+      }
+    })();
+  </script>
+
+  <!-- ── Inline Game Replayer ── -->
+  <script>
+    // _cmReady is set synchronously by cm-chessboard-bundle.js — this resolves immediately
+    function _getCMH() {
+      if (window._cmReady) return Promise.resolve();
+      return new Promise(function(resolve) {
+        document.addEventListener('cm-ready', resolve, { once: true });
+      });
+    }
+
+    // ── Replayer state ────────────────────────────────────────────────────
+    window._hReplayer = {
+      board: null, chess: null, moves: [], cursor: 0,
+      perspective: 'white', _COLOR: null, _FEN: null
+    };
+
+    function rBtn(id) { return document.getElementById(id); }
+
+    function updateNavBtns() {
+      var R = window._hReplayer;
+      rBtn('rBtnStart').disabled = R.cursor === 0;
+      rBtn('rBtnPrev').disabled  = R.cursor === 0;
+      rBtn('rBtnNext').disabled  = R.cursor >= R.moves.length;
+      rBtn('rBtnEnd').disabled   = R.cursor >= R.moves.length;
+    }
+
+    function renderMoveList() {
+      var R = window._hReplayer;
+      var el = rBtn('replayerMoveList');
+      if (!el) return;
+      if (!R.moves.length) { el.textContent = 'No moves'; return; }
+      var html = '';
+      for (var i = 0; i < R.moves.length; i += 2) {
+        var n = Math.floor(i / 2) + 1;
+        var w = R.moves[i] || '', b = R.moves[i+1] || '';
+        var wa = R.cursor === i + 1, ba = R.cursor === i + 2;
+        html += '<span style="color:var(--muted);margin-right:3px;">' + n + '.</span>';
+        html += '<span style="margin-right:6px;font-weight:' + (wa?900:400) + ';color:' + (wa?'var(--primary)':'inherit') + ';">' + w + '</span>';
+        if (b) html += '<span style="margin-right:10px;font-weight:' + (ba?900:400) + ';color:' + (ba?'var(--primary)':'inherit') + ';">' + b + '</span>';
+      }
+      el.innerHTML = html;
+      el.scrollLeft = el.scrollWidth;
+    }
+
+    function updateStatus() {
+      var R = window._hReplayer;
+      var el = rBtn('replayerStatus');
+      if (!el || !R.chess) return;
+      var label = R.cursor === 0 ? 'Starting position' : 'Move ' + R.cursor + ' of ' + R.moves.length;
+      var suffix = '';
+      if (R.chess.in_checkmate()) suffix = ' · Checkmate';
+      else if (R.chess.in_check()) suffix = ' · Check';
+      else if (R.chess.in_draw())  suffix = ' · Draw';
+      else if (R.cursor === R.moves.length) suffix = ' · Game over';
+      el.textContent = label + suffix;
+    }
+
+    async function goToMove(target) {
+      var R = window._hReplayer;
+      if (!R.chess || !R.board) return;
+      R.chess.reset();
+      for (var i = 0; i < target; i++) R.chess.move(R.moves[i]);
+      R.cursor = target;
+      await R.board.setPosition(R.chess.fen(), true);
+      updateNavBtns();
+      renderMoveList();
+      updateStatus();
+    }
+
+    function closeReplayer() {
+      document.getElementById('replayerBg').classList.remove('open');
+    }
+
+    // ── Open replayer ─────────────────────────────────────────────────────
+    window.openReplayer = async function(gameUrl, gameUuid, matchDesc, resultLabel, cachedPgn) {
+      var R = window._hReplayer;
+      var bg      = document.getElementById('replayerBg');
+      var metaEl  = document.getElementById('replayerMeta');
+      var statEl  = document.getElementById('replayerStatus');
+      var extLink = document.getElementById('replayerExtLink');
+
+      bg.classList.add('open');
+      if (metaEl)  metaEl.textContent  = 'Loading game…';
+      if (statEl)  statEl.textContent  = '';
+      if (extLink) extLink.href        = gameUrl || '#';
+      var mlEl = rBtn('replayerMoveList');
+      if (mlEl) mlEl.textContent = '';
+      R.moves = []; R.cursor = 0;
+
+      // _cmReady already true (set synchronously by cm-chessboard-bundle.js)
+      try { await _getCMH(); } catch(e) {
+        if (statEl) statEl.textContent = 'Could not load board library: ' + e.message;
+        return;
+      }
+      var Chessboard = window.Chessboard, FEN = window.CHESS_FEN, COLOR = window.CHESS_COLOR;
+      R._COLOR = COLOR; R._FEN = FEN;
+
+      if (!R.board) {
+        R.board = await new Chessboard(document.getElementById('replayerBoard'), {
+          position:    FEN.start,
+          orientation: COLOR.white,
+          assetsUrl:   '',
+          assetsCache: false,
+          style: { pieces: { file: '' } }
+        });
+      } else {
+        await R.board.setPosition(R._FEN.start, false);
+      }
+      updateNavBtns();
+
+      // PGN: use cached value first, then try Chess.com API
+      var pgn = (typeof cachedPgn === 'string' && cachedPgn.trim()) ? cachedPgn : null;
+
+      if (!pgn) {
+        try {
+          var apiUrl = '';
+          var cleanUuid = String(gameUuid || '').trim();
+          if (cleanUuid && cleanUuid !== 'undefined') {
+            apiUrl = 'https://api.chess.com/pub/game/live/' + cleanUuid;
+          } else if (gameUrl) {
+            var m = String(gameUrl).match(/\/game\/(?:live|daily)\/(\d+)/);
+            if (m) apiUrl = 'https://api.chess.com/pub/game/live/' + m[1];
+          }
+          if (apiUrl) {
+            var res = await fetch(apiUrl);
+            if (res.ok) { var d = await res.json(); pgn = d.pgn || null; }
+          }
+        } catch(e) { console.warn('Replayer PGN fetch:', e); }
+      }
+
+      if (!pgn) {
+        if (metaEl) metaEl.textContent  = matchDesc || 'Game';
+        if (statEl) statEl.textContent = window.location.protocol === 'file:'
+          ? 'PGN not cached yet — go to Admin → Sync PGNs, then reopen.'
+          : 'Could not load PGN — open on Chess.com to analyse.';
+        updateNavBtns();
+        return;
+      }
+
+      // Parse PGN
+      try {
+        if (typeof Chess === 'undefined') {
+          if (statEl) statEl.textContent = 'chess.js not ready — refresh and try again.';
+          return;
+        }
+        R.chess = new Chess();
+        if (!R.chess.load_pgn(pgn)) throw new Error('PGN parse failed');
+        R.moves  = R.chess.history();
+        R.chess.reset();
+        R.cursor = 0;
+
+        var hdr   = typeof R.chess.header === 'function' ? R.chess.header() : {};
+        var white = hdr.White || '', black = hdr.Black || '', result = hdr.Result || '';
+        if (metaEl) metaEl.textContent =
+          (white && black) ? (white + ' vs ' + black + '  —  ' + result) : (matchDesc || 'Game');
+
+        // Auto-flip for SPKC members playing Black
+        var SPKC_MEMBERS = new Set(['cat_vs_tic','ooecan','an_extraterrestrial_life',
+          'bestfaliz01','rickywkkam','penguinthe2nd','person6965']);
+        R.perspective = (black && SPKC_MEMBERS.has(black.toLowerCase())) ? 'black' : 'white';
+        await R.board.setOrientation(R.perspective === 'black' ? R._COLOR.black : R._COLOR.white, false);
+        await R.board.setPosition(R._FEN.start, false);
+        updateNavBtns();
+        renderMoveList();
+        updateStatus();
+      } catch(e) {
+        if (metaEl) metaEl.textContent = matchDesc || 'Game';
+        if (statEl) statEl.textContent = 'Could not parse moves: ' + e.message;
+      }
+    };
+
+    // ── Button wiring ─────────────────────────────────────────────────────
+    document.getElementById('rBtnStart').addEventListener('click', function() { goToMove(0); });
+    document.getElementById('rBtnPrev').addEventListener('click',  function() { var R=window._hReplayer; if(R.cursor>0) goToMove(R.cursor-1); });
+    document.getElementById('rBtnNext').addEventListener('click',  function() { var R=window._hReplayer; if(R.cursor<R.moves.length) goToMove(R.cursor+1); });
+    document.getElementById('rBtnEnd').addEventListener('click',   function() { goToMove(window._hReplayer.moves.length); });
+
+    document.getElementById('rBtnFlip').addEventListener('click', async function() {
+      var R = window._hReplayer;
+      if (!R.board || !R._COLOR) return;
+      R.perspective = R.perspective === 'white' ? 'black' : 'white';
+      await R.board.setOrientation(R.perspective === 'black' ? R._COLOR.black : R._COLOR.white, true);
+    });
+
+    document.getElementById('replayerClose').addEventListener('click', closeReplayer);
+    document.getElementById('replayerBg').addEventListener('click', function(e) {
+      if (e.target === this) closeReplayer();
+    });
+
+    document.addEventListener('keydown', function(e) {
+      var R = window._hReplayer;
+      if (!document.getElementById('replayerBg').classList.contains('open')) return;
+      if (e.key === 'ArrowLeft')  { e.preventDefault(); if(R.cursor>0) goToMove(R.cursor-1); }
+      if (e.key === 'ArrowRight') { e.preventDefault(); if(R.cursor<R.moves.length) goToMove(R.cursor+1); }
+      if (e.key === 'Escape')     { closeReplayer(); }
+    });
+  </script>
+
+</body>
+</html>

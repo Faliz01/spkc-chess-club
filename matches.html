@@ -1,0 +1,689 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Match Archive — SPKC Chess Club</title>
+  <link rel="stylesheet" href="style.css" />
+  <!-- cm-chessboard -->
+  <link rel="stylesheet" href="assets/chessboard.css">
+  <style>
+    /* ── Game Replayer Modal (matches.html) ── */
+    .replayer-modal-bg {
+      display:none; position:fixed; inset:0; z-index:2000;
+      background:rgba(0,0,0,0.55); backdrop-filter:blur(6px);
+      align-items:center; justify-content:center;
+    }
+    .replayer-modal-bg.open { display:flex; }
+    .replayer-modal {
+      background:var(--surface); border:1.5px solid var(--line);
+      border-radius:var(--radius-lg); padding:24px 20px 20px;
+      width:min(94vw, 440px); box-shadow:var(--shadow); position:relative;
+      animation: modalIn 0.18s ease;
+    }
+    html.dark .replayer-modal { background:#141e2e; border-color:#1e3050; }
+    @keyframes modalIn { from { opacity:0; transform:scale(0.96) translateY(8px); } to { opacity:1; transform:none; } }
+    .replayer-close {
+      position:absolute; top:12px; right:14px;
+      background:none; border:none; font-size:22px; cursor:pointer;
+      color:var(--muted); line-height:1;
+    }
+    .replayer-close:hover { color:var(--text); }
+    .replayer-meta {
+      font-size:13px; font-weight:800; color:var(--text);
+      text-align:center; margin-bottom:14px; min-height:18px;
+    }
+    .replayer-status {
+      font-size:12px; color:var(--muted); text-align:center;
+      margin-bottom:10px; min-height:16px;
+    }
+    #replayerBoard {
+      width:100%; aspect-ratio:1; border-radius:10px; overflow:hidden;
+      margin-bottom:14px;
+    }
+    .replayer-move-list {
+      max-height:80px; overflow-y:auto; font-size:12px;
+      font-family:monospace; color:var(--muted);
+      background:var(--surface-soft); border-radius:8px;
+      padding:6px 10px; margin-bottom:12px; line-height:1.8;
+    }
+    html.dark .replayer-move-list { background:#1a2738; }
+    .replayer-controls {
+      display:grid; grid-template-columns:1fr 1fr 1fr 1fr; gap:8px;
+    }
+    .replayer-btn {
+      padding:8px 0; border:1.5px solid var(--line); border-radius:10px;
+      background:var(--surface-soft); color:var(--text);
+      font-size:14px; font-weight:800; cursor:pointer; transition:0.15s;
+      text-align:center;
+    }
+    .replayer-btn:hover:not(:disabled) { background:var(--primary); color:#fff; border-color:var(--primary); }
+    .replayer-btn:disabled { opacity:0.35; cursor:not-allowed; }
+    html.dark .replayer-btn { background:#1a2738; border-color:#1e3050; }
+    .replayer-external {
+      display:block; text-align:center; margin-top:12px;
+      font-size:12px; color:var(--primary); font-weight:700; text-decoration:none;
+    }
+    .replayer-external:hover { text-decoration:underline; }
+    .replayer-flip-btn {
+      display:block; width:100%; margin-top:8px;
+      padding:7px 0; border:1.5px solid var(--line); border-radius:10px;
+      background:var(--surface-soft); color:var(--muted);
+      font-size:12px; font-weight:800; cursor:pointer; transition:0.15s;
+      text-align:center;
+    }
+    .replayer-flip-btn:hover { background:var(--line); color:var(--text); }
+    html.dark .replayer-flip-btn { background:#1a2738; border-color:#1e3050; }
+    /* Replay button on each game card */
+    .ma-replay-btn {
+      display:inline-flex; align-items:center; gap:5px;
+      padding:6px 12px; border-radius:8px; font-size:12px; font-weight:800;
+      border:1.5px solid var(--line); background:var(--surface-soft);
+      color:var(--primary); cursor:pointer; white-space:nowrap; transition:0.15s;
+      text-decoration:none;
+    }
+    .ma-replay-btn:hover { background:var(--primary); color:#fff; border-color:var(--primary); }
+    html.dark .ma-replay-btn { background:#1a2738; border-color:#1e3050; }
+    .ma-game-actions { display:flex; gap:8px; align-items:center; flex-wrap:wrap; }
+  </style>
+</head>
+<body>
+<!-- Inline SVG sprite: piece symbols loaded directly into DOM, no XHR needed -->
+<svg xmlns="http://www.w3.org/2000/svg" style="display:none" aria-hidden="true">
+  <g id="wk" stroke-linecap="round" stroke-linejoin="round" transform="translate(5,5)" stroke="#000" stroke-width="1.5"><line x1="15" y1="4.968" x2="15" y2="0"/><line x1="12.857" y1="1.765" x2="17.143" y2="1.765"/><path d="M17.571,7.5 C17.571,7.5 16.714,5.294 15,5.294 C13.286,5.294 12.429,7.5 12.429,7.5 C11.143,10.147 15,16.765 15,16.765 C15,16.765 18.857,10.147 17.571,7.5 Z" fill="#fff"/><path d="M5.571,27.353 C10.286,30.441 18.857,30.441 23.571,27.353 L23.571,21.176 C23.571,21.176 31.286,17.206 28.714,11.912 C25.286,6.176 17.143,8.824 15,15.441 L15,18.529 L15,15.441 C12,8.824 3.857,6.176 1.286,11.912 C-1.286,17.206 5.571,20.735 5.571,20.735 L5.571,27.353 Z" fill="#fff"/><path d="M5.571,21.176 C10.286,18.529 18.857,18.529 23.571,21.176" fill-opacity="0"/><path d="M5.571,24.265 C10.286,21.618 18.857,21.618 23.571,24.265" fill-opacity="0" stroke-linecap="square"/><path d="M5.571,27.353 C10.286,24.706 18.857,24.706 23.571,27.353" fill-opacity="0"/></g>
+  <g id="wq" stroke-linecap="round" stroke-linejoin="round" transform="translate(4,5)" stroke="#000" stroke-width="1.5"><path d="M3.459,6.2 C3.459,7.178 2.685,7.971 1.73,7.971 C0.774,7.971 0,7.178 0,6.2 C0,5.222 0.774,4.429 1.73,4.429 C2.685,4.429 3.459,5.222 3.459,6.2 Z" fill="#fff"/><path d="M17.73,2.214 C17.73,3.193 16.955,3.986 16,3.986 C15.045,3.986 14.27,3.193 14.27,2.214 C14.27,1.236 15.045,0.443 16,0.443 C16.955,0.443 17.73,1.236 17.73,2.214 Z" fill="#fff"/><path d="M32,6.2 C32,7.178 31.226,7.971 30.27,7.971 C29.315,7.971 28.541,7.178 28.541,6.2 C28.541,5.222 29.315,4.429 30.27,4.429 C31.226,4.429 32,5.222 32,6.2 Z" fill="#fff"/><path d="M10.378,3.1 C10.378,4.078 9.604,4.871 8.649,4.871 C7.693,4.871 6.919,4.078 6.919,3.1 C6.919,2.122 7.693,1.329 8.649,1.329 C9.604,1.329 10.378,2.122 10.378,3.1 Z" fill="#fff"/><path d="M25.081,3.543 C25.081,4.521 24.307,5.314 23.351,5.314 C22.396,5.314 21.622,4.521 21.622,3.543 C21.622,2.565 22.396,1.771 23.351,1.771 C24.307,1.771 25.081,2.565 25.081,3.543 Z" fill="#fff"/><path d="M4.324,18.6 C11.676,17.271 22.486,17.271 27.676,18.6 L29.405,7.971 L23.351,17.714 L23.351,5.314 L18.595,17.271 L16,3.986 L13.405,17.271 L8.649,4.871 L8.649,17.714 L2.595,7.971 L4.324,18.6 Z" fill="#fff"/><path d="M4.324,18.6 C4.324,20.371 5.622,20.371 6.486,22.143 C7.351,23.471 7.351,23.029 6.919,25.243 C5.622,26.129 5.622,27.457 5.622,27.457 C4.324,28.786 6.054,29.671 6.054,29.671 C11.676,30.557 20.324,30.557 25.946,29.671 C25.946,29.671 27.243,28.786 25.946,27.457 C25.946,27.457 26.378,26.129 25.081,25.243 C24.649,23.029 24.649,23.471 25.514,22.143 C26.378,20.371 27.676,20.371 27.676,18.6 C20.324,17.271 11.676,17.271 4.324,18.6 Z" fill="#fff"/><path d="M6.486,22.143 C9.514,21.257 22.486,21.257 25.514,22.143"/><path d="M6.919,25.243 C12.108,24.357 19.892,24.357 25.081,25.243"/></g>
+  <g id="wb" stroke-linecap="round" stroke-linejoin="round" transform="translate(6,5)" stroke="#000" stroke-width="1.5"><g fill="#fff"><path d="M2.545,27.353 C5.422,26.497 11.124,27.732 14,25.588 C16.876,27.732 22.578,26.497 25.455,27.353 C25.455,27.353 26.855,27.829 28,29.118 C27.423,29.974 26.6,29.991 25.455,29.559 C22.578,28.703 16.876,29.965 14,28.676 C11.124,29.965 5.422,28.703 2.545,29.559 C1.397,29.991 0.574,29.974 0,29.118 C1.149,27.406 2.545,27.353 2.545,27.353 Z"/><path d="M7.636,23.824 C9.758,26.029 18.242,26.029 20.364,23.824 C20.788,22.5 20.364,22.059 20.364,22.059 C20.364,19.853 18.242,18.529 18.242,18.529 C22.909,17.206 23.333,8.382 14,4.853 C4.667,8.382 5.091,17.206 9.758,18.529 C9.758,18.529 7.636,19.853 7.636,22.059 C7.636,22.059 7.212,22.5 7.636,23.824 Z"/><path d="M16.121,2.647 C16.121,3.865 15.172,4.853 14,4.853 C12.828,4.853 11.879,3.865 11.879,2.647 C11.879,1.429 12.828,0.441 14,0.441 C15.172,0.441 16.121,1.429 16.121,2.647 Z"/></g><path d="M9.758,18.529 L18.242,18.529 M7.636,22.059 L20.364,22.059 M14,9.265 L14,13.676 M11.879,11.471 L16.121,11.471"/></g>
+  <g id="wn" stroke-linecap="round" stroke-linejoin="round" transform="translate(6,6)" stroke="#000"><path d="M13.576,2.625 C22.485,3.5 27.576,9.625 27.152,28 L7.636,28 C7.636,20.125 16.121,22.313 14.424,9.625" stroke-width="1.5" fill="#fff"/><path d="M15.273,9.625 C15.595,12.171 10.564,16.074 8.485,17.5 C5.939,19.25 6.092,21.298 4.242,21 C3.358,20.178 5.439,18.34 4.242,18.375 C3.394,18.375 4.404,19.451 3.394,20.125 C2.545,20.125 -0.003,21 0,16.625 C0,14.875 5.091,6.125 5.091,6.125 C5.091,6.125 6.695,4.463 6.788,3.063 C6.168,2.193 6.364,1.313 6.364,0.438 C7.212,-0.438 8.909,2.625 8.909,2.625 L10.606,2.625 C10.606,2.625 11.268,0.882 12.727,0 C13.576,0 13.576,2.625 13.576,2.625" stroke-width="1.5" fill="#fff"/><path d="M2.97,16.188 C2.97,16.429 2.78,16.625 2.545,16.625 C2.311,16.625 2.121,16.429 2.121,16.188 C2.121,15.946 2.311,15.75 2.545,15.75 C2.78,15.75 2.97,15.946 2.97,16.188 Z" stroke-width="1.5" fill="#000"/><path d="M7.636,7.438 C7.636,8.162 7.446,8.75 7.212,8.75 C6.978,8.75 6.788,8.162 6.788,7.438 C6.788,6.713 6.978,6.125 7.212,6.125 C7.446,6.125 7.636,6.713 7.636,7.438 Z" stroke-width="1.5" fill="#000" transform="translate(7.212,7.438) rotate(30) translate(-7.212,-7.438)"/></g>
+  <g id="wr" stroke-linecap="round" stroke-linejoin="round" transform="translate(9,8)" stroke="#000" stroke-width="1.5"><polygon fill="#fff" points="0 26 22 26 22 23.4 0 23.4"/><polygon fill="#fff" points="2.444 23.4 2.444 19.933 19.556 19.933 19.556 23.4"/><polyline fill="#fff" points="1.63 4.333 1.63 0 4.889 0 4.889 1.733 8.963 1.733 8.963 0 13.037 0 13.037 1.733 17.111 1.733 17.111 0 20.37 0 20.37 4.333"/><polyline fill="#fff" points="20.37 4.333 17.926 6.933 4.074 6.933 1.63 4.333"/><polyline fill="#fff" points="17.926 6.933 17.926 17.767 4.074 17.767 4.074 6.933"/><polyline fill="#fff" points="17.926 17.767 19.148 19.933 2.852 19.933 4.074 17.767"/><line x1="1.63" y1="4.333" x2="20.37" y2="4.333"/></g>
+  <g id="wp" transform="translate(10,9)" fill="#fff" stroke="#000" stroke-linecap="round" stroke-width="1.5"><path d="M10,0 C8.158,0 6.667,1.501 6.667,3.355 C6.667,4.101 6.908,4.789 7.317,5.351 C5.692,6.29 4.583,8.043 4.583,10.065 C4.583,11.767 5.367,13.285 6.592,14.283 C4.092,15.172 0.417,18.938 0.417,25.581 L19.583,25.581 C19.583,18.938 15.908,15.172 13.408,14.283 C14.633,13.285 15.417,11.767 15.417,10.065 C15.417,8.043 14.308,6.29 12.683,5.351 C13.092,4.789 13.333,4.101 13.333,3.355 C13.333,1.501 11.842,0 10,0 Z"/></g>
+  <g id="bk" stroke-linecap="round" stroke-linejoin="round" transform="translate(5,5)" stroke-width="1.5"><line x1="15" y1="4.968" x2="15" y2="0" stroke="#000"/><path d="M15,16.765 C15,16.765 18.857,10.147 17.571,7.5 C17.571,7.5 16.714,5.294 15,5.294 C13.286,5.294 12.429,7.5 12.429,7.5 C11.143,10.147 15,16.765 15,16.765" stroke="#000" fill="#000"/><path d="M5.571,27.353 C10.286,30.441 18.857,30.441 23.571,27.353 L23.571,21.176 C23.571,21.176 31.286,17.206 28.714,11.912 C25.286,6.176 17.143,8.824 15,15.441 L15,18.529 L15,15.441 C12,8.824 3.857,6.176 1.286,11.912 C-1.286,17.206 5.571,20.735 5.571,20.735 L5.571,27.353 Z" stroke="#000" fill="#000"/><line x1="12.857" y1="1.765" x2="17.143" y2="1.765" stroke="#000"/><path d="M23.143,20.735 C23.143,20.735 30.429,17.206 28.311,12.221 C24.986,7.059 17.143,10.588 15,16.324 L15.009,18.176 L15,16.324 C12.857,10.588 4.205,7.059 1.712,12.221 C-0.429,17.206 5.871,20.162 5.871,20.162" stroke="#fff"/><path d="M5.571,21.176 C10.286,18.529 18.857,18.529 23.571,21.176 M5.571,24.265 C10.286,21.618 18.857,21.618 23.571,24.265 M5.571,27.353 C10.286,24.706 18.857,24.706 23.571,27.353" stroke="#fff"/></g>
+  <g id="bq" stroke-linecap="round" stroke-linejoin="round" transform="translate(3,4)"><g fill="#000"><ellipse cx="2.615" cy="6.222" rx="2.397" ry="2.444"/><ellipse cx="9.59" cy="3.556" rx="2.397" ry="2.444"/><ellipse cx="17" cy="2.667" rx="2.397" ry="2.444"/><ellipse cx="24.41" cy="3.556" rx="2.397" ry="2.444"/><ellipse cx="31.385" cy="6.222" rx="2.397" ry="2.444"/></g><path d="M5.231,18.667 C12.641,17.333 23.538,17.333 28.769,18.667 L30.949,7.556 L24.41,17.778 L24.149,5.244 L19.615,17.333 L17,4.444 L14.385,17.333 L9.851,5.244 L9.59,17.778 L3.051,7.556 L5.231,18.667 Z" stroke="#000" stroke-width="1.5" fill="#000"/><path d="M5.231,18.667 C5.231,20.444 6.538,20.444 7.41,22.222 C8.282,23.556 8.282,23.111 7.846,25.333 C6.538,26.222 6.538,27.556 6.538,27.556 C5.231,28.889 6.974,29.778 6.974,29.778 C12.641,30.667 21.359,30.667 27.026,29.778 C27.026,29.778 28.333,28.889 27.026,27.556 C27.026,27.556 27.462,26.222 26.154,25.333 C25.718,23.111 25.718,23.556 26.59,22.222 C27.462,20.444 28.769,20.444 28.769,18.667 C21.359,17.333 12.641,17.333 5.231,18.667 Z" stroke="#000" stroke-width="1.5" fill="#000"/><path d="M6.974,29.778 C13.467,32.081 20.533,32.081 27.026,29.778" stroke="#000" stroke-width="1.5"/><path d="M6.974,21.333 C13.467,19.03 20.533,19.03 27.026,21.333" stroke="#fff" stroke-width="1.5"/><line x1="8.282" y1="23.556" x2="25.718" y2="23.556" stroke="#fff" stroke-width="1.5"/><path d="M7.41,26.222 C13.637,28.324 20.363,28.324 26.59,26.222" stroke="#fff" stroke-width="1.5"/><path d="M6.538,28.889 C13.295,31.403 20.705,31.403 27.462,28.889" stroke="#fff" stroke-width="1.5"/></g>
+  <g id="bb" stroke-linecap="round" stroke-linejoin="round" transform="translate(6,5)" stroke-width="1.5"><g fill="#000" stroke="#000"><path d="M2.545,27.353 C5.422,26.497 11.124,27.732 14,25.588 C16.876,27.732 22.578,26.497 25.455,27.353 C25.455,27.353 26.855,27.829 28,29.118 C27.423,29.974 26.6,29.991 25.455,29.559 C22.578,28.703 16.876,29.965 14,28.676 C11.124,29.965 5.422,28.703 2.545,29.559 C1.397,29.991 0.574,29.974 0,29.118 C1.149,27.406 2.545,27.353 2.545,27.353 Z"/><path d="M7.636,23.824 C9.758,26.029 18.242,26.029 20.364,23.824 C20.788,22.5 20.364,22.059 20.364,22.059 C20.364,19.853 18.242,18.529 18.242,18.529 C22.909,17.206 23.333,8.382 14,4.853 C4.667,8.382 5.091,17.206 9.758,18.529 C9.758,18.529 7.636,19.853 7.636,22.059 C7.636,22.059 7.212,22.5 7.636,23.824 Z"/><path d="M16.121,2.647 C16.121,3.865 15.172,4.853 14,4.853 C12.828,4.853 11.879,3.865 11.879,2.647 C11.879,1.429 12.828,0.441 14,0.441 C15.172,0.441 16.121,1.429 16.121,2.647 Z"/></g><path d="M9.758,18.529 L18.242,18.529 M7.636,22.059 L20.364,22.059 M14,9.265 L14,13.676 M11.879,11.471 L16.121,11.471" stroke="#fff"/></g>
+  <g id="bn" stroke-linecap="round" stroke-linejoin="round" transform="translate(6,6)"><path d="M13.576,2.636 C22.485,3.515 27.576,9.667 27.152,28.121 L7.636,28.121 C7.636,20.212 16.121,22.409 14.424,9.667" stroke="#000" stroke-width="1.5" fill="#000"/><path d="M15.273,9.667 C15.595,12.224 10.564,16.143 8.485,17.576 C5.939,19.333 6.092,21.39 4.242,21.091 C3.358,20.265 5.439,18.419 4.242,18.455 C3.394,18.455 4.404,19.535 3.394,20.212 C2.545,20.212 -0.003,21.091 0,16.697 C0,14.939 5.091,6.152 5.091,6.152 C5.091,6.152 6.695,4.482 6.788,3.076 C6.168,2.202 6.364,1.318 6.364,0.439 C7.212,-0.439 8.909,2.636 8.909,2.636 L10.606,2.636 C10.606,2.636 11.268,0.886 12.727,0 C13.576,0 13.576,2.636 13.576,2.636" stroke="#000" stroke-width="1.5" fill="#000"/><path d="M2.97,16.258 C2.97,16.5 2.78,16.697 2.545,16.697 C2.311,16.697 2.121,16.5 2.121,16.258 C2.121,16.015 2.311,15.818 2.545,15.818 C2.78,15.818 2.97,16.015 2.97,16.258 Z" stroke="#fff" stroke-width="1.5" fill="#fff"/><path d="M7.636,7.47 C7.636,8.198 7.446,8.788 7.212,8.788 C6.978,8.788 6.788,8.198 6.788,7.47 C6.788,6.742 6.978,6.152 7.212,6.152 C7.446,6.152 7.636,6.742 7.636,7.47 Z" stroke="#fff" stroke-width="1.5" fill="#fff" transform="translate(7.212,7.47) rotate(30) translate(-7.212,-7.47)"/><path d="M15.739,2.988 L15.358,4.262 L15.782,4.394 C18.455,5.273 20.576,6.582 22.485,10.326 C24.394,14.069 25.242,19.386 24.818,28.121 L24.776,28.561 L26.685,28.561 L26.727,28.121 C27.152,19.281 25.981,13.314 23.97,9.368 C21.959,5.422 19.057,3.533 16.172,3.076 L15.739,2.988 Z" fill="#fff"/></g>
+  <g id="br" stroke-linecap="round" stroke-linejoin="round" transform="translate(9,8)"><polygon stroke="#000" stroke-width="1.5" fill="#000" points="0 26 22 26 22 23.4 0 23.4"/><polygon stroke="#000" stroke-width="1.5" fill="#000" points="2.852 19.933 4.074 17.767 17.926 17.767 19.148 19.933"/><polygon stroke="#000" stroke-width="1.5" fill="#000" points="2.444 23.4 2.444 19.933 19.556 19.933 19.556 23.4"/><polygon stroke="#000" stroke-width="1.5" fill="#000" points="4.074 17.767 4.074 6.5 17.926 6.5 17.926 17.767"/><polygon stroke="#000" stroke-width="1.5" fill="#000" points="4.074 6.5 1.63 4.333 20.37 4.333 17.926 6.5"/><polygon stroke="#000" stroke-width="1.5" fill="#000" points="1.63 4.333 1.63 0 4.889 0 4.889 1.733 8.963 1.733 8.963 0 13.037 0 13.037 1.733 17.111 1.733 17.111 0 20.37 0 20.37 4.333"/><polyline stroke="#fff" points="2.444 22.967 19.556 22.967"/><line x1="3.259" y1="19.5" x2="18.741" y2="19.5" stroke="#fff"/><line x1="4.074" y1="17.767" x2="17.926" y2="17.767" stroke="#fff"/><line x1="4.074" y1="6.5" x2="17.926" y2="6.5" stroke="#fff"/><line x1="1.63" y1="4.333" x2="20.37" y2="4.333" stroke="#fff"/></g>
+  <g id="bp" transform="translate(10,8)" fill="#000" stroke="#000" stroke-linecap="round" stroke-width="1.5"><path d="M10,0 C8.158,0 6.667,1.501 6.667,3.355 C6.667,4.101 6.908,4.789 7.317,5.351 C5.692,6.29 4.583,8.043 4.583,10.065 C4.583,11.767 5.367,13.285 6.592,14.283 C4.092,15.172 0.417,18.938 0.417,25.581 L19.583,25.581 C19.583,18.938 15.908,15.172 13.408,14.283 C14.633,13.285 15.417,11.767 15.417,10.065 C15.417,8.043 14.308,6.29 12.683,5.351 C13.092,4.789 13.333,4.101 13.333,3.355 C13.333,1.501 11.842,0 10,0 Z"/></g>
+</svg>
+  <a href="#main" class="skip-link">Skip to content</a>
+
+  <div class="page-shell">
+    <header class="hero">
+      <nav class="nav" aria-label="Primary">
+        <a href="index.html">Home</a>
+        <a href="join.html">Join</a>
+        <a href="tournaments.html">Tournaments</a>
+        <a href="rules.html">Rules</a>
+        <a href="brilliants.html">Brilliants</a>
+        <a href="matches.html" class="active">Matches</a>
+        <a href="history.html">History</a>
+        <a href="openings.html">Openings</a>
+        <button class="dark-toggle" id="darkToggle" aria-label="Toggle dark mode" title="Toggle dark mode">🌙</button>
+      </nav>
+
+      <div class="hero-layout">
+        <div class="hero-copy">
+          <p class="eyebrow">SPKC Season</p>
+          <h1>Match Archive</h1>
+          <p class="hero-text">Every game played in each season round, pulled live from Chess.com. Click any game to analyse on the board.</p>
+          <div class="button-row">
+            <a class="button-link" href="tournaments.html">View Standings</a>
+            <a class="button-ghost" href="rules.html#section1">View Official Rules</a>
+          </div>
+          <div class="hero-stats">
+            <div class="stat-card">
+              <span class="stat-number" id="heroTotalGames">—</span>
+              <span class="stat-label">Games archived</span>
+            </div>
+            <div class="stat-card">
+              <span class="stat-number" id="heroTotalRounds">—</span>
+              <span class="stat-label">Matches played</span>
+            </div>
+            <div class="stat-card">
+              <span class="stat-number" id="heroSeasonLabel">—</span>
+              <span class="stat-label">Season</span>
+            </div>
+          </div>
+        </div>
+
+        <aside class="hero-side badge-card hero-media-card" style="display:flex;flex-direction:column;justify-content:center;align-items:center;gap:18px;padding:32px 24px;">
+          <div class="ma-hero-board" aria-hidden="true">
+            <div class="ma-hero-piece">♜</div>
+            <div class="ma-hero-vs">vs</div>
+            <div class="ma-hero-piece ma-hero-piece--white">♖</div>
+          </div>
+          <div class="media-caption-block">
+            <span class="badge-title">Live from Chess.com</span>
+            <p>Results fetched in real time — no login needed. All season games are public.</p>
+          </div>
+        </aside>
+      </div>
+    </header>
+
+    <!-- Season + Round selector bar -->
+    <div class="ma-selector-bar">
+      <div class="ma-selector-group">
+        <label for="matchSeasonSelect" class="ma-selector-label">Season</label>
+        <select id="matchSeasonSelect" class="ma-season-select">
+          <option value="">Loading seasons…</option>
+        </select>
+      </div>
+      <div class="ma-round-tabs-wrap" id="roundTabsWrap"></div>
+    </div>
+
+    <main id="main" class="content-grid">
+      <section class="panel span-12">
+        <div id="matchArchiveContent">
+          <div class="info-box">Select a season to load matches.</div>
+        </div>
+      </section>
+    </main>
+
+    <footer>SPKC Chess Club — Match archive pulled live from Chess.com.</footer>
+  </div>
+
+  <!-- ── Game Replayer Modal ── -->
+  <div class="replayer-modal-bg" id="replayerBg" role="dialog" aria-modal="true" aria-label="Game replayer">
+    <div class="replayer-modal">
+      <button class="replayer-close" id="replayerClose" aria-label="Close">&#x00D7;</button>
+      <div class="replayer-meta" id="replayerMeta">Loading…</div>
+      <div class="replayer-status" id="replayerStatus"></div>
+      <div id="replayerBoard"></div>
+      <div class="replayer-move-list" id="replayerMoveList"></div>
+      <div class="replayer-controls">
+        <button class="replayer-btn" id="rBtnStart" title="Start">⏮</button>
+        <button class="replayer-btn" id="rBtnPrev"  title="Previous">◄</button>
+        <button class="replayer-btn" id="rBtnNext"  title="Next">►</button>
+        <button class="replayer-btn" id="rBtnEnd"   title="End">⏭</button>
+      </div>
+      <button class="replayer-flip-btn" id="rBtnFlip" title="Flip board">🔄 Flip board</button>
+      <a class="replayer-external" id="replayerExtLink" href="#" target="_blank" rel="noopener noreferrer">Open on Chess.com ↗</a>
+    </div>
+  </div>
+
+  <!-- chess.js v0.13.4: UMD build — exposes global Chess -->
+  <script src="lib/chess.min.js"></script>
+
+  <!-- cm-chessboard: self-contained IIFE bundle (no ES module, works via file://) -->
+  <script src="cm-chessboard-bundle.js"></script>
+
+  <script>
+    // Feature E: Offline / connection timeout guard
+    var dataLoaded = false;
+    var OFFLINE_MSG_HTML = '<div class="offline-msg"><span class="offline-icon">📡</span><strong>Could not connect</strong><p>Check your internet connection and refresh the page.</p><button onclick="location.reload()">Try again</button></div>';
+    setTimeout(function() {
+      if (!dataLoaded) {
+        document.querySelectorAll('.shimmer, [class*="shimmer"], .loading-placeholder').forEach(function(el) {
+          el.innerHTML = OFFLINE_MSG_HTML;
+        });
+        // Also replace any element whose text content still says "Loading"
+        document.querySelectorAll('.panel, .info-box, section').forEach(function(el) {
+          if (el.children.length === 0 && el.textContent.toLowerCase().includes('loading')) {
+            el.innerHTML = OFFLINE_MSG_HTML;
+          }
+        });
+      }
+    }, 8000);
+  </script>
+  <script src="lib/supabase.min.js"></script>
+  <script>
+    const SUPABASE_URL = 'https://qoczwxslhygakivfgxdy.supabase.co';
+    const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFvY3p3eHNsaHlnYWtpdmZneGR5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk2MTAwNzMsImV4cCI6MjA5NTE4NjA3M30.J5I0IR5Ra_JePDzJYHpzstbNRCo667B201iVhjbDZjs';
+    const { createClient } = supabase;
+    const supabaseClient = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+    let totalGamesLoaded = 0;
+    let roundsWithData = 0;
+    let currentSeasonRoundLinks = [];
+    let activeSeasonRoundIndex = 0;
+    let activeInternalRoundIndex = 0;
+    let currentRoundData = null;
+
+    function escapeHtml(v) {
+      return String(v ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+    }
+
+    function fetchWithTimeout(url, ms = 10000) {
+      return Promise.race([
+        fetch(url),
+        new Promise((_, reject) => setTimeout(() => reject(new Error('Timeout')), ms))
+      ]);
+    }
+
+    // Returns { label, cls, score } for a result string
+    function mapResult(r) {
+      if (!r) return { label: '?', cls: '', score: '?' };
+      const s = r.toLowerCase();
+      if (s === 'win') return { label: 'WIN', cls: 'win', score: '1' };
+      if (['checkmated','resigned','timeout','abandoned','timevsinsufficient','loss'].includes(s))
+        return { label: 'LOSS', cls: 'loss', score: '0' };
+      if (['stalemate','insufficient','agreed','repetition','50move','threecheck','draw'].includes(s))
+        return { label: 'DRAW', cls: 'draw', score: '½' };
+      return { label: r.toUpperCase(), cls: '', score: '?' };
+    }
+
+    function parseOpening(pgn) {
+      if (!pgn) return null;
+      const m = pgn.match(/\[ECOUrl\s+"([^"]+)"\]/);
+      if (!m) return null;
+      const slug = m[1].split('/').pop();
+      return slug ? slug.replace(/-/g,' ').replace(/\b\w/g, c => c.toUpperCase()) : null;
+    }
+
+    function formatDate(ts) {
+      if (!ts) return '';
+      return new Date(ts * 1000).toLocaleDateString('en-GB', { day:'numeric', month:'short', year:'numeric' });
+    }
+
+    // ── Init ──────────────────────────────────────────────────────
+    async function initPage() {
+      try {
+        // Order by registration_opens_at DESC (same logic as home/tournaments/player)
+        const { data, error } = await supabaseClient
+          .from('season_settings').select('*')
+          .order('registration_opens_at', { ascending: false, nullsFirst: false });
+        if (error || !data || !data.length) {
+          document.getElementById('matchSeasonSelect').innerHTML = '<option value="">No seasons found</option>';
+          document.getElementById('matchArchiveContent').innerHTML = '<div class="info-box">No seasons configured yet. Set up seasons in the admin panel.</div>';
+          return;
+        }
+        // Default to the most recent already-started season
+        const now = new Date();
+        const started = data.filter(s => s.registration_opens_at && new Date(s.registration_opens_at) <= now);
+        const defaultSeason = started[0] || data[0];
+
+        const sel = document.getElementById('matchSeasonSelect');
+        sel.innerHTML = '';
+        // Show started seasons first, then others
+        const ordered = [...started, ...data.filter(s => !started.includes(s))];
+        ordered.forEach(s => {
+          const o = document.createElement('option');
+          o.value = s.season_key;
+          o.textContent = s.season_label || s.label || s.season_key;
+          if (s.season_key === defaultSeason.season_key) o.selected = true;
+          sel.appendChild(o);
+        });
+        document.getElementById('heroSeasonLabel').textContent = defaultSeason.season_label || defaultSeason.label || defaultSeason.season_key;
+        loadSeason(defaultSeason.season_key);
+        sel.addEventListener('change', function() {
+          const s = ordered.find(x => x.season_key === this.value);
+          document.getElementById('heroSeasonLabel').textContent = s ? (s.season_label || s.label || s.season_key) : this.value;
+          loadSeason(this.value);
+        });
+      } catch(err) {
+        document.getElementById('matchArchiveContent').innerHTML = `<div class="info-box">Failed to load seasons: ${escapeHtml(String(err))}</div>`;
+      }
+    }
+
+    // ── Load season ───────────────────────────────────────────────
+    async function loadSeason(seasonKey) {
+      const content = document.getElementById('matchArchiveContent');
+      const tabsWrap = document.getElementById('roundTabsWrap');
+      content.innerHTML = buildShimmer(3);
+      tabsWrap.innerHTML = '';
+      totalGamesLoaded = 0; roundsWithData = 0; updateHeroStats();
+      try {
+        const { data, error } = await supabaseClient.from('round_tournament_links').select('*').eq('season_key', seasonKey).order('round_number', { ascending: true });
+        if (error) { content.innerHTML = `<div class="info-box">Error loading tournament links: ${escapeHtml(error.message)}</div>`; return; }
+        dataLoaded = true; // Feature E
+        const links = (data || []).filter(r => r.tournament_url_id && String(r.tournament_url_id).trim());
+        if (!links.length) { content.innerHTML = '<div class="info-box">No tournament links saved for this season yet. Add them in the admin panel.</div>'; return; }
+        currentSeasonRoundLinks = links;
+        activeSeasonRoundIndex = 0;
+        tabsWrap.innerHTML = links.map((rl, i) =>
+          `<button class="ma-round-tab${i===0?' active':''}" data-idx="${i}">Round ${escapeHtml(String(rl.round_number))}</button>`
+        ).join('');
+        tabsWrap.querySelectorAll('.ma-round-tab').forEach(btn => {
+          btn.addEventListener('click', function() {
+            tabsWrap.querySelectorAll('.ma-round-tab').forEach(b => b.classList.remove('active'));
+            this.classList.add('active');
+            activeSeasonRoundIndex = parseInt(this.dataset.idx, 10);
+            loadRound(seasonKey, currentSeasonRoundLinks[activeSeasonRoundIndex]);
+          });
+        });
+        loadRound(seasonKey, links[0]);
+      } catch(err) {
+        content.innerHTML = `<div class="info-box">Failed to load season: ${escapeHtml(String(err))}</div>`;
+      }
+    }
+
+    // ── Load round ────────────────────────────────────────────────
+    async function loadRound(seasonKey, roundLink) {
+      const content = document.getElementById('matchArchiveContent');
+      const tid = String(roundLink.tournament_url_id).trim();
+      content.innerHTML = buildShimmer(4);
+      try {
+        const infoResp = await fetchWithTimeout(`https://api.chess.com/pub/tournament/${tid}`);
+        if (!infoResp.ok) {
+          content.innerHTML = `<div class="info-box">Could not load tournament (HTTP ${infoResp.status}). The tournament may not exist yet or is unavailable.</div>`;
+          return;
+        }
+        const info = await infoResp.json();
+        const totalRounds = info.settings?.total_rounds || 1;
+        const timeClass = info.settings?.time_class || '';
+        const timeControl = info.settings?.time_control || '';
+        const startTime = info.settings?.start_time || null;
+
+        // Build header
+        const tcIcon = timeClass === 'bullet' ? '⚡' : timeClass === 'blitz' ? '🔥' : timeClass === 'rapid' ? '🕐' : '♟';
+        content.innerHTML = `
+          <div class="ma-tourney-header">
+            <div class="ma-tourney-title">
+              <span class="ma-tourney-icon">${tcIcon}</span>
+              <span class="ma-tourney-name">${escapeHtml(info.name || tid)}</span>
+            </div>
+            <div class="ma-tourney-pills">
+              ${timeClass ? `<span class="ma-pill ma-pill--tc">${escapeHtml(timeClass.charAt(0).toUpperCase()+timeClass.slice(1))}</span>` : ''}
+              ${timeControl ? `<span class="ma-pill">${escapeHtml(timeControl)}</span>` : ''}
+              ${startTime ? `<span class="ma-pill">${formatDate(startTime)}</span>` : ''}
+              <span class="ma-pill ma-pill--status ${info.status==='finished'?'ma-pill--done':''}">${escapeHtml((info.status||'').toUpperCase())}</span>
+            </div>
+          </div>
+          <div class="ma-match-tabs" id="matchTabsWrap"></div>
+          <div id="matchInternalContent">${buildShimmer(4)}</div>
+        `;
+
+        // Fetch all internal rounds in parallel
+        const fetches = [];
+        for (let i = 1; i <= totalRounds; i++) {
+          fetches.push(
+            fetchWithTimeout(`https://api.chess.com/pub/tournament/${tid}/${i}/1`)
+              .then(r => r.ok ? r.json().then(d => ({ ...d, _n: i })) : { games: [], _n: i, _err: `HTTP ${r.status}` })
+              .catch(e => ({ games: [], _n: i, _err: String(e) }))
+          );
+        }
+        const results = await Promise.all(fetches);
+        currentRoundData = { info, rounds: results };
+        activeInternalRoundIndex = 0;
+
+        let newGames = 0, newRounds = 0;
+        results.forEach(r => { if ((r.games||[]).length) { newGames += r.games.length; newRounds++; } });
+        totalGamesLoaded += newGames; roundsWithData = newRounds; updateHeroStats();
+
+        const tabsWrap2 = document.getElementById('matchTabsWrap');
+        if (tabsWrap2) {
+          tabsWrap2.innerHTML = results.map((r,i) =>
+            `<button class="ma-match-tab${i===0?' active':''}" data-idx="${i}">
+              <span class="ma-match-tab-label">Match ${r._n}</span>
+              <span class="ma-match-tab-count">${(r.games||[]).length} games</span>
+            </button>`
+          ).join('');
+          tabsWrap2.querySelectorAll('.ma-match-tab').forEach(btn => {
+            btn.addEventListener('click', function() {
+              tabsWrap2.querySelectorAll('.ma-match-tab').forEach(b => b.classList.remove('active'));
+              this.classList.add('active');
+              activeInternalRoundIndex = parseInt(this.dataset.idx, 10);
+              renderGames(currentRoundData.rounds[activeInternalRoundIndex]);
+            });
+          });
+        }
+        renderGames(results[0]);
+      } catch(err) {
+        content.innerHTML = `<div class="info-box">Failed to load round: ${escapeHtml(String(err))}</div>`;
+      }
+    }
+
+    // ── Render games ──────────────────────────────────────────────
+    function renderGames(roundData) {
+      const el = document.getElementById('matchInternalContent');
+      if (!el) return;
+      if (!roundData) { el.innerHTML = '<div class="info-box">No data for this match.</div>'; return; }
+      if (roundData._err) { el.innerHTML = `<div class="info-box">Could not load Match ${roundData._n}: ${escapeHtml(roundData._err)}</div>`; return; }
+      const games = roundData.games || [];
+      if (!games.length) { el.innerHTML = `<div class="info-box">No games found for Match ${roundData._n}. The round may not have started yet.</div>`; return; }
+
+      const rows = games.map((game, idx) => {
+        const w = game.white || {}, b = game.black || {};
+        const wr = mapResult(w.result), br = mapResult(b.result);
+        const opening = parseOpening(game.pgn);
+        const gameUrl = game.url || '#';
+        const wUser = w.username || '—', bUser = b.username || '—';
+        const wRating = w.rating || '?', bRating = b.rating || '?';
+        const isDraw = wr.cls === 'draw';
+
+        return `
+          <div class="ma-game-card">
+            <div class="ma-game-number">#${idx + 1}</div>
+
+            <!-- White side -->
+            <div class="ma-side ma-side--white">
+              <div class="ma-side-piece" aria-hidden="true">♙</div>
+              <div class="ma-side-info">
+                <a class="ma-side-name" href="https://www.chess.com/member/${encodeURIComponent(wUser)}" target="_blank" rel="noopener noreferrer">${escapeHtml(wUser)}</a>
+                <span class="ma-side-rating">Rating ${escapeHtml(String(wRating))}</span>
+              </div>
+              <div class="ma-result-badge ma-result-badge--${wr.cls}">${escapeHtml(wr.label)}</div>
+            </div>
+
+            <!-- Score line -->
+            <div class="ma-scoreline">
+              <span class="ma-score ${wr.cls === 'win' ? 'ma-score--bold' : ''}">${wr.score}</span>
+              <span class="ma-score-dash">–</span>
+              <span class="ma-score ${br.cls === 'win' ? 'ma-score--bold' : ''}">${br.score}</span>
+            </div>
+
+            <!-- Black side -->
+            <div class="ma-side ma-side--black">
+              <div class="ma-result-badge ma-result-badge--${br.cls}">${escapeHtml(br.label)}</div>
+              <div class="ma-side-info ma-side-info--right">
+                <a class="ma-side-name" href="https://www.chess.com/member/${encodeURIComponent(bUser)}" target="_blank" rel="noopener noreferrer">${escapeHtml(bUser)}</a>
+                <span class="ma-side-rating">Rating ${escapeHtml(String(bRating))}</span>
+              </div>
+              <div class="ma-side-piece" aria-hidden="true">♟</div>
+            </div>
+
+            <!-- Actions: Replay + Analyse -->
+            <div class="ma-game-actions">
+              <button class="ma-replay-btn" onclick='openReplayer(${JSON.stringify(gameUrl)}, ${JSON.stringify(String(game.uuid||""))}, ${JSON.stringify(wUser + ' vs ' + bUser)}, ${JSON.stringify(game.pgn||"")})'>▶ Replay</button>
+              <a class="ma-analyse-btn" href="${escapeHtml(gameUrl)}" target="_blank" rel="noopener noreferrer">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+                Analyse
+              </a>
+            </div>
+
+            ${opening ? `<div class="ma-opening"><span class="ma-opening-eco">ECO</span><span class="ma-opening-name">${escapeHtml(opening)}</span></div>` : ''}
+          </div>
+        `;
+      }).join('');
+
+      el.innerHTML = `
+        <div class="ma-games-header">
+          <span class="ma-games-title">Match ${escapeHtml(String(roundData._n))}</span>
+          <span class="ma-games-count">${games.length} game${games.length !== 1 ? 's' : ''}</span>
+        </div>
+        <div class="ma-games-list">${rows}</div>
+      `;
+    }
+
+    // ── Helpers ───────────────────────────────────────────────────
+    function buildShimmer(n) {
+      return `<div class="ma-shimmer-wrap">${Array(n).fill('<div class="ma-shimmer-row"></div>').join('')}</div>`;
+    }
+
+    function updateHeroStats() {
+      document.getElementById('heroTotalGames').textContent = totalGamesLoaded > 0 ? totalGamesLoaded : '—';
+      document.getElementById('heroTotalRounds').textContent = roundsWithData > 0 ? roundsWithData : '—';
+    }
+
+    // ── Boot ──────────────────────────────────────────────────────
+    document.readyState === 'loading'
+      ? document.addEventListener('DOMContentLoaded', initPage)
+      : initPage();
+  </script>
+
+  <!-- ── localStorage safety wrappers ── -->
+  <script>
+    function safeGetStorage(k) { try { return localStorage.getItem(k); } catch(e) { return null; } }
+    function safeSetStorage(k,v) { try { localStorage.setItem(k,v); } catch(e) {} }
+  </script>
+
+  <!-- ── Dark mode toggle ── -->
+  <script>
+    (function() {
+      const btn = document.getElementById('darkToggle');
+      if (safeGetStorage('spkc-dark') === '1') document.documentElement.classList.add('dark');
+      if (btn) {
+        btn.textContent = document.documentElement.classList.contains('dark') ? '☀️' : '🌙';
+        btn.addEventListener('click', function() {
+          const d = document.documentElement.classList.toggle('dark');
+          safeSetStorage('spkc-dark', d ? '1' : '0');
+          btn.textContent = d ? '☀️' : '🌙';
+        });
+      }
+    })();
+  </script>
+
+  <!-- ── Inline Game Replayer ── -->
+  <script>
+    // _cmReady is set synchronously by cm-chessboard-bundle.js — this resolves immediately
+    function _getCMM() {
+      if (window._cmReady) return Promise.resolve();
+      return new Promise(function(resolve) {
+        document.addEventListener('cm-ready', resolve, { once: true });
+      });
+    }
+
+    window._mReplayer = { board:null, chess:null, moves:[], cursor:0, perspective:'white', _COLOR:null, _FEN:null };
+
+    var SPKC_MEMBERS = new Set(['cat_vs_tic','ooecan','an_extraterrestrial_life','bestfaliz01','rickywkkam','penguinthe2nd','person6965']);
+
+    function rEl(id) { return document.getElementById(id); }
+
+    function updateNavBtns() {
+      var R = window._mReplayer;
+      rEl('rBtnStart').disabled = R.cursor === 0;
+      rEl('rBtnPrev').disabled  = R.cursor === 0;
+      rEl('rBtnNext').disabled  = R.cursor >= R.moves.length;
+      rEl('rBtnEnd').disabled   = R.cursor >= R.moves.length;
+    }
+
+    function renderMoveList() {
+      var R = window._mReplayer;
+      var el = rEl('replayerMoveList');
+      if (!el || !R.moves.length) { if (el) el.textContent = 'No moves'; return; }
+      var html = '';
+      for (var i = 0; i < R.moves.length; i += 2) {
+        var n = Math.floor(i/2)+1;
+        var w = R.moves[i]||'', b = R.moves[i+1]||'';
+        var wa = R.cursor===i+1, ba = R.cursor===i+2;
+        html += '<span style="color:var(--muted);margin-right:3px;">'+n+'.</span>';
+        html += '<span style="margin-right:6px;font-weight:'+(wa?900:400)+';color:'+(wa?'var(--primary)':'inherit')+';">'+w+'</span>';
+        if (b) html += '<span style="margin-right:10px;font-weight:'+(ba?900:400)+';color:'+(ba?'var(--primary)':'inherit')+';">'+b+'</span>';
+      }
+      el.innerHTML = html;
+      el.scrollLeft = el.scrollWidth;
+    }
+
+    function updateStatus() {
+      var R = window._mReplayer;
+      var el = rEl('replayerStatus');
+      if (!el || !R.chess) return;
+      var label = R.cursor === 0 ? 'Starting position' : 'Move '+R.cursor+' of '+R.moves.length;
+      var suffix = '';
+      if (R.chess.in_checkmate()) suffix = ' · Checkmate';
+      else if (R.chess.in_check()) suffix = ' · Check';
+      else if (R.chess.in_draw())  suffix = ' · Draw';
+      else if (R.cursor === R.moves.length) suffix = ' · Game over';
+      el.textContent = label + suffix;
+    }
+
+    async function goToMove(target) {
+      var R = window._mReplayer;
+      if (!R.chess || !R.board) return;
+      R.chess.reset();
+      for (var i = 0; i < target; i++) R.chess.move(R.moves[i]);
+      R.cursor = target;
+      await R.board.setPosition(R.chess.fen(), true);
+      updateNavBtns(); renderMoveList(); updateStatus();
+    }
+
+    function closeReplayer() { rEl('replayerBg').classList.remove('open'); }
+
+    window.openReplayer = async function(gameUrl, gameUuid, matchLabel, cachedPgn) {
+      var R = window._mReplayer;
+      var bg = rEl('replayerBg'), metaEl = rEl('replayerMeta');
+      var statEl = rEl('replayerStatus'), extLink = rEl('replayerExtLink');
+
+      bg.classList.add('open');
+      if (metaEl) metaEl.textContent = matchLabel || 'Loading game…';
+      if (statEl) statEl.textContent = 'Fetching PGN…';
+      if (extLink) extLink.href = gameUrl || '#';
+      var mlEl = rEl('replayerMoveList'); if (mlEl) mlEl.textContent = '';
+      R.moves = []; R.cursor = 0;
+
+      try { await _getCMM(); } catch(e) { if (statEl) statEl.textContent = 'Board library failed: '+e.message; return; }
+      var Chessboard = window.Chessboard, FEN = window.CHESS_FEN, COLOR = window.CHESS_COLOR;
+      R._COLOR = COLOR; R._FEN = FEN;
+
+      if (!R.board) {
+        R.board = await new Chessboard(rEl('replayerBoard'), {
+          position: FEN.start, orientation: COLOR.white,
+          assetsUrl: '',
+          assetsCache: false,
+          style: { pieces: { file: '' } }
+        });
+      } else { await R.board.setPosition(R._FEN.start, false); }
+      updateNavBtns();
+
+      var pgn = (typeof cachedPgn === 'string' && cachedPgn.trim()) ? cachedPgn : null;
+
+      if (!pgn) {
+        try {
+          var apiUrl = '';
+          var cleanUuid = String(gameUuid||'').trim();
+          if (cleanUuid && cleanUuid !== 'undefined') {
+            apiUrl = 'https://api.chess.com/pub/game/live/'+cleanUuid;
+          } else if (gameUrl) {
+            var m2 = String(gameUrl).match(/\/game\/(?:live|daily)\/(\d+)/);
+            if (m2) apiUrl = 'https://api.chess.com/pub/game/live/'+m2[1];
+          }
+          if (apiUrl) { var res = await fetch(apiUrl); if (res.ok) { var d = await res.json(); pgn = d.pgn||null; } }
+        } catch(e) { console.warn('Replayer PGN fetch:', e); }
+      }
+
+      if (!pgn) {
+        if (statEl) statEl.textContent = window.location.protocol === 'file:'
+          ? 'PGN not cached yet — go to Admin → Sync PGNs, then reopen.'
+          : 'Could not load PGN — open on Chess.com to analyse.';
+        updateNavBtns(); return;
+      }
+
+      try {
+        if (typeof Chess === 'undefined') { if (statEl) statEl.textContent = 'chess.js not ready.'; return; }
+        R.chess = new Chess();
+        if (!R.chess.load_pgn(pgn)) throw new Error('PGN parse failed');
+        R.moves = R.chess.history(); R.chess.reset(); R.cursor = 0;
+
+        var hdr = typeof R.chess.header === 'function' ? R.chess.header() : {};
+        var white = hdr.White||'', black = hdr.Black||'', result = hdr.Result||'';
+        if (metaEl) metaEl.textContent = (white&&black) ? (white+' vs '+black+'  —  '+result) : (matchLabel||'Game');
+
+        R.perspective = (black && SPKC_MEMBERS.has(black.toLowerCase())) ? 'black' : 'white';
+        await R.board.setOrientation(R.perspective==='black' ? R._COLOR.black : R._COLOR.white, false);
+        await R.board.setPosition(R._FEN.start, false);
+        updateNavBtns(); renderMoveList(); updateStatus();
+      } catch(e) { if (statEl) statEl.textContent = 'Could not parse moves: '+e.message; }
+    };
+
+    rEl('rBtnStart').addEventListener('click', function() { goToMove(0); });
+    rEl('rBtnPrev').addEventListener('click',  function() { var R=window._mReplayer; if(R.cursor>0) goToMove(R.cursor-1); });
+    rEl('rBtnNext').addEventListener('click',  function() { var R=window._mReplayer; if(R.cursor<R.moves.length) goToMove(R.cursor+1); });
+    rEl('rBtnEnd').addEventListener('click',   function() { goToMove(window._mReplayer.moves.length); });
+
+    rEl('rBtnFlip').addEventListener('click', async function() {
+      var R = window._mReplayer; if (!R.board||!R._COLOR) return;
+      R.perspective = R.perspective==='white' ? 'black' : 'white';
+      await R.board.setOrientation(R.perspective==='black' ? R._COLOR.black : R._COLOR.white, true);
+    });
+
+    document.addEventListener('keydown', function(e) {
+      var R = window._mReplayer;
+      if (!rEl('replayerBg').classList.contains('open')) return;
+      if (e.key==='ArrowLeft')  { e.preventDefault(); if(R.cursor>0) goToMove(R.cursor-1); }
+      if (e.key==='ArrowRight') { e.preventDefault(); if(R.cursor<R.moves.length) goToMove(R.cursor+1); }
+      if (e.key==='Escape') closeReplayer();
+    });
+
+    rEl('replayerClose').addEventListener('click', closeReplayer);
+    rEl('replayerBg').addEventListener('click', function(e) { if (e.target===rEl('replayerBg')) closeReplayer(); });
+  </script>
+</body>
+</html>

@@ -1,0 +1,519 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Brilliant Moves — SPKC Chess Club</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <a href="#main" class="skip-link">Skip to content</a>
+
+  <div class="page-shell">
+    <header class="hero">
+      <nav class="nav" aria-label="Primary">
+        <a href="index.html">Home</a>
+        <a href="join.html">Join</a>
+        <a href="tournaments.html">Tournaments</a>
+        <a href="rules.html">Rules</a>
+        <a href="brilliants.html" class="active">Brilliants</a>
+        <a href="matches.html">Matches</a>
+        <a href="history.html">History</a>
+        <a href="openings.html">Openings</a>
+        <button class="dark-toggle" id="darkToggle" aria-label="Toggle dark mode" title="Toggle dark mode">🌙</button>
+      </nav>
+
+      <div class="hero-layout">
+        <div class="hero-copy">
+          <p class="eyebrow">SPKC Season</p>
+          <h1>Brilliant Moves ✨</h1>
+          <p class="hero-text">
+            A Brilliant Move (!!) is a game-changing tactical find that earns the player an extra <strong>+4 season points</strong>. A brilliant is a brilliant — it counts regardless of the game result. Submit within 24 hours with a game link for verification.
+          </p>
+
+          <div class="button-row">
+            <a class="button-link" href="tournaments.html">View Standings</a>
+            <a class="button-ghost" href="rules.html#section7">Brilliant Move Bonus Rules</a>
+          </div>
+
+          <div class="hero-stats">
+            <div class="stat-card">
+              <span class="stat-number" id="heroBrilliantTotal">—</span>
+              <span class="stat-label">Total brilliants</span>
+            </div>
+            <div class="stat-card">
+              <span class="stat-number" id="heroBrilliantSeason">—</span>
+              <span class="stat-label">This season</span>
+            </div>
+            <div class="stat-card">
+              <span class="stat-number" id="heroBrilliantTopPlayer">—</span>
+              <span class="stat-label">Top brilliant player</span>
+            </div>
+          </div>
+        </div>
+
+        <aside class="hero-side badge-card hero-media-card">
+          <img
+            src="https://pplx-res.cloudinary.com/image/upload/pplx_search_images/a0defd430124915ce5808c5b81c14ab3589f6f2e.jpg"
+            alt="Chess trophy representing brilliant moves and awards"
+            width="500"
+            height="600"
+            loading="lazy"
+            class="hero-image"
+          />
+          <div class="media-caption-block">
+            <span class="badge-title">Brilliant move bonus</span>
+            <p>
+              Each verified !! earns +4 season points on top of your regular round score — no matter if you won, drew, or lost. Submit within 24 hours with a game link.
+            </p>
+          </div>
+        </aside>
+      </div>
+    </header>
+
+    <main id="main" class="content-grid">
+
+      <section class="panel span-12">
+        <div class="section-head">
+          <h2 class="section-title">Brilliant moves</h2>
+          <span id="brilliantsCount" class="section-badge">Loading...</span>
+        </div>
+
+        <div class="brilliant-filter-bar" id="brilliantFilterBar">
+          <div>
+            <label for="brillSeasonFilter" style="font-size:12px; font-weight:700; color:var(--muted); display:block; margin-bottom:4px; text-transform:uppercase; letter-spacing:1px;">Season</label>
+            <select id="brillSeasonFilter">
+              <option value="">All seasons</option>
+            </select>
+          </div>
+          <div>
+            <label for="brillPlayerFilter" style="font-size:12px; font-weight:700; color:var(--muted); display:block; margin-bottom:4px; text-transform:uppercase; letter-spacing:1px;">Player</label>
+            <input id="brillPlayerFilter" type="text" placeholder="Filter by name or username…" style="min-width:220px;" />
+          </div>
+        </div>
+
+        <div id="brilliantsGrid" class="brilliants-grid">
+          <div class="info-box">Loading brilliant moves from database…</div>
+        </div>
+      </section>
+
+      <section class="panel span-5">
+        <h2 class="section-title">Most Brilliants</h2>
+        <p style="color:var(--muted); font-size:14px; margin:0 0 4px;">Top players by brilliant move count this season.</p>
+        <div id="brilliantsLb" class="brilliants-lb-list">
+          <div class="info-box">Loading leaderboard…</div>
+        </div>
+      </section>
+
+      <!-- Public claim submission -->
+      <section class="panel span-5">
+        <h2 class="section-title">Submit a claim ✨</h2>
+        <p style="color:var(--muted);font-size:13px;margin:0 0 14px;">Found a !! in your game? Submit it here within 24 hours of the round. The organiser will verify and add it.</p>
+        <div class="claim-form-panel">
+          <div class="claim-field">
+            <label for="claimUsername">Your Chess.com username</label>
+            <input class="form-input" type="text" id="claimUsername" placeholder="e.g. Bestfaliz01" maxlength="50" />
+          </div>
+          <div class="claim-field">
+            <label for="claimGameLink">Game link</label>
+            <input class="form-input" type="url" id="claimGameLink" placeholder="https://www.chess.com/game/live/..." />
+          </div>
+          <div class="claim-field">
+            <label for="claimMoveNum">Move number</label>
+            <input class="form-input" type="number" id="claimMoveNum" placeholder="e.g. 18" min="1" max="500" style="width:120px;" />
+          </div>
+          <div class="claim-field">
+            <label for="claimNote">Note (optional)</label>
+            <input class="form-input" type="text" id="claimNote" placeholder="Brief description of the move" maxlength="200" />
+          </div>
+          <button class="button-link" id="claimSubmitBtn" style="border:none;width:100%;">Submit claim</button>
+          <p class="claim-status" id="claimStatus"></p>
+        </div>
+      </section>
+
+      <section class="panel span-7" id="rule7">
+        <h2 class="section-title">About Brilliant Moves</h2>
+        <div class="info-stack">
+          <div class="info-box">
+            <strong>7.1 — What counts.</strong> A Brilliant Move is a move annotated <strong>!!</strong> by Chess.com's analysis engine in a game played during an official season round. The move must have been a genuinely strong, non-obvious tactical or strategic find.
+          </div>
+          <div class="info-box">
+            <strong>7.2 — Bonus points.</strong> Each verified brilliant move awards the player <strong>+4 season points</strong>, added on top of their regular round finishing score. There is no cap on the number of brilliants per season.
+          </div>
+          <div class="info-box">
+            <strong>7.3 — No game result restriction.</strong> A Brilliant Move bonus is awarded regardless of the game's outcome. A brilliant move in a loss counts just as much as one in a win — a brilliant is a brilliant.
+          </div>
+          <div class="info-box">
+            <strong>7.4 — Submission window.</strong> Players must submit their brilliant move claim to the organiser within <strong>24 hours</strong> of the round ending. Include a link to the Chess.com game and the move number.
+          </div>
+          <div class="info-box">
+            <strong>7.5 — Verification.</strong> The organiser reviews each submission. If the !! annotation is confirmed in the game analysis, the bonus is awarded and the move is added to this page. The organiser's decision is final.
+          </div>
+          <div class="info-box">
+            <strong>7.6 — Recording.</strong> Verified brilliants appear on this page and the +4 points are added to the season standings workbook in the Brilliants column.
+          </div>
+        </div>
+      </section>
+
+    </main>
+
+    <footer>SPKC Chess Club — Brilliant moves showcase and bonus points tracker.</footer>
+  </div>
+
+  <!-- ── localStorage safety wrappers — must be first, dark mode toggle depends on these ── -->
+  <script>
+    function safeGetStorage(k) { try { return localStorage.getItem(k); } catch(e) { return null; } }
+    function safeSetStorage(k,v) { try { localStorage.setItem(k,v); } catch(e) {} }
+  </script>
+
+  <script>
+    // Feature E: Offline / connection timeout guard
+    var dataLoaded = false;
+    var OFFLINE_MSG_HTML = '<div class="offline-msg"><span class="offline-icon">📡</span><strong>Could not connect</strong><p>Check your internet connection and refresh the page.</p><button onclick="location.reload()">Try again</button></div>';
+    setTimeout(function() {
+      if (!dataLoaded) {
+        document.querySelectorAll('.shimmer, [class*="shimmer"], .loading-placeholder').forEach(function(el) {
+          el.innerHTML = OFFLINE_MSG_HTML;
+        });
+        // Also replace any element whose text content still says "Loading"
+        document.querySelectorAll('.panel, .info-box, section').forEach(function(el) {
+          if (el.children.length === 0 && el.textContent.toLowerCase().includes('loading')) {
+            el.innerHTML = OFFLINE_MSG_HTML;
+          }
+        });
+      }
+    }, 8000);
+  </script>
+  <script src="lib/supabase.min.js"></script>
+  <script>
+    const SUPABASE_URL = 'https://qoczwxslhygakivfgxdy.supabase.co';
+    // NOTE: The anon key is safe to expose in client-side code — it only has the permissions
+    // you set in Supabase RLS policies. Never expose your service_role key here.
+    const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFvY3p3eHNsaHlnYWtpdmZneGR5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk2MTAwNzMsImV4cCI6MjA5NTE4NjA3M30.J5I0IR5Ra_JePDzJYHpzstbNRCo667B201iVhjbDZjs';
+
+    const { createClient } = supabase;
+    const supabaseClient = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+    let allBrilliants = [];
+
+    function escapeHtml(value) {
+      return String(value ?? '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+    }
+
+    function formatDate(iso) {
+      if (!iso) return '';
+      const d = new Date(iso);
+      if (isNaN(d.getTime())) return '';
+      return d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
+    }
+
+    // Build a placeholder div shown while image is loading or if it fails
+    function imgPlaceholder(id) {
+      return `<div class="brilliant-img-placeholder" id="bip-${escapeHtml(String(id))}"
+        style="width:100%;aspect-ratio:16/9;border-radius:10px;background:var(--surface-soft);
+        border:1.5px dashed var(--line);display:flex;align-items:center;justify-content:center;
+        color:var(--muted);font-size:12px;font-weight:700;margin:10px 0;">
+        🖼️ Image loading…
+      </div>`;
+    }
+
+    // Resolve screenshot_url: if it's a storage path (no http), get a signed URL;
+    // if it's already a full URL, use it directly
+    async function resolveScreenshotUrl(rawUrl) {
+      if (!rawUrl) return null;
+      // Already a full https URL — use as-is (may still fail if token expired)
+      if (rawUrl.startsWith('http://') || rawUrl.startsWith('https://')) return rawUrl;
+      // Treat as a storage path inside private_uploads bucket
+      try {
+        const { data, error } = await supabaseClient.storage
+          .from('private_uploads')
+          .createSignedUrl(rawUrl, 10800); // 3 hours
+        if (error || !data?.signedUrl) return null;
+        return data.signedUrl;
+      } catch(e) { return null; }
+    }
+
+    async function renderBrilliants(data) {
+      const grid = document.getElementById('brilliantsGrid');
+      const countBadge = document.getElementById('brilliantsCount');
+      if (!data.length) {
+        grid.innerHTML = '<div class="info-box">No brilliant moves recorded yet.</div>';
+        countBadge.textContent = '0 brilliants';
+        return;
+      }
+      countBadge.textContent = data.length + ' brilliant' + (data.length !== 1 ? 's' : '');
+
+      // Render cards immediately with placeholders for images
+      grid.innerHTML = data.map((move, idx) => {
+        const captionHtml = move.caption
+          ? `<p class="brilliant-caption">"${escapeHtml(move.caption)}"</p>`
+          : '';
+        const analyseHtml = move.game_link
+          ? `<a class="brilliant-analyse-btn" href="${escapeHtml(move.game_link)}" target="_blank" rel="noopener noreferrer">♟ Analyse on Chess.com →</a>`
+          : '';
+        const usernameUrl = move.chess_username
+          ? `https://www.chess.com/member/${encodeURIComponent(move.chess_username)}`
+          : '#';
+        // Show placeholder; signed URL injected async below
+        const imgSlot = move.screenshot_url
+          ? imgPlaceholder(idx)
+          : '';
+        return `
+          <article class="brilliant-card" data-idx="${idx}">
+            <div class="brilliant-badge">✨ Brilliant Move</div>
+            <div class="brilliant-player">
+              ${escapeHtml(move.player_name)}
+              <a href="${escapeHtml(usernameUrl)}" target="_blank" rel="noopener noreferrer"
+                style="font-size:12px; color:var(--primary); font-weight:600; margin-left:6px; text-decoration:none;">
+                @${escapeHtml(move.chess_username)}
+              </a>
+            </div>
+            <div class="brilliant-meta">
+              ${move.season_key ? `<span class="brilliant-meta-pill">Season: ${escapeHtml(move.season_key)}</span>` : ''}
+              ${move.round_number ? `<span class="brilliant-meta-pill">Round ${escapeHtml(String(move.round_number))}</span>` : ''}
+              ${move.match_desc ? `<span class="brilliant-meta" style="font-size:13px;">${escapeHtml(move.match_desc)}</span>` : ''}
+            </div>
+            ${captionHtml}
+            ${imgSlot}
+            <div style="font-size:12px; color:var(--muted); margin-top:auto;">${formatDate(move.created_at)}</div>
+            ${analyseHtml}
+          </article>
+        `;
+      }).join('');
+
+      // Now resolve signed URLs async and replace placeholders
+      await Promise.all(data.map(async (move, idx) => {
+        if (!move.screenshot_url) return;
+        const pip = document.getElementById(`bip-${idx}`);
+        if (!pip) return;
+        const url = await resolveScreenshotUrl(move.screenshot_url);
+        if (url) {
+          const img = document.createElement('img');
+          img.className = 'brilliant-img';
+          img.alt = 'Brilliant move screenshot';
+          img.loading = 'lazy';
+          img.style.cssText = 'width:100%;border-radius:10px;margin:10px 0;display:block;';
+          img.onerror = function() {
+            this.replaceWith(Object.assign(document.createElement('div'), {
+              className: 'brilliant-img-placeholder',
+              style: 'width:100%;aspect-ratio:16/9;border-radius:10px;background:var(--surface-soft);border:1.5px dashed var(--line);display:flex;align-items:center;justify-content:center;color:var(--muted);font-size:12px;font-weight:700;margin:10px 0;',
+              textContent: '🚫 Image unavailable — the signed link may have expired. Admin can re-upload.'
+            }));
+          };
+          img.src = url;
+          pip.replaceWith(img);
+        } else {
+          pip.textContent = '🚫 Image unavailable — the signed link may have expired. Admin can re-upload.';
+          pip.style.background = 'var(--surface-soft)';
+        }
+      }));
+    }
+
+    function renderLeaderboard(data) {
+      const lb = document.getElementById('brilliantsLb');
+      if (!data.length) {
+        lb.innerHTML = '<div class="info-box">No brilliant moves yet.</div>';
+        return;
+      }
+      // Group by chess_username
+      const counts = {};
+      const names = {};
+      data.forEach(move => {
+        const key = (move.chess_username || '').toLowerCase();
+        counts[key] = (counts[key] || 0) + 1;
+        names[key] = move.player_name || move.chess_username;
+      });
+      const ranked = Object.entries(counts)
+        .sort((a, b) => b[1] - a[1])
+        .slice(0, 5);
+      lb.innerHTML = '<div class="brilliants-lb-list">' + ranked.map(([username, count], i) => {
+        const playerName = names[username] || username;
+        return `
+          <div class="brilliants-lb-row">
+            <span class="brilliants-lb-rank">#${i + 1}</span>
+            <span class="brilliants-lb-name">
+              ${escapeHtml(playerName)}
+              <a href="https://www.chess.com/member/${encodeURIComponent(username)}" target="_blank" rel="noopener noreferrer"
+                style="font-size:11px; color:var(--muted); display:block; text-decoration:none;">@${escapeHtml(username)}</a>
+            </span>
+            <span class="brilliants-lb-count">✨ ${count}</span>
+          </div>
+        `;
+      }).join('') + '</div>';
+    }
+
+    function populateSeasonFilter(data) {
+      const select = document.getElementById('brillSeasonFilter');
+      const seasons = [...new Set(data.map(m => m.season_key).filter(Boolean))].sort();
+      seasons.forEach(s => {
+        const opt = document.createElement('option');
+        opt.value = s;
+        opt.textContent = s;
+        select.appendChild(opt);
+      });
+    }
+
+    function applyFilters() {
+      const seasonVal = document.getElementById('brillSeasonFilter').value;
+      const playerVal = document.getElementById('brillPlayerFilter').value.trim().toLowerCase();
+      const filtered = allBrilliants.filter(move => {
+        const seasonMatch = !seasonVal || move.season_key === seasonVal;
+        const playerMatch = !playerVal ||
+          (move.player_name || '').toLowerCase().includes(playerVal) ||
+          (move.chess_username || '').toLowerCase().includes(playerVal);
+        return seasonMatch && playerMatch;
+      });
+      renderBrilliants(filtered); // async — signed URLs resolved in background
+    }
+
+    function updateHeroStats(data) {
+      document.getElementById('heroBrilliantTotal').textContent = data.length;
+
+      // Current season = most recent season_key in data
+      const seasons = [...new Set(data.map(m => m.season_key).filter(Boolean))].sort();
+      const currentSeason = seasons[seasons.length - 1] || null;
+      const seasonCount = currentSeason ? data.filter(m => m.season_key === currentSeason).length : 0;
+      document.getElementById('heroBrilliantSeason').textContent = seasonCount;
+
+      // Top player overall
+      const counts = {};
+      const names = {};
+      data.forEach(move => {
+        const key = (move.chess_username || '').toLowerCase();
+        counts[key] = (counts[key] || 0) + 1;
+        names[key] = move.player_name || move.chess_username;
+      });
+      const top = Object.entries(counts).sort((a, b) => b[1] - a[1])[0];
+      document.getElementById('heroBrilliantTopPlayer').textContent = top ? names[top[0]] : '—';
+    }
+
+    async function initBrilliants() {
+      try {
+        const { data, error } = await supabaseClient
+          .from('brilliant_moves')
+          .select('*')
+          .order('created_at', { ascending: false });
+
+        if (error) {
+          document.getElementById('brilliantsGrid').innerHTML =
+            `<div class="info-box">Could not load brilliant moves: ${escapeHtml(error.message)}</div>`;
+          document.getElementById('brilliantsLb').innerHTML =
+            '<div class="info-box">Leaderboard unavailable.</div>';
+          document.getElementById('brilliantsCount').textContent = 'Error';
+          return;
+        }
+
+        allBrilliants = Array.isArray(data) ? data : [];
+        dataLoaded = true; // Feature E
+
+        updateHeroStats(allBrilliants);
+        populateSeasonFilter(allBrilliants);
+        renderBrilliants(allBrilliants);
+        renderLeaderboard(allBrilliants);
+
+        // Wire up filters
+        document.getElementById('brillSeasonFilter').addEventListener('change', applyFilters);
+        document.getElementById('brillPlayerFilter').addEventListener('input', applyFilters);
+
+      } catch (err) {
+        document.getElementById('brilliantsGrid').innerHTML =
+          `<div class="info-box">Failed to load: ${escapeHtml(String(err))}</div>`;
+      }
+    }
+
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', initBrilliants);
+    } else {
+      initBrilliants();
+    }
+
+    // ── Public claim submission ───────────────────────────────────────────
+    (function() {
+      var claimBtn    = document.getElementById('claimSubmitBtn');
+      var claimStatus = document.getElementById('claimStatus');
+
+      function setClaimStatus(msg, ok) {
+        if (!claimStatus) return;
+        claimStatus.textContent = msg;
+        claimStatus.style.color  = ok ? 'var(--success, #1f7a46)' : 'var(--danger, #a53a3a)';
+        claimStatus.style.fontWeight = '600';
+        claimStatus.style.marginTop  = '10px';
+        claimStatus.style.display    = msg ? 'block' : 'none';
+      }
+
+      if (!claimBtn) return;
+
+      claimBtn.addEventListener('click', async function() {
+        var username  = (document.getElementById('claimUsername').value || '').trim();
+        var gameLink  = (document.getElementById('claimGameLink').value || '').trim();
+        var moveNum   = (document.getElementById('claimMoveNum').value || '').trim();
+        var note      = (document.getElementById('claimNote').value || '').trim();
+
+        if (!username) { setClaimStatus('Please enter your Chess.com username.', false); return; }
+        if (!gameLink) { setClaimStatus('Please enter the game link.', false); return; }
+        if (!moveNum)  { setClaimStatus('Please enter the move number.', false); return; }
+
+        var caption = 'Move ' + moveNum + (note ? ' — ' + note : '') + ' [PENDING REVIEW]';
+
+        // Get the latest season key from allBrilliants, or use fallback
+        var seasonKey = '';
+        if (allBrilliants && allBrilliants.length) {
+          var keys = allBrilliants.map(function(m) { return m.season_key || ''; }).filter(Boolean).sort();
+          seasonKey = keys[keys.length - 1] || '';
+        }
+        if (!seasonKey) seasonKey = '2026-season';
+
+        claimBtn.disabled = true;
+        claimBtn.textContent = 'Submitting…';
+        setClaimStatus('', true);
+
+        var payload = {
+          chess_username : username,
+          player_name    : username,  // public claimant only knows their username
+          game_link      : gameLink,
+          caption        : caption,
+          season_key     : seasonKey,
+          screenshot_url : null
+        };
+
+        var result = await supabaseClient.from('brilliant_moves').insert([payload]);
+
+        claimBtn.disabled = false;
+        claimBtn.textContent = 'Submit claim';
+
+        if (result.error) {
+          setClaimStatus('Submission failed: ' + result.error.message, false);
+          return;
+        }
+
+        setClaimStatus('Claim submitted! The organiser will verify it shortly. ✨', true);
+        document.getElementById('claimUsername').value = '';
+        document.getElementById('claimGameLink').value = '';
+        document.getElementById('claimMoveNum').value  = '';
+        document.getElementById('claimNote').value     = '';
+      });
+    })();
+  </script>
+
+  <!-- ── Dark mode toggle ── -->
+  <script>
+    (function() {
+      const btn = document.getElementById('darkToggle');
+      if (safeGetStorage('spkc-dark') === '1') document.documentElement.classList.add('dark');
+      if (btn) {
+        btn.textContent = document.documentElement.classList.contains('dark') ? '☀️' : '🌙';
+        btn.addEventListener('click', function() {
+          const isDark = document.documentElement.classList.toggle('dark');
+          safeSetStorage('spkc-dark', isDark ? '1' : '0');
+          btn.textContent = isDark ? '☀️' : '🌙';
+        });
+      }
+    })();
+  </script>
+</body>
+</html>

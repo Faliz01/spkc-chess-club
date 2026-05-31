@@ -1,0 +1,3525 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>SPKC Admin Upload</title>
+  <style>
+    :root {
+      --bg: #f5f7fb;
+      --card: #ffffff;
+      --line: #d9e3ef;
+      --text: #17263c;
+      --muted: #63748b;
+      --muted-admin: #63748b;
+      --primary: #204b95;
+      --success: #1f7a46;
+      --danger: #a53a3a;
+      --radius: 18px;
+      --shadow: 0 12px 28px rgba(23, 38, 60, 0.08);
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+      background: linear-gradient(180deg, #f8faff 0%, #edf3f9 100%);
+      color: var(--text);
+    }
+
+    .shell {
+      max-width: 980px;
+      margin: 0 auto;
+      padding: 32px 18px;
+    }
+
+    .card {
+      background: var(--card);
+      border: 1px solid var(--line);
+      border-radius: 24px;
+      box-shadow: var(--shadow);
+      padding: 24px;
+      margin-bottom: 22px;
+    }
+
+    h1, h2 { margin-top: 0; }
+
+    p {
+      color: var(--muted);
+      line-height: 1.7;
+    }
+
+    .stack {
+      display: grid;
+      gap: 14px;
+    }
+
+    .grid-2 {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 14px;
+    }
+
+    label {
+      font-weight: 700;
+      display: block;
+      margin-bottom: 6px;
+    }
+
+    input[type="email"],
+    input[type="password"],
+    input[type="file"],
+    input[type="text"],
+    input[type="datetime-local"],
+    select,
+    textarea {
+      width: 100%;
+      padding: 12px 14px;
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      font: inherit;
+      background: #fff;
+    }
+
+    textarea {
+      resize: vertical;
+    }
+
+    button {
+      border: none;
+      border-radius: 999px;
+      padding: 12px 18px;
+      font: inherit;
+      font-weight: 700;
+      cursor: pointer;
+      background: var(--primary);
+      color: white;
+    }
+
+    button.secondary {
+      background: #eef3fb;
+      color: var(--primary);
+    }
+
+    button.danger {
+      background: #fff0f0;
+      color: var(--danger);
+    }
+
+    .button-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-top: 8px;
+    }
+
+    .status {
+      margin-top: 14px;
+      padding: 14px 16px;
+      border-radius: 14px;
+      border: 1px solid var(--line);
+      background: #f8fbff;
+      color: var(--text);
+      white-space: pre-line;
+    }
+
+    .status.success {
+      border-color: #bfe0c9;
+      background: #eef9f1;
+      color: var(--success);
+    }
+
+    .status.error {
+      border-color: #ebc4c4;
+      background: #fff1f1;
+      color: var(--danger);
+    }
+
+    .meta {
+      font-size: 14px;
+      color: var(--muted);
+    }
+
+    .settings-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 16px;
+    }
+
+    .settings-table th,
+    .settings-table td {
+      text-align: left;
+      padding: 12px 10px;
+      border-bottom: 1px solid var(--line);
+      vertical-align: top;
+      font-size: 14px;
+    }
+
+    .settings-table th {
+      color: var(--primary);
+      font-size: 14px;
+      font-weight: 700;
+    }
+
+    /* Registrations table */
+    .reg-table {
+      width: 100%;
+      border-collapse: collapse;
+      min-width: 700px;
+    }
+
+    .reg-table th,
+    .reg-table td {
+      text-align: left;
+      padding: 10px 8px;
+      border-bottom: 1px solid var(--line);
+      font-size: 13px;
+      vertical-align: middle;
+    }
+
+    .reg-table th {
+      background: #f4f8fc;
+      color: var(--primary);
+      font-weight: 700;
+    }
+
+    .reg-table tbody tr:last-child td {
+      border-bottom: none;
+    }
+
+    .reg-table tbody tr:hover {
+      background: #f8fbff;
+    }
+
+    .status-badge {
+      display: inline-block;
+      padding: 4px 10px;
+      border-radius: 999px;
+      font-size: 12px;
+      font-weight: 700;
+    }
+
+    .status-badge.pending  { background: #fff8e1; color: #8a6200; }
+    .status-badge.accepted { background: #eef9f1; color: #1f7a46; }
+    .status-badge.rejected { background: #fff1f1; color: #a53a3a; }
+
+    .reg-action-btn {
+      border: none;
+      border-radius: 999px;
+      padding: 5px 12px;
+      font: inherit;
+      font-size: 12px;
+      font-weight: 700;
+      cursor: pointer;
+      margin-right: 4px;
+      margin-bottom: 2px;
+    }
+
+    .reg-action-btn.accept {
+      background: #eef9f1;
+      color: #1f7a46;
+    }
+
+    .reg-action-btn.reject {
+      background: #fff1f1;
+      color: #a53a3a;
+    }
+
+    .table-scroll {
+      overflow-x: auto;
+      margin-top: 12px;
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      background: #fff;
+    }
+
+    .field-group {
+      margin-bottom: 14px;
+    }
+
+    @media (max-width: 720px) {
+      .grid-2 {
+        grid-template-columns: 1fr;
+      }
+
+      .settings-table {
+        display: block;
+        overflow-x: auto;
+      }
+    }
+
+    /* ── Rules Editor ─────────────────────────────────────────────────── */
+    .re-section {
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      margin-bottom: 12px;
+      background: #fff;
+      overflow: hidden;
+    }
+
+    .re-section-header {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 14px 18px;
+      cursor: pointer;
+      user-select: none;
+      background: #f4f8fc;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .re-section-header:hover {
+      background: #eaf0fb;
+    }
+
+    .re-section-title-input {
+      flex: 1;
+      font-weight: 700;
+      font-size: 15px;
+      color: var(--primary);
+      border: 1px solid transparent;
+      border-radius: 8px;
+      padding: 4px 8px;
+      font: inherit;
+      font-weight: 700;
+      background: transparent;
+      cursor: text;
+    }
+
+    .re-section-title-input:focus {
+      border-color: var(--primary);
+      background: #fff;
+      outline: none;
+    }
+
+    .re-section-num-input {
+      width: 50px;
+      text-align: center;
+      font-weight: 700;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 4px 6px;
+      font: inherit;
+      font-size: 14px;
+    }
+
+    .re-section-body {
+      display: none;
+      padding: 14px 18px;
+    }
+
+    .re-section.open .re-section-body {
+      display: block;
+    }
+
+    .re-rule-row {
+      display: flex;
+      gap: 8px;
+      align-items: flex-start;
+      margin-bottom: 8px;
+    }
+
+    .re-rule-num {
+      width: 60px;
+      flex-shrink: 0;
+      padding: 8px 10px;
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      font: inherit;
+      font-size: 13px;
+      font-weight: 700;
+      background: #f8fbff;
+    }
+
+    .re-rule-text {
+      flex: 1;
+      padding: 8px 12px;
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      font: inherit;
+      font-size: 13px;
+      resize: vertical;
+      min-height: 60px;
+    }
+
+    .re-rule-text:focus,
+    .re-rule-num:focus {
+      outline: none;
+      border-color: var(--primary);
+      box-shadow: 0 0 0 3px rgba(32,75,149,0.08);
+    }
+
+    .re-btn-icon {
+      background: #fff0f0;
+      color: var(--danger);
+      border: none;
+      border-radius: 8px;
+      padding: 8px 10px;
+      font: inherit;
+      font-size: 13px;
+      cursor: pointer;
+      flex-shrink: 0;
+    }
+
+    .re-btn-icon:hover { background: #ffe0e0; }
+
+    .re-btn-add-rule {
+      background: #eef9f1;
+      color: #1f7a46;
+      border: 1px dashed #88c9a0;
+      border-radius: 10px;
+      padding: 8px 14px;
+      font: inherit;
+      font-size: 13px;
+      cursor: pointer;
+      margin-top: 6px;
+      width: 100%;
+    }
+
+    .re-btn-add-rule:hover { background: #dcf5e8; }
+
+    .re-chevron {
+      transition: transform 0.2s;
+      color: var(--muted);
+      font-size: 14px;
+    }
+
+    .re-section.open .re-chevron {
+      transform: rotate(180deg);
+    }
+
+    .re-section-actions {
+      display: flex;
+      gap: 6px;
+      flex-shrink: 0;
+    }
+
+    .re-btn-section-del {
+      background: #fff0f0;
+      color: var(--danger);
+      border: none;
+      border-radius: 8px;
+      padding: 4px 8px;
+      font: inherit;
+      font-size: 12px;
+      cursor: pointer;
+    }
+
+    .re-btn-section-del:hover { background: #ffe0e0; }
+
+    .admin-log-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 13px;
+    }
+
+    .admin-log-table th,
+    .admin-log-table td {
+      text-align: left;
+      padding: 8px 10px;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .admin-log-table th {
+      background: #f4f8fc;
+      color: var(--primary);
+      font-weight: 700;
+    }
+  </style>
+</head>
+<body>
+  <div class="shell">
+    <section class="card">
+      <h1>SPKC admin upload</h1>
+      <p>Log in with your Supabase account, then manage workbook uploads, season registration settings, season round dates, and registrations.</p>
+      <p class="meta">
+        Workbook path: <strong>private_uploads/latest/season-standings.xlsx</strong><br />
+        Round dates path: <strong>private_uploads/latest/season-dates.json</strong>
+      </p>
+    </section>
+
+    <section class="card">
+      <h2>Login</h2>
+      <div class="stack">
+        <div>
+          <label for="email">Email</label>
+          <input id="email" type="email" autocomplete="email" />
+        </div>
+        <div>
+          <label for="password">Password</label>
+          <input id="password" type="password" autocomplete="current-password" />
+        </div>
+        <div class="button-row">
+          <button id="loginBtn">Log in</button>
+          <button id="logoutBtn" class="secondary" type="button">Log out</button>
+        </div>
+      </div>
+      <div id="authStatus" class="status">Not logged in.</div>
+    </section>
+
+    <div id="adminContent" style="display:none">
+
+    <section class="card">
+      <h2>Workbook tools</h2>
+      <div class="stack">
+        <div>
+          <label for="fileInput">Excel file</label>
+          <input id="fileInput" type="file" accept=".xlsx" />
+        </div>
+        <div class="button-row">
+          <button id="uploadBtn" type="button">Upload latest workbook</button>
+          <button id="downloadBtn" class="secondary" type="button">Download latest workbook</button>
+          <button id="signedLinkBtn" class="secondary" type="button">Open 1-hour signed link</button>
+        </div>
+      </div>
+      <div id="uploadStatus" class="status">Choose your Excel file after logging in.</div>
+    </section>
+
+    <!-- ── Create new season ──────────────────────────────────────────── -->
+    <section class="card">
+      <h2>Create new season</h2>
+      <p>Add a new season entry to the database. All fields except season key and label are optional.</p>
+      <div class="grid-2">
+        <div>
+          <label for="newSeasonKey">Season key</label>
+          <input id="newSeasonKey" type="text" placeholder="e.g. 2027-season-2" />
+        </div>
+        <div>
+          <label for="newSeasonLabel">Season label</label>
+          <input id="newSeasonLabel" type="text" placeholder="e.g. 2027 Season 2" />
+        </div>
+        <div>
+          <label for="newFilePath">File path</label>
+          <input id="newFilePath" type="text" placeholder="latest/season-standings.xlsx" value="latest/season-standings.xlsx" />
+        </div>
+        <div>
+          <label for="newSheetName">Sheet name</label>
+          <input id="newSheetName" type="text" placeholder="e.g. 2027 Season 2" />
+        </div>
+        <div>
+          <label for="newRoundCount">Round count</label>
+          <select id="newRoundCount">
+            <option value="6">6</option>
+            <option value="9">9</option>
+            <option value="12">12</option>
+            <option value="16">16</option>
+          </select>
+        </div>
+        <div>
+          <label for="newRoundTime">Round time</label>
+          <input id="newRoundTime" type="text" placeholder="e.g. 20:00" /><small style="color:var(--muted);font-size:11px;display:block;margin-top:3px;">Time only (HH:MM, 24h, HKT). Used for countdown &amp; live banner.</small>
+        </div>
+        <div>
+          <label for="newSeasonWindow">Season window</label>
+          <input id="newSeasonWindow" type="text" placeholder="e.g. 1 Jan - 30 Mar 2027" />
+        </div>
+        <div>
+          <label for="newFormatCycle">Format cycle</label>
+          <input id="newFormatCycle" type="text" placeholder="Bullet / Blitz / Rapid" />
+        </div>
+      </div>
+      <div style="margin-top:14px;">
+        <label for="newSummary">Summary</label>
+        <textarea id="newSummary" rows="2" style="width:100%;padding:12px;border:1px solid var(--line);border-radius:14px;font:inherit;"></textarea>
+      </div>
+      <div style="margin-top:10px;">
+        <label for="newNotes">Notes (one per line)</label>
+        <textarea id="newNotes" rows="3" style="width:100%;padding:12px;border:1px solid var(--line);border-radius:14px;font:inherit;"></textarea>
+      </div>
+      <div style="margin-top:10px;">
+        <label for="newRegEnabled">Registration enabled at creation</label>
+        <select id="newRegEnabled">
+          <option value="false">Disabled (default)</option>
+          <option value="true">Enabled</option>
+        </select>
+      </div>
+      <div class="button-row">
+        <button id="createSeasonBtn" type="button">Create season</button>
+      </div>
+      <div id="createSeasonStatus" class="status">Log in to create seasons.</div>
+    </section>
+
+    <!-- ── Season registration settings ──────────────────────────────── -->
+    <section class="card">
+      <h2>Season registration settings</h2>
+      <div class="grid-2">
+        <div>
+          <label for="seasonSelect">Season</label>
+          <select id="seasonSelect"></select>
+        </div>
+        <div>
+          <label for="seasonEnabled">Registration enabled</label>
+          <select id="seasonEnabled">
+            <option value="true">Enabled</option>
+            <option value="false">Disabled</option>
+          </select>
+        </div>
+        <div>
+          <label for="seasonOpensAt">Registration opens at</label>
+          <input id="seasonOpensAt" type="datetime-local" />
+        </div>
+        <div>
+          <label for="seasonClosesAt">Registration closes at</label>
+          <input id="seasonClosesAt" type="datetime-local" />
+        </div>
+        <div>
+          <label for="editFilePath">File path</label>
+          <input id="editFilePath" type="text" placeholder="latest/season-standings.xlsx" />
+        </div>
+        <div>
+          <label for="editSheetName">Sheet name</label>
+          <input id="editSheetName" type="text" placeholder="e.g. 2026 Season" />
+        </div>
+        <div>
+          <label for="editRoundCount">Round count</label>
+          <select id="editRoundCount">
+            <option value="6">6</option>
+            <option value="9">9</option>
+            <option value="12">12</option>
+            <option value="16">16</option>
+          </select>
+        </div>
+        <div>
+          <label for="editRoundTime">Round time</label>
+          <input id="editRoundTime" type="text" placeholder="e.g. 20:00" /><small style="color:var(--muted);font-size:11px;display:block;margin-top:3px;">Time only (HH:MM, 24h, HKT). Used for countdown &amp; live banner.</small>
+        </div>
+        <div>
+          <label for="editSeasonWindow">Season window</label>
+          <input id="editSeasonWindow" type="text" placeholder="e.g. 26 Apr - 12 Jul" />
+        </div>
+        <div>
+          <label for="editFormatCycle">Format cycle</label>
+          <input id="editFormatCycle" type="text" placeholder="Bullet / Blitz / Rapid" />
+        </div>
+      </div>
+
+      <div style="margin-top:14px;">
+        <label for="editSummary">Summary</label>
+        <textarea id="editSummary" rows="2" style="width:100%;padding:12px;border:1px solid var(--line);border-radius:14px;font:inherit;"></textarea>
+      </div>
+      <div style="margin-top:10px;">
+        <label for="editNotes">Notes (one per line)</label>
+        <textarea id="editNotes" rows="3" style="width:100%;padding:12px;border:1px solid var(--line);border-radius:14px;font:inherit;"></textarea>
+      </div>
+
+      <div class="button-row">
+        <button id="loadSettingsBtn" type="button" class="secondary">Reload settings</button>
+        <button id="saveSettingsBtn" type="button">Save season settings</button>
+        <button id="deleteSeasonBtn" type="button" class="danger">Delete season</button>
+      </div>
+
+      <div id="settingsStatus" class="status">Log in to manage season registration windows.</div>
+      <div id="settingsTableWrap"></div>
+    </section>
+
+    <!-- ── Season round dates ─────────────────────────────────────────── -->
+    <section class="card">
+      <h2>Season round dates</h2>
+      <p class="meta">This edits <strong>private_uploads/latest/season-dates.json</strong>.</p>
+
+      <div class="grid-2">
+        <div>
+          <label for="dateSeasonSelect">Season</label>
+          <select id="dateSeasonSelect"></select>
+        </div>
+        <div>
+          <label for="dateSeasonLabel">Season label</label>
+          <input id="dateSeasonLabel" type="text" placeholder="e.g. 2027 Season 1" />
+        </div>
+        <div>
+          <label for="roundCountSelect">Number of rounds</label>
+          <select id="roundCountSelect">
+            <option value="6">6</option>
+            <option value="9">9</option>
+            <option value="12">12</option>
+            <option value="16">16</option>
+          </select>
+        </div>
+      </div>
+
+      <div id="roundDateFields" class="grid-2" style="margin-top: 14px;"></div>
+
+      <div class="button-row">
+        <button id="loadDatesBtn" type="button" class="secondary">Load round dates</button>
+        <button id="saveDatesBtn" type="button">Save round dates</button>
+      </div>
+
+      <div id="datesStatus" class="status">Log in to manage future season round dates.</div>
+    </section>
+
+    <!-- ── Announcements manager ─────────────────────────────────────── -->
+    <section class="card">
+      <h2>Announcements</h2>
+      <p>Post announcements that appear on the home page. Pinned announcements always appear first.</p>
+      <div class="stack">
+        <div>
+          <label for="annTitle">Title</label>
+          <input id="annTitle" type="text" placeholder="e.g. Round 3 starts tonight at 20:00" />
+        </div>
+        <div>
+          <label for="annBody">Body</label>
+          <textarea id="annBody" rows="3"></textarea>
+        </div>
+        <div style="display:flex; align-items:center; gap:10px;">
+          <input type="checkbox" id="annPinned" style="width:auto; margin:0;" />
+          <label for="annPinned" style="font-weight:700; margin:0;">Pin this announcement</label>
+        </div>
+      </div>
+      <div class="button-row">
+        <button id="postAnnBtn" type="button">Post announcement</button>
+        <button id="loadAnnsBtn" class="secondary" type="button">Refresh list</button>
+      </div>
+      <div id="annStatus" class="status">Log in to manage announcements.</div>
+      <div id="annListWrap" style="margin-top:14px;"></div>
+    </section>
+
+    <!-- ── Brilliant Moves manager ──────────────────────────────────────── -->
+    <section class="card">
+      <h2>Brilliant Moves ✨</h2>
+      <p style="color:var(--muted-admin);font-size:13px;margin:0 0 14px;">
+        Log a brilliant move (!!) to showcase on the Brilliants page and award +4 season points.
+      </p>
+      <div class="grid-2">
+        <div class="field-group">
+          <label>Season</label>
+          <select id="brillSeasonSelect"></select>
+        </div>
+        <div class="field-group">
+          <label>Round number</label>
+          <select id="brillRoundSelect">
+            <option value="1">Round 1</option><option value="2">Round 2</option>
+            <option value="3">Round 3</option><option value="4">Round 4</option>
+            <option value="5">Round 5</option><option value="6">Round 6</option>
+          </select>
+        </div>
+        <div class="field-group">
+          <label>Player name</label>
+          <input id="brillPlayerName" type="text" placeholder="e.g. Felix Liu" />
+        </div>
+        <div class="field-group">
+          <label>Chess.com username</label>
+          <input id="brillUsername" type="text" placeholder="e.g. Bestfaliz01" />
+        </div>
+        <div class="field-group">
+          <label>Match (opponent)</label>
+          <input id="brillMatch" type="text" placeholder="e.g. vs Sebastian Siu" />
+        </div>
+        <div class="field-group">
+          <label>Chess.com game link (optional)</label>
+          <input id="brillGameLink" type="url" placeholder="https://www.chess.com/game/live/..." />
+        </div>
+      </div>
+      <div class="field-group" style="margin-top:10px;">
+        <label>Caption / note (optional)</label>
+        <input id="brillCaption" type="text" placeholder="e.g. Stunning queen sacrifice on move 18!" />
+      </div>
+      <div class="field-group" style="margin-top:10px;">
+        <label>Screenshot (optional — choose an image file)</label>
+        <input id="brillScreenshotFile" type="file" accept="image/*" />
+        <div id="brillScreenshotPreview" style="margin-top:8px;display:none;">
+          <img id="brillScreenshotPreviewImg" src="" alt="Preview" style="max-width:100%;max-height:180px;border-radius:10px;border:1px solid var(--border);object-fit:contain;" />
+          <p id="brillScreenshotPreviewName" style="font-size:11px;color:var(--muted-admin);margin:4px 0 0;"></p>
+        </div>
+      </div>
+      <div class="button-row" style="margin-top:12px;">
+        <button id="postBrilliantBtn" type="button">✨ Submit brilliant</button>
+        <button id="loadBrilliants" class="secondary" type="button">Refresh list</button>
+      </div>
+      <div id="brilliantStatus" class="status">Log in to manage brilliant moves.</div>
+      <div id="brilliantListWrap" style="margin-top:14px;"></div>
+    </section>
+
+    <!-- ── Feature 4: Announce round winner ───────────────────────────── -->
+    <section class="card">
+      <h2>Announce round winner</h2>
+      <div class="field-group">
+        <label>Season</label>
+        <select id="winnerSeasonSelect"></select>
+      </div>
+      <div class="field-group">
+        <label>Round number</label>
+        <select id="winnerRoundSelect">
+          <option value="1">Round 1</option><option value="2">Round 2</option>
+          <option value="3">Round 3</option><option value="4">Round 4</option>
+          <option value="5">Round 5</option><option value="6">Round 6</option>
+        </select>
+      </div>
+      <div class="field-group">
+        <label>Winner name</label>
+        <input id="winnerName" type="text" placeholder="e.g. Ka Po Liu" />
+      </div>
+      <div class="field-group">
+        <label>Winner Chess.com username (optional)</label>
+        <input id="winnerUsername" type="text" placeholder="e.g. kapol1u" />
+      </div>
+      <div class="field-group">
+        <label>Extra note (optional)</label>
+        <input id="winnerNote" type="text" placeholder="e.g. Won all 5 games!" />
+      </div>
+      <div class="button-row" style="margin-top:12px;">
+        <button id="postWinnerBtn" type="button">📢 Post announcement</button>
+      </div>
+      <div id="winnerStatus" class="status">Log in to post winner announcements.</div>
+    </section>
+
+    <!-- ── Feature 10: Chess.com tournament links ──────────────────────── -->
+    <section class="card">
+      <h2>Chess.com tournament links</h2>
+      <p style="color:var(--muted-admin);font-size:13px;margin:0 0 14px;">
+        Store the Chess.com tournament URL ID for each round. This enables future head-to-head match data. The URL ID is the part after /tournament/ in the tournament URL.
+      </p>
+      <div class="field-group">
+        <label>Season</label>
+        <select id="tourneySeasonSelect"></select>
+      </div>
+      <div id="tourneyRoundFields" style="margin-top:14px; display:grid; gap:10px;"></div>
+      <div class="button-row" style="margin-top:14px;">
+        <button id="loadTourneyLinksBtn" class="secondary" type="button">Load saved links</button>
+        <button id="saveTourneyLinksBtn" type="button">Save links</button>
+        <button id="syncPgnsBtn" type="button" class="secondary" style="background:var(--accent,#1a7a44);color:#fff;border-color:var(--accent,#1a7a44);">&#x21bb; Sync PGNs</button>
+      </div>
+      <div id="tourneyLinksStatus" class="status">Log in to manage tournament links.</div>
+      <div id="syncPgnProgress" style="display:none;margin-top:10px;font-size:13px;color:var(--muted-admin);"></div>
+    </section>
+
+    <!-- ── Feature F: Activity Log ─────────────────────────────────────── -->
+    <section class="card" id="activityLogCard">
+      <h2>Activity Log</h2>
+      <p style="color:var(--muted-admin);font-size:13px;margin:0 0 12px;">Last 20 admin actions. Requires the <code>admin_log</code> table from migration.sql.</p>
+      <div class="button-row">
+        <button id="refreshLogBtn" class="secondary" type="button">Refresh</button>
+      </div>
+      <div id="activityLogStatus" class="status">Log in and click Refresh to view.</div>
+      <div id="activityLogWrap" style="margin-top:8px;"></div>
+    </section>
+
+    <!-- ATT Marking Tool -->
+    <section class="card" id="attMarkingCard">
+      <h2>Mark ATT &mdash; Cancelled Round</h2>
+      <p style="color:var(--muted-admin);font-size:13px;margin:0 0 14px;">When a round is cancelled due to low attendance, mark who showed up. They receive <strong>5 ATT points</strong>. This logs the action &mdash; update the standings workbook separately.</p>
+      <div class="grid-2">
+        <div class="field-group">
+          <label>Season</label>
+          <select id="attSeasonSelect"></select>
+        </div>
+        <div class="field-group">
+          <label>Round number</label>
+          <select id="attRoundSelect">
+            <option value="1">Round 1</option><option value="2">Round 2</option>
+            <option value="3">Round 3</option><option value="4">Round 4</option>
+            <option value="5">Round 5</option><option value="6">Round 6</option>
+          </select>
+        </div>
+      </div>
+      <div class="button-row" style="margin-bottom:12px;">
+        <button id="attLoadPlayersBtn" type="button" class="secondary">Load registered players</button>
+      </div>
+      <div id="attPlayerList" style="margin-bottom:14px;"></div>
+      <div class="button-row">
+        <button id="attConfirmBtn" type="button">&#9989; Confirm ATT marks</button>
+        <button id="attSelectAllBtn" type="button" class="secondary">Select all</button>
+        <button id="attClearBtn" type="button" class="secondary">Clear all</button>
+      </div>
+      <div id="attStatus" class="status">Log in and load players to mark ATT attendance.</div>
+    </section>
+
+    <!-- Export standings as image card -->
+    <section class="card" id="exportStandingsCard">
+      <h2>Export standings image</h2>
+      <p style="color:var(--muted-admin);font-size:13px;margin:0 0 14px;">Generate a shareable PNG card. Upload the latest workbook first so data is fresh.</p>
+      <div class="grid-2">
+        <div class="field-group">
+          <label>Season</label>
+          <select id="exportSeasonSelect"></select>
+        </div>
+        <div class="field-group">
+          <label>Mode</label>
+          <select id="exportModeSelect" onchange="document.getElementById('exportRoundRow').style.display=this.value==='round'?'block':'none';">
+            <option value="standings">Season standings (total pts)</option>
+            <option value="round">Single round results</option>
+            <option value="brilliants">Brilliants leaderboard</option>
+          </select>
+        </div>
+        <div class="field-group" id="exportRoundRow" style="display:none;">
+          <label>Round</label>
+          <select id="exportRoundSelect">
+            <option value="1">Round 1</option><option value="2">Round 2</option>
+            <option value="3">Round 3</option><option value="4">Round 4</option>
+            <option value="5">Round 5</option><option value="6">Round 6</option>
+          </select>
+        </div>
+        <div class="field-group">
+          <label>Max rows</label>
+          <select id="exportRowCount">
+            <option value="5">Top 5</option>
+            <option value="10" selected>Top 10</option>
+            <option value="15">Top 15</option>
+            <option value="20">All (up to 20)</option>
+          </select>
+        </div>
+      </div>
+      <div class="button-row">
+        <button id="exportStandingsBtn" type="button">&#127968; Generate image</button>
+      </div>
+      <div id="exportStatus" class="status">Log in, choose a season, then click Generate image.</div>
+      <div id="exportCanvasWrap" style="margin-top:16px; display:none;">
+        <canvas id="standingsCanvas" style="border-radius:16px; max-width:100%; border:1px solid var(--line);"></canvas>
+        <div class="button-row" style="margin-top:10px;">
+          <a id="exportDownloadLink" download="spkc-standings.png" style="display:none;">
+            <button type="button">&#8595; Download PNG</button>
+          </a>
+        </div>
+      </div>
+    </section>
+
+    <!-- ── Registrations viewer ───────────────────────────────────────── -->
+    <section class="card">
+      <h2>Registrations</h2>
+      <div class="grid-2" style="margin-bottom:10px;">
+        <div>
+          <label for="regSeasonFilter">Season filter</label>
+          <select id="regSeasonFilter"><option value="">All seasons</option></select>
+        </div>
+        <div>
+          <label for="regStatusFilter">Status filter</label>
+          <select id="regStatusFilter">
+            <option value="">All statuses</option>
+            <option value="pending">Pending</option>
+            <option value="accepted">Accepted</option>
+            <option value="rejected">Rejected</option>
+          </select>
+        </div>
+      </div>
+      <div id="bulkActionBar" style="display:none; margin-bottom:10px;" class="button-row">
+        <span id="selectedCount" style="font-size:13px; color:var(--muted); font-weight:700; align-self:center;">0 selected</span>
+        <button id="bulkAcceptBtn" type="button" class="reg-action-btn accept">Accept selected</button>
+        <button id="bulkRejectBtn" type="button" class="reg-action-btn reject">Reject selected</button>
+      </div>
+      <div class="button-row">
+        <button id="loadRegsBtn" class="secondary" type="button">Load registrations</button>
+        <button id="exportRegsBtn" class="secondary" type="button">Export CSV</button>
+      </div>
+      <div id="regsStatus" class="status">Log in and click Load to view registrations.</div>
+      <div id="regsTableWrap" style="overflow-x:auto;margin-top:12px;"></div>
+    </section>
+
+    <!-- ── Rules Editor ──────────────────────────────────────────────── -->
+    <section class="card" id="rulesEditorCard">
+      <h2>Rules Editor</h2>
+      <p style="color:var(--muted-admin);font-size:13px;margin:0 0 14px;">
+        Edit the official rules displayed on <strong>rules.html</strong>. Each save auto-increments the version number (e.g. 9.7 → 9.8 → 10.0). Click a section header to expand it, then add/edit/delete individual rules.
+      </p>
+
+      <!-- Version bar -->
+      <div style="display:flex; align-items:center; gap:14px; flex-wrap:wrap; margin-bottom:18px; padding:14px 18px; background:#f4f8fc; border-radius:14px; border:1px solid var(--line);">
+        <div>
+          <span style="font-size:12px; color:var(--muted); font-weight:700; text-transform:uppercase; letter-spacing:1px;">Current version</span><br/>
+          <span id="rulesCurrentVersion" style="font-size:22px; font-weight:700; color:var(--primary);">—</span>
+        </div>
+        <div style="flex:1;"></div>
+        <div style="font-size:12px; color:var(--muted);" id="rulesLastUpdated">Last updated: —</div>
+        <button id="loadRulesBtn" class="secondary" type="button">↺ Load from DB</button>
+        <button id="saveRulesBtn" type="button">💾 Save &amp; publish</button>
+        <button id="addSectionBtn" class="secondary" type="button">+ Add section</button>
+      </div>
+
+      <div id="rulesEditorStatus" class="status">Log in to manage rules.</div>
+      <div id="rulesEditorBody" style="margin-top:14px;"></div>
+    </section>
+
+    </div><!-- #adminContent -->
+  </div>
+
+  <script src="lib/supabase.min.js"></script>
+  <script>
+    const SUPABASE_URL = 'https://qoczwxslhygakivfgxdy.supabase.co';
+    // NOTE: The anon key is safe to expose in client-side code — it only has the permissions
+    // you set in Supabase RLS policies. Never expose your service_role key here.
+    const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFvY3p3eHNsaHlnYWtpdmZneGR5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk2MTAwNzMsImV4cCI6MjA5NTE4NjA3M30.J5I0IR5Ra_JePDzJYHpzstbNRCo667B201iVhjbDZjs';
+    const BUCKET = 'private_uploads';
+    const FILEPATH = 'latest/season-standings.xlsx';
+    const DATES_FILEPATH = 'latest/season-dates.json';
+
+    const { createClient } = supabase;
+    const supabaseClient = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+    // Multi-tab logout sync: if user signs out in another tab, redirect this one too
+    supabaseClient.auth.onAuthStateChange(function(event, session) {
+      if (event === 'SIGNED_OUT') {
+        window.location.reload();
+      }
+    });
+
+    // ── DOM refs ──────────────────────────────────────────────────────────
+
+    const emailInput        = document.getElementById('email');
+    const passwordInput     = document.getElementById('password');
+    const fileInput         = document.getElementById('fileInput');
+    const loginBtn          = document.getElementById('loginBtn');
+    const logoutBtn         = document.getElementById('logoutBtn');
+    const uploadBtn         = document.getElementById('uploadBtn');
+    const downloadBtn       = document.getElementById('downloadBtn');
+    const signedLinkBtn     = document.getElementById('signedLinkBtn');
+    const authStatus        = document.getElementById('authStatus');
+    const uploadStatus      = document.getElementById('uploadStatus');
+
+    // Create season
+    const newSeasonKey      = document.getElementById('newSeasonKey');
+    const newSeasonLabel    = document.getElementById('newSeasonLabel');
+    const newFilePath       = document.getElementById('newFilePath');
+    const newSheetName      = document.getElementById('newSheetName');
+    const newRoundCount     = document.getElementById('newRoundCount');
+    const newRoundTime      = document.getElementById('newRoundTime');
+    const newSeasonWindow   = document.getElementById('newSeasonWindow');
+    const newFormatCycle    = document.getElementById('newFormatCycle');
+    const newSummary        = document.getElementById('newSummary');
+    const newNotes          = document.getElementById('newNotes');
+    const newRegEnabled      = document.getElementById('newRegEnabled');
+    const createSeasonBtn   = document.getElementById('createSeasonBtn');
+    const createSeasonStatus = document.getElementById('createSeasonStatus');
+
+    // Season registration settings
+    const seasonSelect      = document.getElementById('seasonSelect');
+    const seasonEnabled     = document.getElementById('seasonEnabled');
+    const seasonOpensAt     = document.getElementById('seasonOpensAt');
+    const seasonClosesAt    = document.getElementById('seasonClosesAt');
+    const editFilePath      = document.getElementById('editFilePath');
+    const editSheetName     = document.getElementById('editSheetName');
+    const editRoundCount    = document.getElementById('editRoundCount');
+    const editRoundTime     = document.getElementById('editRoundTime');
+    const editSeasonWindow  = document.getElementById('editSeasonWindow');
+    const editFormatCycle   = document.getElementById('editFormatCycle');
+    const editSummary       = document.getElementById('editSummary');
+    const editNotes         = document.getElementById('editNotes');
+    const loadSettingsBtn   = document.getElementById('loadSettingsBtn');
+    const saveSettingsBtn   = document.getElementById('saveSettingsBtn');
+    const deleteSeasonBtn   = document.getElementById('deleteSeasonBtn');
+    const settingsStatus    = document.getElementById('settingsStatus');
+    const settingsTableWrap = document.getElementById('settingsTableWrap');
+
+    // Round dates
+    const dateSeasonSelect  = document.getElementById('dateSeasonSelect');
+    const dateSeasonLabel   = document.getElementById('dateSeasonLabel');
+    const roundCountSelect  = document.getElementById('roundCountSelect');
+    const roundDateFields   = document.getElementById('roundDateFields');
+    const loadDatesBtn      = document.getElementById('loadDatesBtn');
+    const saveDatesBtn      = document.getElementById('saveDatesBtn');
+    const datesStatus       = document.getElementById('datesStatus');
+
+    // Registrations
+    const regSeasonFilter   = document.getElementById('regSeasonFilter');
+    const regStatusFilter   = document.getElementById('regStatusFilter');
+    const loadRegsBtn       = document.getElementById('loadRegsBtn');
+    const regsStatus        = document.getElementById('regsStatus');
+    const regsTableWrap     = document.getElementById('regsTableWrap');
+
+    // Announcements
+    const annTitle    = document.getElementById('annTitle');
+    const annBody     = document.getElementById('annBody');
+    const annPinned   = document.getElementById('annPinned');
+    const postAnnBtn  = document.getElementById('postAnnBtn');
+    const loadAnnsBtn = document.getElementById('loadAnnsBtn');
+    const annStatus   = document.getElementById('annStatus');
+    const annListWrap = document.getElementById('annListWrap');
+
+    // Winner announcement (Feature 4)
+    const winnerSeasonSelect = document.getElementById('winnerSeasonSelect');
+    const winnerRoundSelect  = document.getElementById('winnerRoundSelect');
+    const winnerNameInput    = document.getElementById('winnerName');
+    const winnerUsernameInput = document.getElementById('winnerUsername');
+    const winnerNoteInput    = document.getElementById('winnerNote');
+    const postWinnerBtn      = document.getElementById('postWinnerBtn');
+    const winnerStatus       = document.getElementById('winnerStatus');
+
+    // Tournament links (Feature 10)
+    const tourneySeasonSelect   = document.getElementById('tourneySeasonSelect');
+    const tourneyRoundFields    = document.getElementById('tourneyRoundFields');
+    const loadTourneyLinksBtn   = document.getElementById('loadTourneyLinksBtn');
+    const saveTourneyLinksBtn   = document.getElementById('saveTourneyLinksBtn');
+    const tourneyLinksStatus    = document.getElementById('tourneyLinksStatus');
+
+    // ── State ─────────────────────────────────────────────────────────────
+
+    let seasonSettings = [];
+    let seasonDatesConfig = {};
+    let currentUser = null;
+
+    // ── Feature F: Activity log helper ─────────────────────────────────
+
+    function logAction(action, detail) {
+      // Fire-and-forget — never blocks UI
+      try {
+        supabaseClient.from('admin_log').insert([{
+          action: action,
+          detail: detail || null,
+          performed_by: currentUser ? currentUser.email : null
+        }]).then(function(res) {
+          if (res.error) console.warn('logAction failed:', res.error.message);
+        });
+      } catch (e) { console.warn('logAction threw:', e); }
+    }
+
+    function relativeTime(isoStr) {
+      if (!isoStr) return '-';
+      const diff = Math.floor((Date.now() - new Date(isoStr).getTime()) / 1000);
+      if (diff < 60) return diff + 's ago';
+      if (diff < 3600) return Math.floor(diff / 60) + 'm ago';
+      if (diff < 86400) return Math.floor(diff / 3600) + 'h ago';
+      return Math.floor(diff / 86400) + 'd ago';
+    }
+
+    async function loadActivityLog() {
+      const wrap = document.getElementById('activityLogWrap');
+      const status = document.getElementById('activityLogStatus');
+      if (!wrap) return;
+      if (status) { status.textContent = 'Loading...'; status.className = 'status'; }
+      const { data, error } = await supabaseClient
+        .from('admin_log')
+        .select('action, detail, performed_by, created_at')
+        .order('created_at', { ascending: false })
+        .limit(20);
+      if (error) {
+        if (status) { status.textContent = 'Load failed: ' + error.message; status.className = 'status error'; }
+        return;
+      }
+      const items = Array.isArray(data) ? data : [];
+      if (!items.length) {
+        wrap.innerHTML = '<p style="color:#63748b; font-size:13px;">No activity recorded yet.</p>';
+        if (status) { status.textContent = 'No log entries.'; status.className = 'status'; }
+        return;
+      }
+      wrap.innerHTML = '<div style="overflow-x:auto; border:1px solid #d9e3ef; border-radius:14px; background:#fff; margin-top:8px;"><table class="admin-log-table"><thead><tr><th>Action</th><th>Detail</th><th>By</th><th>Time</th></tr></thead><tbody>' +
+        items.map(function(r) {
+          return '<tr><td>' + escapeHtml(r.action || '') + '</td><td>' + escapeHtml(r.detail || '-') + '</td><td>' + escapeHtml(r.performed_by || '-') + '</td><td title="' + escapeHtml(r.created_at || '') + '">' + relativeTime(r.created_at) + '</td></tr>';
+        }).join('') + '</tbody></table></div>';
+      if (status) { status.textContent = items.length + ' entries loaded.'; status.className = 'status success'; }
+    }
+
+    // ── Status helpers ────────────────────────────────────────────────────
+
+    function setAuthStatus(message, type = '') {
+      authStatus.textContent = message;
+      authStatus.className = type ? 'status ' + type : 'status';
+    }
+
+    function setUploadStatus(message, type = '') {
+      uploadStatus.textContent = message;
+      uploadStatus.className = type ? 'status ' + type : 'status';
+    }
+
+    function setSettingsStatus(message, type = '') {
+      settingsStatus.textContent = message;
+      settingsStatus.className = type ? 'status ' + type : 'status';
+    }
+
+    function setDatesStatus(message, type = '') {
+      datesStatus.textContent = message;
+      datesStatus.className = type ? 'status ' + type : 'status';
+    }
+
+    function setCreateSeasonStatus(message, type = '') {
+      createSeasonStatus.textContent = message;
+      createSeasonStatus.className = type ? 'status ' + type : 'status';
+    }
+
+    function setRegsStatus(message, type = '') {
+      regsStatus.textContent = message;
+      regsStatus.className = type ? 'status ' + type : 'status';
+    }
+
+    function setWinnerStatus(message, type = '') {
+      winnerStatus.textContent = message;
+      winnerStatus.className = type ? 'status ' + type : 'status';
+    }
+
+    function setTourneyLinksStatus(message, type = '') {
+      tourneyLinksStatus.textContent = message;
+      tourneyLinksStatus.className = type ? 'status ' + type : 'status';
+    }
+
+    // ── Utility ───────────────────────────────────────────────────────────
+
+    function escapeHtml(value) {
+      return String(value ?? '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+    }
+
+    function toDatetimeLocalValue(value) {
+      if (!value) return '';
+      const date = new Date(value);
+      if (Number.isNaN(date.getTime())) return '';
+      const offset = date.getTimezoneOffset();
+      const localDate = new Date(date.getTime() - offset * 60000);
+      return localDate.toISOString().slice(0, 16);
+    }
+
+    function fromDatetimeLocalValue(value) {
+      if (!value) return null;
+      const date = new Date(value);
+      if (Number.isNaN(date.getTime())) return null;
+      return date.toISOString();
+    }
+
+    // Parse JSON array string or return []
+    function parseJsonArray(value) {
+      if (!value) return [];
+      if (typeof value === 'string') {
+        try {
+          const parsed = JSON.parse(value);
+          return Array.isArray(parsed) ? parsed : [];
+        } catch (_e) {
+          return value.trim() ? [value.trim()] : [];
+        }
+      }
+      return Array.isArray(value) ? value : [];
+    }
+
+    // ── Auth ──────────────────────────────────────────────────────────────
+
+    async function refreshSessionStatus() {
+      const { data, error } = await supabaseClient.auth.getSession();
+
+      if (error) {
+        setAuthStatus('Could not check login status.', 'error');
+        currentUser = null;
+        return null;
+      }
+
+      const session = data.session;
+
+      if (session && session.user) {
+        setAuthStatus('Logged in as ' + session.user.email, 'success');
+        currentUser = session.user;
+        document.getElementById('adminContent').style.display = '';
+        return session;
+      }
+
+      setAuthStatus('Not logged in.');
+      currentUser = null;
+      document.getElementById('adminContent').style.display = 'none';
+      return null;
+    }
+
+    // ── Season settings loading/saving ────────────────────────────────────
+
+    function getSelectedSetting() {
+      return seasonSettings.find(item => item.season_key === seasonSelect.value) || null;
+    }
+
+    function fillSeasonForm() {
+      const setting = getSelectedSetting();
+
+      if (!setting) {
+        seasonEnabled.value = 'false';
+        seasonOpensAt.value = '';
+        seasonClosesAt.value = '';
+        editFilePath.value = '';
+        editSheetName.value = '';
+        editRoundCount.value = '6';
+        editRoundTime.value = '';
+        editSeasonWindow.value = '';
+        editFormatCycle.value = '';
+        editSummary.value = '';
+        editNotes.value = '';
+        return;
+      }
+
+      seasonEnabled.value = String(Boolean(setting.registration_enabled));
+      seasonOpensAt.value = toDatetimeLocalValue(setting.registration_opens_at);
+      seasonClosesAt.value = toDatetimeLocalValue(setting.registration_closes_at);
+      editFilePath.value = setting.file_path || '';
+      editSheetName.value = setting.sheet_name || '';
+
+      // round_count — match select option
+      const rc = String(setting.round_count || '6');
+      editRoundCount.value = ['6','9','12','16'].includes(rc) ? rc : '6';
+
+      editRoundTime.value = setting.round_time || '';
+      editSeasonWindow.value = setting.season_window || '';
+      editFormatCycle.value = setting.format_cycle || '';
+      editSummary.value = setting.summary || '';
+
+      // Display notes as newline-separated
+      const notesArr = parseJsonArray(setting.notes);
+      editNotes.value = notesArr.join('\n');
+    }
+
+    function renderSettingsTable() {
+      if (!seasonSettings.length) {
+        settingsTableWrap.innerHTML = '';
+        return;
+      }
+
+      settingsTableWrap.innerHTML = `
+        <div style="overflow-x:auto;margin-top:16px;">
+          <table class="settings-table">
+            <thead>
+              <tr>
+                <th>Season key</th>
+                <th>Label</th>
+                <th>Enabled</th>
+                <th>Opens</th>
+                <th>Closes</th>
+                <th>Round count</th>
+                <th>Updated</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${seasonSettings.map(item => `
+                <tr>
+                  <td>${escapeHtml(item.season_key)}</td>
+                  <td>${escapeHtml(item.season_label)}</td>
+                  <td>${item.registration_enabled ? 'Yes' : 'No'}</td>
+                  <td>${escapeHtml(item.registration_opens_at ? new Date(item.registration_opens_at).toLocaleString() : 'Not set')}</td>
+                  <td>${escapeHtml(item.registration_closes_at ? new Date(item.registration_closes_at).toLocaleString() : 'Not set')}</td>
+                  <td>${escapeHtml(String(item.round_count || '-'))}</td>
+                  <td>${escapeHtml((item.updated_at || item.created_at) ? new Date(item.updated_at || item.created_at).toLocaleString() : '-')}</td>
+                </tr>
+              `).join('')}
+            </tbody>
+          </table>
+        </div>
+      `;
+    }
+
+    async function loadSeasonSettings() {
+      const { data, error } = await supabaseClient
+        .from('season_settings')
+        .select('*') // SELECT * works before and after migration; missing columns just return undefined
+        .order('season_key', { ascending: true });
+
+      if (error) {
+        setSettingsStatus('Failed to load season settings: ' + error.message, 'error');
+        return;
+      }
+
+      seasonSettings = Array.isArray(data) ? data : [];
+
+      // Populate all season selects
+      const optHtml = seasonSettings.map(item => {
+        return `<option value="${escapeHtml(item.season_key)}">${escapeHtml(item.season_label)}</option>`;
+      }).join('');
+
+      seasonSelect.innerHTML = optHtml;
+
+      // Winner season select (Feature 4)
+      winnerSeasonSelect.innerHTML = optHtml;
+
+      // Tourney season select (Feature 10)
+      tourneySeasonSelect.innerHTML = optHtml;
+
+      // Brilliant moves season select
+      const brillSeasonSelectEl = document.getElementById('brillSeasonSelect');
+      if (brillSeasonSelectEl) brillSeasonSelectEl.innerHTML = optHtml;
+
+      // ATT marking season select
+      const attSeasonEl = document.getElementById('attSeasonSelect');
+      if (attSeasonEl) attSeasonEl.innerHTML = optHtml;
+
+      // Export standings season select
+      const exportSeasonEl = document.getElementById('exportSeasonSelect');
+      if (exportSeasonEl) exportSeasonEl.innerHTML = optHtml;
+
+      // Populate registrations season filter
+      const currentRegFilter = regSeasonFilter.value;
+      regSeasonFilter.innerHTML = '<option value="">All seasons</option>' + seasonSettings.map(item => {
+        return `<option value="${escapeHtml(item.season_key)}">${escapeHtml(item.season_label)}</option>`;
+      }).join('');
+      regSeasonFilter.value = currentRegFilter;
+
+      // Populate date season select
+      populateDateSeasonSelectFromSettings();
+
+      fillSeasonForm();
+      renderSettingsTable();
+      setSettingsStatus('Season settings loaded.', 'success');
+    }
+
+    function populateDateSeasonSelectFromSettings() {
+      const currentVal = dateSeasonSelect.value;
+      // Merge settings keys with any existing seasonDatesConfig keys
+      const allKeys = new Set([
+        ...seasonSettings.map(s => s.season_key),
+        ...Object.keys(seasonDatesConfig)
+      ]);
+      dateSeasonSelect.innerHTML = [...allKeys].sort().map(key => {
+        const settingLabel = (seasonSettings.find(s => s.season_key === key) || {}).season_label || '';
+        const configLabel = (seasonDatesConfig[key] || {}).label || '';
+        const label = settingLabel || configLabel || key;
+        return `<option value="${escapeHtml(key)}">${escapeHtml(label)}</option>`;
+      }).join('');
+
+      if (currentVal && [...allKeys].includes(currentVal)) {
+        dateSeasonSelect.value = currentVal;
+      }
+    }
+
+    // ── Create new season ─────────────────────────────────────────────────
+
+    createSeasonBtn.addEventListener('click', async () => {
+      const session = await refreshSessionStatus();
+      if (!session) {
+        setCreateSeasonStatus('You must log in before creating seasons.', 'error');
+        return;
+      }
+
+      const key = newSeasonKey.value.trim();
+      const label = newSeasonLabel.value.trim();
+
+      if (!key) {
+        setCreateSeasonStatus('Season key is required.', 'error');
+        return;
+      }
+
+      if (!/^[a-zA-Z0-9\-]+$/.test(key)) {
+        setCreateSeasonStatus('Season key may only contain letters, numbers, and hyphens.', 'error');
+        return;
+      }
+
+      if (!label) {
+        setCreateSeasonStatus('Season label is required.', 'error');
+        return;
+      }
+
+      const sheetName = newSheetName.value.trim();
+      const sheetHintsArr = sheetName ? [sheetName, key] : [key];
+      const notesArr = newNotes.value.split('\n').filter(Boolean);
+
+      const payload = {
+        season_key: key,
+        season_label: label,
+        file_path: newFilePath.value.trim() || 'latest/season-standings.xlsx',
+        sheet_name: sheetName || label,
+        sheet_hints: JSON.stringify(sheetHintsArr),
+        round_count: Number(newRoundCount.value) || 6,
+        round_time: newRoundTime.value.trim() || null,
+        season_window: newSeasonWindow.value.trim() || null,
+        format_cycle: newFormatCycle.value.trim() || null,
+        summary: newSummary.value.trim() || null,
+        notes: JSON.stringify(notesArr),
+        registration_enabled: newRegEnabled.value === 'true',
+        registration_opens_at: null,
+        registration_closes_at: null
+      };
+
+      setCreateSeasonStatus('Creating season...');
+
+      const { error } = await supabaseClient
+        .from('season_settings')
+        .insert([payload]);
+
+      if (error) {
+        setCreateSeasonStatus('Create failed: ' + error.message, 'error');
+        return;
+      }
+
+      setCreateSeasonStatus(`Season "${label}" created successfully.`, 'success');
+      logAction('season_created', key);
+
+      // Clear form
+      newSeasonKey.value = '';
+      newSeasonLabel.value = '';
+      newFilePath.value = '';
+      newSheetName.value = '';
+      newRoundTime.value = '';
+      newSeasonWindow.value = '';
+      newFormatCycle.value = '';
+      newSummary.value = '';
+      newNotes.value = '';
+      newRegEnabled.value = 'false';
+
+      // Reload settings list and date season options
+      await loadSeasonSettings();
+      await loadSeasonDatesConfig();
+    });
+
+    // ── Save season settings ──────────────────────────────────────────────
+
+    saveSettingsBtn.addEventListener('click', async () => {
+      const session = await refreshSessionStatus();
+
+      if (!session) {
+        setSettingsStatus('You must log in before saving settings.', 'error');
+        return;
+      }
+
+      const seasonKey = seasonSelect.value;
+      const existing = getSelectedSetting();
+
+      if (!seasonKey || !existing) {
+        setSettingsStatus('Choose a valid season first.', 'error');
+        return;
+      }
+
+      const notesArr = editNotes.value.split('\n').filter(Boolean);
+      const sheetNameVal = editSheetName.value.trim();
+      const sheetHintsArr = sheetNameVal
+        ? [sheetNameVal, seasonKey]
+        : [existing.season_label || seasonKey, seasonKey];
+
+      const payload = {
+        registration_enabled: seasonEnabled.value === 'true',
+        registration_opens_at: fromDatetimeLocalValue(seasonOpensAt.value),
+        registration_closes_at: fromDatetimeLocalValue(seasonClosesAt.value),
+        file_path: editFilePath.value.trim() || 'latest/season-standings.xlsx',
+        sheet_name: sheetNameVal || existing.season_label || '',
+        sheet_hints: JSON.stringify(sheetHintsArr),
+        round_count: Number(editRoundCount.value) || 6,
+        round_time: editRoundTime.value.trim() || null,
+        season_window: editSeasonWindow.value.trim() || null,
+        format_cycle: editFormatCycle.value.trim() || null,
+        summary: editSummary.value.trim() || null,
+        notes: JSON.stringify(notesArr),
+      };
+
+      setSettingsStatus('Saving season settings...');
+
+      const { error } = await supabaseClient
+        .from('season_settings')
+        .update(payload)
+        .eq('season_key', seasonKey);
+
+      if (error) {
+        setSettingsStatus('Saving failed: ' + error.message, 'error');
+        return;
+      }
+
+      setSettingsStatus('Season settings saved successfully.', 'success');
+      await loadSeasonSettings();
+    });
+
+    deleteSeasonBtn.addEventListener('click', async () => {
+      const session = await refreshSessionStatus();
+      if (!session) {
+        setSettingsStatus('You must log in before deleting a season.', 'error');
+        return;
+      }
+
+      const seasonKey = seasonSelect.value;
+      const existing = getSelectedSetting();
+
+      if (!seasonKey || !existing) {
+        setSettingsStatus('Choose a valid season first.', 'error');
+        return;
+      }
+
+      const confirmed = window.confirm(
+        `Are you sure you want to permanently delete "${existing.season_label}" (${seasonKey})? This cannot be undone.`
+      );
+      if (!confirmed) return;
+
+      setSettingsStatus('Deleting season...');
+
+      // Refresh the session first to get the latest access token
+      let accessToken = null;
+      try {
+        const { data: refreshData, error: refreshErr } = await supabaseClient.auth.refreshSession();
+        if (refreshErr || !refreshData?.session) {
+          // Try getting existing session
+          const { data: sesData } = await supabaseClient.auth.getSession();
+          accessToken = sesData?.session?.access_token || null;
+        } else {
+          accessToken = refreshData.session.access_token;
+        }
+      } catch(e) {
+        console.warn('[SPKC] Could not refresh session:', e);
+      }
+
+      if (!accessToken) {
+        setSettingsStatus('Delete failed: not logged in. Please log in again.', 'error');
+        return;
+      }
+
+      // Use raw fetch so we can pass the fresh access token explicitly
+      const deleteResp = await fetch(
+        `${SUPABASE_URL}/rest/v1/season_settings?season_key=eq.${encodeURIComponent(seasonKey)}`,
+        {
+          method: 'DELETE',
+          headers: {
+            'apikey': SUPABASE_ANON_KEY,
+            'Authorization': 'Bearer ' + accessToken,
+            'Content-Type': 'application/json',
+            'Prefer': 'return=minimal'
+          }
+        }
+      );
+
+      if (!deleteResp.ok) {
+        const errText = await deleteResp.text();
+        console.error('[SPKC] Delete season HTTP error:', deleteResp.status, errText);
+        setSettingsStatus(`Delete failed (HTTP ${deleteResp.status}): ${errText || 'Check Supabase RLS policy allows DELETE for authenticated users.'}`, 'error');
+        return;
+      }
+
+      setSettingsStatus(`Season "${existing.season_label}" deleted successfully.`, 'success');
+      logAction('season_deleted', seasonKey);
+      await loadSeasonSettings();
+    });
+
+    // ── Round dates ───────────────────────────────────────────────────────
+
+    function buildRoundDateInputs(roundCount, dates = {}) {
+      roundDateFields.innerHTML = '';
+
+      for (let i = 1; i <= roundCount; i += 1) {
+        const value = dates[String(i)] || dates[i] || '';
+        const wrapper = document.createElement('div');
+        wrapper.innerHTML = `
+          <label for="round${i}Date">Round ${i} date</label>
+          <input
+            id="round${i}Date"
+            type="text"
+            data-round="${i}"
+            placeholder="e.g. 11 January 2027"
+            value="${escapeHtml(value)}"
+          />
+        `;
+        roundDateFields.appendChild(wrapper);
+      }
+    }
+
+    function fillDateForm() {
+      const seasonKey = dateSeasonSelect.value;
+      const entry = seasonDatesConfig[seasonKey] || {};
+      // Prefer round_count from season_settings if available
+      const settingRow = seasonSettings.find(s => s.season_key === seasonKey);
+      const roundCount = Number(
+        (settingRow && settingRow.round_count) ||
+        entry.roundCount ||
+        Object.keys(entry.roundDates || {}).length ||
+        6
+      );
+      // Sync the label from settings if available
+      const label = (settingRow && settingRow.season_label) || entry.label || seasonKey || '';
+
+      dateSeasonLabel.value = label;
+      // Ensure select has the right option (add if not in predefined list)
+      const validOptions = ['6','9','12','16'];
+      if (!validOptions.includes(String(roundCount))) {
+        // Add a temporary option
+        const opt = document.createElement('option');
+        opt.value = String(roundCount);
+        opt.textContent = String(roundCount);
+        roundCountSelect.appendChild(opt);
+      }
+      roundCountSelect.value = String(roundCount);
+      buildRoundDateInputs(roundCount, entry.roundDates || {});
+    }
+
+    function renderDateSeasonOptions() {
+      const keys = Object.keys(seasonDatesConfig);
+
+      dateSeasonSelect.innerHTML = keys.map(key => {
+        const entry = seasonDatesConfig[key] || {};
+        const label = entry.label || key;
+        return `<option value="${escapeHtml(key)}">${escapeHtml(label)}</option>`;
+      }).join('');
+
+      if (!keys.length) {
+        roundDateFields.innerHTML = '';
+        dateSeasonLabel.value = '';
+        return;
+      }
+
+      fillDateForm();
+    }
+
+    async function loadSeasonDatesConfig() {
+      const { data, error } = await supabaseClient
+        .storage
+        .from(BUCKET)
+        .download(DATES_FILEPATH);
+
+      if (error) {
+        if (String(error.message || '').toLowerCase().includes('not found')) {
+          seasonDatesConfig = {};
+          populateDateSeasonSelectFromSettings();
+          setDatesStatus('No season dates file found yet. A new one will be created when you save.', 'error');
+          return;
+        }
+
+        setDatesStatus('Failed to load season dates: ' + error.message, 'error');
+        return;
+      }
+
+      const text = await data.text();
+      seasonDatesConfig = JSON.parse(text || '{}');
+
+      populateDateSeasonSelectFromSettings();
+      fillDateForm();
+      setDatesStatus('Season round dates loaded.', 'success');
+    }
+
+    async function saveSeasonDatesConfig() {
+      const seasonKey = dateSeasonSelect.value;
+
+      if (!seasonKey) {
+        setDatesStatus('Choose a season first.', 'error');
+        return;
+      }
+
+      const roundCount = Number(roundCountSelect.value);
+      const roundDates = {};
+
+      document.querySelectorAll('#roundDateFields input[data-round]').forEach(input => {
+        roundDates[input.dataset.round] = input.value.trim();
+      });
+
+      seasonDatesConfig[seasonKey] = {
+        label: dateSeasonLabel.value.trim() || seasonKey,
+        roundCount,
+        roundDates
+      };
+
+      const blob = new Blob(
+        [JSON.stringify(seasonDatesConfig, null, 2)],
+        { type: 'application/json' }
+      );
+
+      const { error } = await supabaseClient
+        .storage
+        .from(BUCKET)
+        .upload(DATES_FILEPATH, blob, {
+          upsert: true,
+          contentType: 'application/json'
+        });
+
+      if (error) {
+        setDatesStatus('Saving round dates failed: ' + error.message, 'error');
+        return;
+      }
+
+      setDatesStatus('Season round dates saved successfully.', 'success');
+      populateDateSeasonSelectFromSettings();
+    }
+
+    // ── Registrations viewer ──────────────────────────────────────────────
+
+    async function loadRegistrations() {
+      const session = await refreshSessionStatus();
+      if (!session) {
+        setRegsStatus('You must log in before loading registrations.', 'error');
+        return;
+      }
+
+      setRegsStatus('Loading registrations...');
+      regsTableWrap.innerHTML = '';
+
+      const seasonFilterVal = regSeasonFilter.value;
+      const statusFilterVal = regStatusFilter.value;
+
+      let query = supabaseClient
+        .from('registrations')
+        .select('id, season_key, full_name, class_name, chess_username, contact_text, status, notes, created_at')
+        .order('created_at', { ascending: false });
+
+      if (seasonFilterVal) {
+        query = query.eq('season_key', seasonFilterVal);
+      }
+
+      if (statusFilterVal) {
+        query = query.eq('status', statusFilterVal);
+      }
+
+      const { data, error } = await query;
+
+      if (error) {
+        setRegsStatus('Failed to load registrations: ' + error.message, 'error');
+        return;
+      }
+
+      const regs = Array.isArray(data) ? data : [];
+
+      if (!regs.length) {
+        setRegsStatus('No registrations found matching the selected filters.', 'success');
+        return;
+      }
+
+      setRegsStatus(`Loaded ${regs.length} registration(s).`, 'success');
+
+      const tbody = regs.map(reg => {
+        const status = String(reg.status || 'pending').toLowerCase();
+        const submittedAt = reg.created_at
+          ? new Date(reg.created_at).toLocaleString('en-GB', { year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })
+          : '-';
+
+        // Build WhatsApp notify button (shown for accepted regs)
+        const waMsg = encodeURIComponent(
+          `Hi ${reg.full_name || reg.chess_username}! Your registration for SPKC Chess Club Season ${reg.season_key} has been accepted. Your Chess.com username is ${reg.chess_username}. Welcome!`
+        );
+        const waBtn = `<button class="reg-action-btn" style="background:#dcf5e8;color:#1a7a44;" data-wa-name="${escapeHtml(reg.full_name || '')}" data-wa-username="${escapeHtml(reg.chess_username || '')}" data-wa-season="${escapeHtml(reg.season_key || '')}" title="Send WhatsApp notification">&#128172; WhatsApp</button>`;
+
+        let actionButtons = '';
+        if (status === 'pending') {
+          actionButtons = `
+            <button class="reg-action-btn accept" data-id="${escapeHtml(reg.id)}" data-action="accepted">Accept</button>
+            <button class="reg-action-btn reject" data-id="${escapeHtml(reg.id)}" data-action="rejected">Reject</button>
+          `;
+        } else if (status === 'accepted') {
+          actionButtons = `<button class="reg-action-btn reject" data-id="${escapeHtml(reg.id)}" data-action="rejected">Reject</button>${waBtn}`;
+        } else if (status === 'rejected') {
+          actionButtons = `<button class="reg-action-btn accept" data-id="${escapeHtml(reg.id)}" data-action="accepted">Accept</button>`;
+        }
+
+        return `
+          <tr data-reg-id="${escapeHtml(reg.id)}">
+            <td><input type="checkbox" class="reg-checkbox" data-reg-id="${escapeHtml(reg.id)}" style="width:auto;" /></td>
+            <td>${escapeHtml(reg.season_key)}</td>
+            <td>${escapeHtml(reg.full_name)}</td>
+            <td>${escapeHtml(reg.class_name)}</td>
+            <td>${escapeHtml(reg.chess_username)}</td>
+            <td>${escapeHtml(reg.contact_text)}</td>
+            <td><span class="status-badge ${escapeHtml(status)}">${escapeHtml(status)}</span></td>
+            <td>${escapeHtml(submittedAt)}</td>
+            <td><input class="reg-notes-input" data-reg-id="${escapeHtml(reg.id)}" type="text"
+              value="${escapeHtml(reg.notes || '')}"
+              style="width:100%; min-width:120px; padding:6px 8px; border-radius:8px; border:1px solid var(--line); font:inherit; font-size:12px;" /></td>
+            <td>${actionButtons}</td>
+          </tr>
+        `;
+      }).join('');
+
+      regsTableWrap.innerHTML = `
+        <div class="table-scroll">
+          <table class="reg-table">
+            <thead>
+              <tr>
+                <th><input type="checkbox" id="selectAllRegs" style="width:auto;" /></th>
+                <th>Season</th>
+                <th>Full Name</th>
+                <th>Class</th>
+                <th>Chess.com Username</th>
+                <th>Contact</th>
+                <th>Status</th>
+                <th>Submitted</th>
+                <th>Notes</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody>${tbody}</tbody>
+          </table>
+        </div>
+      `;
+
+      // Attach action button handlers
+      regsTableWrap.querySelectorAll('.reg-action-btn[data-action]').forEach(btn => {
+        btn.addEventListener('click', async () => {
+          const regId = btn.dataset.id;
+          const newStatus = btn.dataset.action;
+
+          btn.disabled = true;
+          btn.textContent = '...';
+
+          // Find reg row data for logging and WhatsApp
+          const row = btn.closest('tr');
+          const cells = row ? row.querySelectorAll('td') : [];
+          const rowFullName = cells[2] ? cells[2].textContent.trim() : '';
+          const rowUsername = cells[4] ? cells[4].textContent.trim() : '';
+          const rowSeason = cells[1] ? cells[1].textContent.trim() : '';
+
+          const { error } = await supabaseClient
+            .from('registrations')
+            .update({ status: newStatus })
+            .eq('id', regId);
+
+          if (error) {
+            setRegsStatus(`Failed to update registration: ${error.message}`, 'error');
+            btn.disabled = false;
+            btn.textContent = newStatus === 'accepted' ? 'Accept' : 'Reject';
+            return;
+          }
+
+          // Feature C: show WhatsApp button inline after acceptance
+          if (newStatus === 'accepted' && row) {
+            const waMsg = encodeURIComponent(
+              `Hi ${rowFullName || rowUsername}! Your registration for SPKC Chess Club Season ${rowSeason} has been accepted. Your Chess.com username is ${rowUsername}. Welcome!`
+            );
+            const waUrl = `https://wa.me/?text=${waMsg}`;
+            const existingWa = row.querySelector('[data-wa-name]');
+            if (!existingWa) {
+              const actCell = btn.closest('td');
+              if (actCell) {
+                const waBtn = document.createElement('button');
+                waBtn.className = 'reg-action-btn';
+                waBtn.style.cssText = 'background:#dcf5e8;color:#1a7a44;margin-top:4px;';
+                waBtn.textContent = '💬 WhatsApp';
+                waBtn.title = 'Send WhatsApp notification';
+                waBtn.addEventListener('click', () => window.open(waUrl, '_blank'));
+                actCell.appendChild(waBtn);
+              }
+            }
+            // Feature F: log the action
+            logAction('reg_accepted', `${rowFullName} (${rowUsername})`);
+          } else if (newStatus === 'rejected') {
+            logAction('reg_rejected', rowFullName || rowUsername);
+          }
+
+          // Reload the registrations list to reflect the change
+          await loadRegistrations();
+        });
+      });
+
+      // Feature C: wire WhatsApp buttons on existing accepted rows
+      regsTableWrap.querySelectorAll('[data-wa-name]').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const name = btn.dataset.waName;
+          const uname = btn.dataset.waUsername;
+          const season = btn.dataset.waSeason;
+          const waMsg = encodeURIComponent(
+            `Hi ${name || uname}! Your registration for SPKC Chess Club Season ${season} has been accepted. Your Chess.com username is ${uname}. Welcome!`
+          );
+          window.open(`https://wa.me/?text=${waMsg}`, '_blank');
+        });
+      });
+
+      // Notes save-on-blur handler
+      regsTableWrap.querySelectorAll('.reg-notes-input').forEach(input => {
+        input.addEventListener('blur', async () => {
+          const regId = input.dataset.regId;
+          const newNotes = input.value.trim();
+          const { error } = await supabaseClient
+            .from('registrations')
+            .update({ notes: newNotes })
+            .eq('id', regId);
+          if (error) {
+            setRegsStatus('Notes save failed: ' + error.message, 'error');
+          } else {
+            setRegsStatus('Notes saved.', 'success');
+          }
+        });
+      });
+
+      // Select all toggle
+      const selectAll = regsTableWrap.querySelector('#selectAllRegs');
+      const bulkBar = document.getElementById('bulkActionBar');
+      const selectedCountEl = document.getElementById('selectedCount');
+
+      function updateBulkBar() {
+        const checked = regsTableWrap.querySelectorAll('.reg-checkbox:checked').length;
+        selectedCountEl.textContent = `${checked} selected`;
+        bulkBar.style.display = checked > 0 ? 'flex' : 'none';
+      }
+
+      if (selectAll) {
+        selectAll.addEventListener('change', () => {
+          regsTableWrap.querySelectorAll('.reg-checkbox').forEach(cb => { cb.checked = selectAll.checked; });
+          updateBulkBar();
+        });
+      }
+
+      regsTableWrap.querySelectorAll('.reg-checkbox').forEach(cb => {
+        cb.addEventListener('change', updateBulkBar);
+      });
+    }
+
+    // ── Workbook upload/download ───────────────────────────────────────────
+
+    uploadBtn.addEventListener('click', async () => {
+      const session = await refreshSessionStatus();
+
+      if (!session) {
+        setUploadStatus('You must log in before uploading.', 'error');
+        return;
+      }
+
+      const file = fileInput.files[0];
+
+      if (!file) {
+        setUploadStatus('Choose an .xlsx file first.', 'error');
+        return;
+      }
+
+      if (!file.name.toLowerCase().endsWith('.xlsx')) {
+        setUploadStatus('Only .xlsx files are allowed.', 'error');
+        return;
+      }
+
+      setUploadStatus('Uploading workbook...');
+
+      const { error } = await supabaseClient
+        .storage
+        .from(BUCKET)
+        .upload(FILEPATH, file, {
+          upsert: true,
+          contentType: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+        });
+
+      if (error) {
+        setUploadStatus('Upload failed: ' + error.message, 'error');
+        return;
+      }
+
+      setUploadStatus('Upload successful to ' + BUCKET + '/' + FILEPATH, 'success');
+      logAction('workbook_uploaded', file.name);
+    });
+
+    downloadBtn.addEventListener('click', async () => {
+      const session = await refreshSessionStatus();
+
+      if (!session) {
+        setUploadStatus('You must log in before downloading.', 'error');
+        return;
+      }
+
+      setUploadStatus('Preparing download...');
+
+      const { data, error } = await supabaseClient
+        .storage
+        .from(BUCKET)
+        .download(FILEPATH);
+
+      if (error) {
+        setUploadStatus('Download failed: ' + error.message, 'error');
+        return;
+      }
+
+      const url = URL.createObjectURL(data);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'season-standings.xlsx';
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+
+      setUploadStatus('Download started.', 'success');
+    });
+
+    signedLinkBtn.addEventListener('click', async () => {
+      const session = await refreshSessionStatus();
+
+      if (!session) {
+        setUploadStatus('You must log in before opening a signed link.', 'error');
+        return;
+      }
+
+      setUploadStatus('Creating signed link...');
+
+      const { data, error } = await supabaseClient
+        .storage
+        .from(BUCKET)
+        .createSignedUrl(FILEPATH, 3600);
+
+      if (error) {
+        setUploadStatus('Signed link failed: ' + error.message, 'error');
+        return;
+      }
+
+      window.open(data.signedUrl, '_blank');
+      setUploadStatus('Signed link opened in a new tab. It lasts 1 hour.', 'success');
+    });
+
+    // ── Event listeners ───────────────────────────────────────────────────
+
+    loginBtn.addEventListener('click', async () => {
+      const email = emailInput.value.trim();
+      const password = passwordInput.value;
+
+      if (!email || !password) {
+        setAuthStatus('Enter your email and password first.', 'error');
+        return;
+      }
+
+      setAuthStatus('Logging in...');
+
+      const { error } = await supabaseClient.auth.signInWithPassword({ email, password });
+
+      if (error) {
+        setAuthStatus('Login failed: ' + error.message, 'error');
+        return;
+      }
+
+      await refreshSessionStatus();
+      await loadSeasonSettings();
+      await loadSeasonDatesConfig();
+      await loadAnnouncements();
+    });
+
+    logoutBtn.addEventListener('click', async () => {
+      await supabaseClient.auth.signOut();
+      await refreshSessionStatus();
+      setUploadStatus('Logged out.');
+      setSettingsStatus('Logged out.');
+      setDatesStatus('Logged out.');
+      setCreateSeasonStatus('Log in to create seasons.');
+      setRegsStatus('Log in and click Load to view registrations.');
+      setWinnerStatus('Log in to post winner announcements.');
+      setTourneyLinksStatus('Log in to manage tournament links.');
+    });
+
+    seasonSelect.addEventListener('change', fillSeasonForm);
+    dateSeasonSelect.addEventListener('change', fillDateForm);
+
+    roundCountSelect.addEventListener('change', () => {
+      const seasonKey = dateSeasonSelect.value;
+      const entry = seasonDatesConfig[seasonKey] || {};
+      buildRoundDateInputs(Number(roundCountSelect.value), entry.roundDates || {});
+    });
+
+    loadSettingsBtn.addEventListener('click', async () => {
+      const session = await refreshSessionStatus();
+
+      if (!session) {
+        setSettingsStatus('You must log in before loading settings.', 'error');
+        return;
+      }
+
+      setSettingsStatus('Reloading season settings...');
+      await loadSeasonSettings();
+    });
+
+    loadDatesBtn.addEventListener('click', async () => {
+      const session = await refreshSessionStatus();
+
+      if (!session) {
+        setDatesStatus('You must log in before loading round dates.', 'error');
+        return;
+      }
+
+      setDatesStatus('Loading round dates...');
+      await loadSeasonDatesConfig();
+    });
+
+    saveDatesBtn.addEventListener('click', async () => {
+      const session = await refreshSessionStatus();
+
+      if (!session) {
+        setDatesStatus('You must log in before saving round dates.', 'error');
+        return;
+      }
+
+      setDatesStatus('Saving round dates...');
+      await saveSeasonDatesConfig();
+    });
+
+    loadRegsBtn.addEventListener('click', loadRegistrations);
+
+    // ── Announcements ───────────────────────────────────────────
+
+    function setAnnStatus(msg, type = '') {
+      annStatus.textContent = msg;
+      annStatus.className = type ? 'status ' + type : 'status';
+    }
+
+    async function loadAnnouncements() {
+      const { data, error } = await supabaseClient
+        .from('announcements')
+        .select('id, title, body, pinned, created_at')
+        .order('pinned', { ascending: false })
+        .order('created_at', { ascending: false });
+
+      if (error) { setAnnStatus('Load failed: ' + error.message, 'error'); return; }
+
+      const items = Array.isArray(data) ? data : [];
+      if (!items.length) { annListWrap.innerHTML = '<p style="color:var(--muted)">No announcements yet.</p>'; return; }
+
+      annListWrap.innerHTML = `
+        <table class="settings-table">
+          <thead><tr><th>Pinned</th><th>Title</th><th>Body</th><th>Posted</th><th>Delete</th></tr></thead>
+          <tbody>
+            ${items.map(item => `
+              <tr>
+                <td>${item.pinned ? '📌' : ''}</td>
+                <td>${escapeHtml(item.title || '')}</td>
+                <td style="max-width:300px; white-space:pre-wrap; word-break:break-word;">${escapeHtml(item.body || '')}</td>
+                <td>${item.created_at ? new Date(item.created_at).toLocaleString('en-GB', {day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'}) : '-'}</td>
+                <td><button class="reg-action-btn reject" data-ann-id="${escapeHtml(item.id)}">Delete</button></td>
+              </tr>
+            `).join('')}
+          </tbody>
+        </table>
+      `;
+
+      annListWrap.querySelectorAll('[data-ann-id]').forEach(btn => {
+        btn.addEventListener('click', async () => {
+          if (!confirm('Delete this announcement?')) return;
+          const { error } = await supabaseClient.from('announcements').delete().eq('id', btn.dataset.annId);
+          if (error) { setAnnStatus('Delete failed: ' + error.message, 'error'); return; }
+          setAnnStatus('Announcement deleted.', 'success');
+          await loadAnnouncements();
+        });
+      });
+    }
+
+    postAnnBtn.addEventListener('click', async () => {
+      const session = await refreshSessionStatus();
+      if (!session) { setAnnStatus('Log in first.', 'error'); return; }
+      const title = annTitle.value.trim();
+      if (!title) { setAnnStatus('Title is required.', 'error'); return; }
+      setAnnStatus('Posting...');
+      const { error } = await supabaseClient.from('announcements').insert([{
+        title,
+        body: annBody.value.trim(),
+        pinned: annPinned.checked
+      }]);
+      if (error) { setAnnStatus('Post failed: ' + error.message, 'error'); return; }
+      setAnnStatus('Announcement posted.', 'success');
+      annTitle.value = ''; annBody.value = ''; annPinned.checked = false;
+      await loadAnnouncements();
+    });
+
+    loadAnnsBtn.addEventListener('click', async () => {
+      const session = await refreshSessionStatus();
+      if (!session) { setAnnStatus('Log in first.', 'error'); return; }
+      await loadAnnouncements();
+    });
+
+    // ── Feature 4: Post round winner announcement ─────────────────────────
+
+    postWinnerBtn.addEventListener('click', async () => {
+      const session = await refreshSessionStatus();
+      if (!session || !currentUser) {
+        setWinnerStatus('Log in first.', 'error');
+        return;
+      }
+
+      const seasonKey = winnerSeasonSelect.value;
+      const seasonItem = seasonSettings.find(s => s.season_key === seasonKey);
+      const seasonLabel = seasonItem ? seasonItem.season_label : seasonKey;
+      const roundNum = winnerRoundSelect.value;
+      const name = winnerNameInput.value.trim();
+      const username = winnerUsernameInput.value.trim();
+      const extraNote = winnerNoteInput.value.trim();
+
+      if (!name) {
+        setWinnerStatus('Winner name is required.', 'error');
+        return;
+      }
+
+      const title = `🏆 Round ${roundNum} Winner: ${name}`;
+      const body = `${name} won Round ${roundNum} of ${seasonLabel}!${extraNote ? ' ' + extraNote : ''}${username ? ' Chess.com: ' + username : ''}`;
+
+      setWinnerStatus('Posting announcement...');
+
+      const { error } = await supabaseClient.from('announcements').insert([{
+        title,
+        body,
+        pinned: false
+      }]);
+
+      if (error) {
+        setWinnerStatus('Post failed: ' + error.message, 'error');
+        return;
+      }
+
+      setWinnerStatus(`Round ${roundNum} winner announcement posted successfully.`, 'success');
+      winnerNameInput.value = '';
+      winnerUsernameInput.value = '';
+      winnerNoteInput.value = '';
+      // Reload announcements list
+      await loadAnnouncements();
+    });
+
+    // ── Feature 10: Tournament links per round ────────────────────────────
+
+    async function loadTourneyLinks() {
+      const seasonKey = tourneySeasonSelect.value;
+      if (!seasonKey) {
+        setTourneyLinksStatus('Choose a season first.', 'error');
+        return;
+      }
+
+      setTourneyLinksStatus('Loading saved links...');
+
+      const { data, error } = await supabaseClient
+        .from('round_tournament_links')
+        .select('round_number, tournament_url_id')
+        .eq('season_key', seasonKey)
+        .order('round_number', { ascending: true });
+
+      if (error && !String(error.message || '').toLowerCase().includes('does not exist')) {
+        setTourneyLinksStatus('Load failed: ' + error.message, 'error');
+        return;
+      }
+
+      const saved = {};
+      if (data && Array.isArray(data)) {
+        data.forEach(row => { saved[row.round_number] = row.tournament_url_id || ''; });
+      }
+
+      // Get round count for this season
+      const settingRow = seasonSettings.find(s => s.season_key === seasonKey);
+      const roundCount = (settingRow && settingRow.round_count) || 6;
+
+      // Render round input fields
+      tourneyRoundFields.innerHTML = '';
+      for (let i = 1; i <= roundCount; i++) {
+        const val = saved[i] || '';
+        const div = document.createElement('div');
+        div.innerHTML = `
+          <label>Round ${i}</label>
+          <input type="text" placeholder="e.g. spkc-round-${i}-2026" data-round="${i}" class="tourney-link-input"
+            value="${escapeHtml(val)}"
+            style="width:100%; padding:12px 14px; border:1px solid var(--line); border-radius:14px; font:inherit; background:#fff;" />
+        `;
+        tourneyRoundFields.appendChild(div);
+      }
+
+      setTourneyLinksStatus(data ? `Loaded ${Object.keys(saved).length} saved link(s).` : 'No saved links found.', 'success');
+    }
+
+    tourneySeasonSelect.addEventListener('change', () => {
+      // Clear fields when season changes
+      tourneyRoundFields.innerHTML = '';
+      setTourneyLinksStatus('Select a season and click "Load saved links".');
+    });
+
+    loadTourneyLinksBtn.addEventListener('click', async () => {
+      const session = await refreshSessionStatus();
+      if (!session) {
+        setTourneyLinksStatus('Log in first.', 'error');
+        return;
+      }
+      await loadTourneyLinks();
+    });
+
+    saveTourneyLinksBtn.addEventListener('click', async () => {
+      const session = await refreshSessionStatus();
+      if (!session || !currentUser) {
+        setTourneyLinksStatus('Log in first.', 'error');
+        return;
+      }
+
+      const seasonKey = tourneySeasonSelect.value;
+      if (!seasonKey) {
+        setTourneyLinksStatus('Choose a season first.', 'error');
+        return;
+      }
+
+      const inputs = tourneyRoundFields.querySelectorAll('.tourney-link-input');
+      if (!inputs.length) {
+        setTourneyLinksStatus('Load the links first before saving.', 'error');
+        return;
+      }
+
+      const rows = [];
+      inputs.forEach(input => {
+        rows.push({
+          season_key: seasonKey,
+          round_number: Number(input.dataset.round),
+          tournament_url_id: input.value.trim() || null,
+          updated_at: new Date().toISOString()
+        });
+      });
+
+      setTourneyLinksStatus('Saving links...');
+
+      const { error } = await supabaseClient
+        .from('round_tournament_links')
+        .upsert(rows, { onConflict: 'season_key,round_number' });
+
+      if (error) {
+        setTourneyLinksStatus('Save failed: ' + error.message, 'error');
+        return;
+      }
+
+      setTourneyLinksStatus(`${rows.length} link(s) saved successfully.`, 'success');
+    });
+
+    // ── Sync PGNs — fetch all game PGNs from Chess.com and cache in Supabase ──
+    document.getElementById('syncPgnsBtn').addEventListener('click', async () => {
+      const session = await refreshSessionStatus();
+      if (!session || !currentUser) {
+        setTourneyLinksStatus('Log in first.', 'error');
+        return;
+      }
+
+      const seasonKey = tourneySeasonSelect.value;
+      if (!seasonKey) {
+        setTourneyLinksStatus('Choose a season first.', 'error');
+        return;
+      }
+
+      // Load current tournament links for this season
+      const { data: linkRows, error: linkErr } = await supabaseClient
+        .from('round_tournament_links')
+        .select('round_number, tournament_url_id, pgn_cache')
+        .eq('season_key', seasonKey)
+        .order('round_number', { ascending: true });
+
+      if (linkErr) {
+        setTourneyLinksStatus('Could not load links: ' + linkErr.message, 'error');
+        return;
+      }
+
+      const rounds = (linkRows || []).filter(r => r.tournament_url_id);
+      if (!rounds.length) {
+        setTourneyLinksStatus('No tournament IDs saved yet — save links first.', 'error');
+        return;
+      }
+
+      const progress = document.getElementById('syncPgnProgress');
+      progress.style.display = 'block';
+      setTourneyLinksStatus('Syncing PGNs…');
+
+      let synced = 0, failed = 0;
+
+      for (const row of rounds) {
+        const tid = row.tournament_url_id;
+        progress.textContent = `Round ${row.round_number}: fetching from Chess.com…`;
+        try {
+          // Fetch tournament info to get number of sub-rounds
+          const infoRes = await fetch(`https://api.chess.com/pub/tournament/${tid}`);
+          if (!infoRes.ok) throw new Error(`Tournament info ${infoRes.status}`);
+          const info = await infoRes.json();
+          const numRounds = info.settings?.rounds || info.rounds?.length || 1;
+
+          // Fetch all sub-rounds and collect games
+          const allGames = [];
+          for (let r = 1; r <= numRounds; r++) {
+            try {
+              const gRes = await fetch(`https://api.chess.com/pub/tournament/${tid}/${r}/1`);
+              if (!gRes.ok) continue;
+              const gData = await gRes.json();
+              (gData.games || []).forEach(g => {
+                allGames.push({
+                  url:   g.url   || null,
+                  uuid:  g.uuid  || null,
+                  pgn:   g.pgn   || null,
+                  white: g.white ? { username: g.white.username, rating: g.white.rating, result: g.white.result } : null,
+                  black: g.black ? { username: g.black.username, rating: g.black.rating, result: g.black.result } : null,
+                  time_class: g.time_class || null,
+                  end_time:   g.end_time   || null,
+                });
+              });
+            } catch(_) {}
+          }
+
+          progress.textContent = `Round ${row.round_number}: saving ${allGames.length} games…`;
+
+          const { error: upsertErr } = await supabaseClient
+            .from('round_tournament_links')
+            .update({ pgn_cache: allGames, pgn_synced_at: new Date().toISOString() })
+            .eq('season_key', seasonKey)
+            .eq('round_number', row.round_number);
+
+          if (upsertErr) throw new Error(upsertErr.message);
+          synced++;
+        } catch(e) {
+          console.error(`Sync failed for round ${row.round_number}:`, e);
+          failed++;
+        }
+      }
+
+      progress.style.display = 'none';
+      const msg = `PGN sync complete — ${synced} round(s) synced${failed ? `, ${failed} failed` : ''}.`;
+      setTourneyLinksStatus(msg, failed ? 'error' : 'success');
+    });
+
+    // ── Export CSV ──────────────────────────────────────────────
+
+    const exportRegsBtn = document.getElementById('exportRegsBtn');
+
+    exportRegsBtn.addEventListener('click', async () => {
+      const session = await refreshSessionStatus();
+      if (!session) { setRegsStatus('Log in first.', 'error'); return; }
+
+      setRegsStatus('Preparing CSV...');
+
+      const seasonFilterVal = regSeasonFilter.value;
+      const statusFilterVal = regStatusFilter.value;
+
+      let query = supabaseClient
+        .from('registrations')
+        .select('id, season_key, full_name, class_name, chess_username, contact_text, status, notes, created_at')
+        .order('created_at', { ascending: false });
+
+      if (seasonFilterVal) query = query.eq('season_key', seasonFilterVal);
+      if (statusFilterVal) query = query.eq('status', statusFilterVal);
+
+      const { data, error } = await query;
+      if (error) { setRegsStatus('Export failed: ' + error.message, 'error'); return; }
+
+      const rows = Array.isArray(data) ? data : [];
+      if (!rows.length) { setRegsStatus('No data to export.', 'error'); return; }
+
+      const headers = ['ID', 'Season', 'Full Name', 'Class', 'Chess.com Username', 'Contact', 'Status', 'Notes', 'Submitted'];
+      const csvRows = [
+        headers.join(','),
+        ...rows.map(r => [
+          r.id, r.season_key, r.full_name, r.class_name, r.chess_username,
+          r.contact_text, r.status, r.notes || '', r.created_at || ''
+        ].map(v => `"${String(v ?? '').replace(/"/g, '""')}"`).join(','))
+      ];
+      const blob = new Blob([csvRows.join('\n')], { type: 'text/csv' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `registrations${seasonFilterVal ? '-' + seasonFilterVal : ''}.csv`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+      setRegsStatus(`Exported ${rows.length} registration(s).`, 'success');
+    });
+
+    // ── Bulk accept / reject ─────────────────────────────────────
+
+    document.getElementById('bulkAcceptBtn').addEventListener('click', async () => {
+      const ids = [...regsTableWrap.querySelectorAll('.reg-checkbox:checked')].map(cb => cb.dataset.regId);
+      if (!ids.length) return;
+      const { error } = await supabaseClient.from('registrations').update({ status: 'accepted' }).in('id', ids);
+      if (error) { setRegsStatus('Bulk accept failed: ' + error.message, 'error'); return; }
+      setRegsStatus(`${ids.length} registration(s) accepted.`, 'success');
+      await loadRegistrations();
+    });
+
+    document.getElementById('bulkRejectBtn').addEventListener('click', async () => {
+      const ids = [...regsTableWrap.querySelectorAll('.reg-checkbox:checked')].map(cb => cb.dataset.regId);
+      if (!ids.length) return;
+      const { error } = await supabaseClient.from('registrations').update({ status: 'rejected' }).in('id', ids);
+      if (error) { setRegsStatus('Bulk reject failed: ' + error.message, 'error'); return; }
+      setRegsStatus(`${ids.length} registration(s) rejected.`, 'success');
+      await loadRegistrations();
+    });
+
+
+    // ATT Marking Tool JS
+    function setAttStatus(msg, type) {
+      var el = document.getElementById('attStatus');
+      if (el) { el.textContent = msg; el.className = type ? 'status ' + type : 'status'; }
+    }
+
+    document.getElementById('attLoadPlayersBtn').addEventListener('click', async function() {
+      var session = await refreshSessionStatus();
+      if (!session) { setAttStatus('Log in first.', 'error'); return; }
+      var seasonKey = document.getElementById('attSeasonSelect').value;
+      if (!seasonKey) { setAttStatus('Choose a season first.', 'error'); return; }
+      setAttStatus('Loading registered players...');
+      var result = await supabaseClient
+        .from('registrations')
+        .select('id, full_name, chess_username')
+        .eq('season_key', seasonKey)
+        .eq('status', 'accepted')
+        .order('full_name', { ascending: true });
+      if (result.error) { setAttStatus('Load failed: ' + result.error.message, 'error'); return; }
+      var players = Array.isArray(result.data) ? result.data : [];
+      var wrap = document.getElementById('attPlayerList');
+      if (!players.length) {
+        wrap.innerHTML = '<p style="color:var(--muted);font-size:13px;">No accepted registrations found for this season.</p>';
+        setAttStatus('No players found.', 'error');
+        return;
+      }
+      wrap.innerHTML = '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:8px;">' +
+        players.map(function(p) {
+          var esc = function(s){ return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/"/g,'&quot;'); };
+          return '<label style="display:flex;align-items:center;gap:10px;background:#f4f8fc;border:1px solid var(--line);border-radius:12px;padding:10px 14px;cursor:pointer;">' +
+            '<input type="checkbox" data-att-player="' + esc(p.full_name) + '" data-att-username="' + esc(p.chess_username) + '" style="width:auto;margin:0;cursor:pointer;" />' +
+            '<span style="font-size:14px;font-weight:700;">' + esc(p.full_name || p.chess_username) + '</span>' +
+            '<span style="font-size:12px;color:var(--muted);">@' + esc(p.chess_username) + '</span>' +
+            '</label>';
+        }).join('') + '</div>';
+      setAttStatus(players.length + ' player(s) loaded. Tick who attended, then click Confirm.', 'success');
+    });
+
+    document.getElementById('attSelectAllBtn').addEventListener('click', function() {
+      document.querySelectorAll('#attPlayerList input[type="checkbox"]').forEach(function(cb) { cb.checked = true; });
+    });
+    document.getElementById('attClearBtn').addEventListener('click', function() {
+      document.querySelectorAll('#attPlayerList input[type="checkbox"]').forEach(function(cb) { cb.checked = false; });
+    });
+
+    document.getElementById('attConfirmBtn').addEventListener('click', async function() {
+      var session = await refreshSessionStatus();
+      if (!session || !currentUser) { setAttStatus('Log in first.', 'error'); return; }
+      var seasonKey = document.getElementById('attSeasonSelect').value;
+      var roundNum  = document.getElementById('attRoundSelect').value;
+      var checked   = document.querySelectorAll('#attPlayerList input[type="checkbox"]:checked');
+      if (!checked.length) { setAttStatus('No players ticked. Tick who attended first.', 'error'); return; }
+      var attendees = [];
+      checked.forEach(function(cb) { attendees.push({ name: cb.dataset.attPlayer, username: cb.dataset.attUsername }); });
+      var detail = 'Season: ' + seasonKey + ' | Round ' + roundNum + ' | ATT (5 pts) for: ' +
+        attendees.map(function(a) { return a.name + ' (@' + a.username + ')'; }).join(', ');
+      setAttStatus('Logging ATT marks...');
+      var insResult = await supabaseClient.from('admin_log').insert([{
+        action: 'att_marked', detail: detail, performed_by: currentUser.email
+      }]);
+      if (insResult.error) { setAttStatus('Log failed: ' + insResult.error.message, 'error'); return; }
+      setAttStatus(
+        'ATT logged for ' + attendees.length + ' player(s) in Round ' + roundNum + '. ' +
+        'Now update the workbook: add "ATT" in their Round ' + roundNum + ' cell (5 pts each). ' +
+        'Attended: ' + attendees.map(function(a) { return a.name; }).join(', '),
+        'success'
+      );
+      logAction('att_marked', 'R' + roundNum + ' x' + attendees.length + ' players');
+    });
+
+    // Export standings as image JS
+    function drawStandingsCanvas(players, setting, titleSuffix, mode) {
+      var CARD_W = 600, ROW_H = 52, PAD = 28, HDR_H = 100, FTR_H = 40;
+      var CARD_H = HDR_H + players.length * ROW_H + PAD + FTR_H;
+      var canvas = document.getElementById('standingsCanvas');
+      canvas.width = CARD_W * 2; canvas.height = CARD_H * 2; // retina
+      canvas.style.width = CARD_W + 'px'; canvas.style.height = CARD_H + 'px';
+      var ctx = canvas.getContext('2d');
+      ctx.scale(2, 2);
+
+      // Background
+      ctx.fillStyle = '#0a1628';
+      ctx.fillRect(0, 0, CARD_W, CARD_H);
+
+      // Subtle grid lines
+      ctx.strokeStyle = 'rgba(255,255,255,0.03)';
+      ctx.lineWidth = 1;
+      for (var gx = 0; gx < CARD_W; gx += 40) {
+        ctx.beginPath(); ctx.moveTo(gx, 0); ctx.lineTo(gx, CARD_H); ctx.stroke();
+      }
+
+      // Header gradient
+      var grad = ctx.createLinearGradient(0, 0, CARD_W, HDR_H);
+      grad.addColorStop(0, '#1a3a6e'); grad.addColorStop(1, '#0f2040');
+      ctx.fillStyle = grad;
+      ctx.fillRect(0, 0, CARD_W, HDR_H);
+
+      // Left accent bar
+      var accentGrad = ctx.createLinearGradient(0, 0, 0, HDR_H);
+      accentGrad.addColorStop(0, '#4a90e2'); accentGrad.addColorStop(1, '#1a5ba6');
+      ctx.fillStyle = accentGrad;
+      ctx.fillRect(0, 0, 5, HDR_H);
+
+      // Club name
+      ctx.fillStyle = '#ffffff';
+      ctx.font = 'bold 20px Arial';
+      ctx.fillText('SPKC Chess Club', PAD, 34);
+
+      // Season label
+      ctx.fillStyle = '#7fb3e8';
+      ctx.font = '13px Arial';
+      ctx.fillText((setting.season_label || '') + '  —  ' + titleSuffix, PAD, 56);
+
+      // Mode chip
+      var chipColors = { standings: '#1a5ba6', round: '#1a6b4a', brilliants: '#7a4a00' };
+      var chipLabels = { standings: 'Season Standings', round: 'Round Results', brilliants: 'Brilliants' };
+      ctx.fillStyle = chipColors[mode] || '#1a3a6e';
+      ctx.beginPath(); ctx.roundRect(PAD, 66, 120, 22, 6); ctx.fill();
+      ctx.fillStyle = '#ffffff'; ctx.font = 'bold 11px Arial';
+      ctx.fillText(chipLabels[mode] || mode, PAD + 8, 81);
+
+      // Date chip
+      var dateStr = new Date().toLocaleDateString('en-GB', {day:'numeric',month:'short',year:'numeric'});
+      ctx.fillStyle = 'rgba(255,255,255,0.08)';
+      ctx.beginPath(); ctx.roundRect(CARD_W - PAD - 100, 66, 100, 22, 6); ctx.fill();
+      ctx.fillStyle = '#7fb3e8'; ctx.font = '11px Arial'; ctx.textAlign = 'right';
+      ctx.fillText(dateStr, CARD_W - PAD - 6, 81); ctx.textAlign = 'left';
+
+      // Column headers
+      var yBase = HDR_H + 6;
+      ctx.fillStyle = 'rgba(255,255,255,0.35)'; ctx.font = 'bold 10px Arial';
+      ctx.fillText('RANK', PAD, yBase + 14);
+      ctx.fillText('PLAYER', PAD + 68, yBase + 14);
+      ctx.textAlign = 'right'; ctx.fillText('SCORE', CARD_W - PAD, yBase + 14); ctx.textAlign = 'left';
+
+      // Divider
+      ctx.strokeStyle = 'rgba(255,255,255,0.08)'; ctx.lineWidth = 1;
+      ctx.beginPath(); ctx.moveTo(0, yBase + 20); ctx.lineTo(CARD_W, yBase + 20); ctx.stroke();
+
+      // Rows
+      players.forEach(function(p, idx) {
+        var rowY = yBase + 20 + idx * ROW_H;
+        // Alternate row bg
+        ctx.fillStyle = idx % 2 === 0 ? 'rgba(255,255,255,0.03)' : 'transparent';
+        ctx.fillRect(0, rowY, CARD_W, ROW_H);
+
+        // Top 3 left highlight bar
+        var barColors = ['#f5c518','#a8a9ad','#cd7f32'];
+        if (idx < 3) {
+          var barG = ctx.createLinearGradient(0, rowY, 0, rowY + ROW_H);
+          barG.addColorStop(0, barColors[idx] + '40');
+          barG.addColorStop(1, barColors[idx] + '10');
+          ctx.fillStyle = barG;
+          ctx.fillRect(0, rowY, CARD_W, ROW_H);
+          ctx.fillStyle = barColors[idx];
+          ctx.fillRect(0, rowY, 4, ROW_H);
+        }
+
+        var textY = rowY + ROW_H / 2 + 6;
+
+        // Rank
+        var rankLabels = ['1st','2nd','3rd'];
+        ctx.font = idx < 3 ? 'bold 15px Arial' : '13px Arial';
+        ctx.fillStyle = idx < 3 ? barColors[idx] : 'rgba(255,255,255,0.5)';
+        ctx.fillText(rankLabels[idx] || '#' + (idx + 1), PAD, textY);
+
+        // Name
+        ctx.font = idx < 3 ? 'bold 15px Arial' : '14px Arial';
+        ctx.fillStyle = idx < 3 ? '#ffffff' : '#c8dff5';
+        var dispName = p.name.length > 28 ? p.name.slice(0, 26) + '..' : p.name;
+        ctx.fillText(dispName, PAD + 68, textY);
+
+        // Score
+        ctx.font = 'bold 15px Arial';
+        ctx.fillStyle = idx < 3 ? barColors[idx] : '#7fb3e8';
+        ctx.textAlign = 'right';
+        ctx.fillText(String(p.label || p.value), CARD_W - PAD, textY);
+        ctx.textAlign = 'left';
+      });
+
+      // Footer
+      var footY = CARD_H - FTR_H;
+      ctx.fillStyle = 'rgba(0,0,0,0.4)';
+      ctx.fillRect(0, footY, CARD_W, FTR_H);
+      ctx.fillStyle = 'rgba(255,255,255,0.3)'; ctx.font = '10px Arial';
+      ctx.fillText('SPKC International Chess Club', PAD, footY + FTR_H/2 + 4);
+      ctx.fillStyle = '#4a90e2';
+      ctx.textAlign = 'right';
+      ctx.fillText('chess.com/club/spkc-international-chess-club-1', CARD_W - PAD, footY + FTR_H/2 + 4);
+      ctx.textAlign = 'left';
+
+      // Show result
+      document.getElementById('exportCanvasWrap').style.display = 'block';
+      var link = document.getElementById('exportDownloadLink');
+      link.href = canvas.toDataURL('image/png'); link.style.display = 'inline';
+      setExportStatus('Image ready! Click Download PNG to save it.', 'success');
+    }
+
+    function setExportStatus(msg, type) {
+      var el = document.getElementById('exportStatus');
+      if (el) { el.textContent = msg; el.className = type ? 'status ' + type : 'status'; }
+    }
+
+    document.getElementById('exportStandingsBtn').addEventListener('click', async function() {
+      var session = await refreshSessionStatus();
+      if (!session) { setExportStatus('Log in first.', 'error'); return; }
+      var seasonKey = document.getElementById('exportSeasonSelect').value;
+      var maxRows   = parseInt(document.getElementById('exportRowCount').value, 10) || 10;
+      var exportMode = document.getElementById('exportModeSelect') ? document.getElementById('exportModeSelect').value : 'standings';
+      if (!seasonKey) { setExportStatus('Choose a season first.', 'error'); return; }
+      var setting = seasonSettings.find(function(s) { return s.season_key === seasonKey; });
+      if (!setting) { setExportStatus('Season settings not loaded. Reload page.', 'error'); return; }
+
+      // ── Brilliants mode: pull from DB ─────────────────────────────────────
+      if (exportMode === 'brilliants') {
+        setExportStatus('Loading brilliant moves...');
+        var bResult = await supabaseClient
+          .from('brilliant_moves')
+          .select('player_name, chess_username')
+          .eq('season_key', seasonKey)
+          .not('caption', 'like', '%PENDING REVIEW%');
+        if (bResult.error) { setExportStatus('Failed: ' + bResult.error.message, 'error'); return; }
+        var bRows = bResult.data || [];
+        // Count brilliants per player
+        var bMap = {};
+        bRows.forEach(function(b) {
+          var k = b.player_name || b.chess_username || 'Unknown';
+          bMap[k] = (bMap[k] || 0) + 1;
+        });
+        var bPlayers = Object.entries(bMap)
+          .map(function(e) { return { name: e[0], value: e[1], label: e[1] + ' brilliant' + (e[1]!==1?'s':'') }; })
+          .sort(function(a,b) { return b.value - a.value; })
+          .slice(0, maxRows);
+        if (!bPlayers.length) { setExportStatus('No confirmed brilliants found for this season.', 'error'); return; }
+        drawStandingsCanvas(bPlayers, setting, 'Brilliants', 'brilliants');
+        return;
+      }
+
+      // ── Workbook-based modes: standings or round ───────────────────────────
+      setExportStatus('Downloading workbook...');
+      var _fp = setting.file_path || FILEPATH;
+      var { data: _signedData, error: _signedErr } = await supabaseClient.storage.from(BUCKET).createSignedUrl(_fp, 300);
+      if (_signedErr || !_signedData || !_signedData.signedUrl) {
+        setExportStatus('Could not get workbook URL: ' + (_signedErr ? _signedErr.message : 'no URL returned'), 'error');
+        return;
+      }
+      var _wbResp = await fetch(_signedData.signedUrl);
+      if (!_wbResp.ok) { setExportStatus('Workbook fetch failed: ' + _wbResp.status, 'error'); return; }
+
+      setExportStatus('Parsing data...');
+      if (typeof XLSX === 'undefined') {
+        await new Promise(function(resolve, reject) {
+          var s = document.createElement('script');
+          s.src = 'https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js';
+          s.onload = resolve; s.onerror = reject;
+          document.head.appendChild(s);
+        });
+      }
+
+      var ab = await _wbResp.arrayBuffer();
+      var wb = XLSX.read(ab, { type: 'array' });
+      var sheetHints = [];
+      try { sheetHints = JSON.parse(setting.sheet_hints || '[]'); } catch(e) {}
+      sheetHints.push(setting.sheet_name || '', seasonKey);
+      var sheetName = wb.SheetNames.find(function(n) {
+        return sheetHints.some(function(h) { return h && n.toLowerCase().includes(h.toLowerCase()); });
+      }) || wb.SheetNames[0];
+      var ws = wb.Sheets[sheetName];
+      var rows = XLSX.utils.sheet_to_json(ws, { header: 1, defval: '' });
+
+      var players = [];
+
+      if (exportMode === 'standings') {
+        // Total Points block
+        var startIdx = -1;
+        for (var ri = 0; ri < rows.length; ri++) {
+          if (String(rows[ri][0] || '').trim().toLowerCase() === 'total points') { startIdx = ri; break; }
+        }
+        var seen = new Set();
+        if (startIdx >= 0) {
+          for (var rj = startIdx + 1; rj < rows.length && players.length < maxRows; rj++) {
+            var r = rows[rj];
+            var pname = String(r[0] || '').trim();
+            if (!pname || seen.has(pname.toLowerCase())) continue;
+            if (pname.toLowerCase() === 'player' || pname.toLowerCase() === 'name') continue;
+            // Use Total Score column (index 3 per workbook schema: Player/Username/Rank/Total Score/R1...)
+            // Fallback: scan from col 3 forward for first numeric value
+            var pts = null;
+            var tsVal = r[3]; // 'Total Score' is always col D (index 3)
+            if (tsVal !== '' && tsVal !== null && tsVal !== undefined && !isNaN(Number(tsVal))) {
+              pts = Number(tsVal);
+            } else {
+              // Fallback: find first numeric col after name
+              for (var ci2 = 1; ci2 <= 5; ci2++) {
+                var v2 = r[ci2];
+                if (v2 !== '' && v2 !== null && !isNaN(Number(v2)) && Number(v2) >= 0) { pts = Number(v2); break; }
+              }
+            }
+            if (pts === null || pts === undefined) continue;
+            seen.add(pname.toLowerCase());
+            players.push({ name: pname, value: pts, label: pts + ' pts' });
+          }
+          players.sort(function(a, b) { return b.value - a.value; });
+        }
+        if (!players.length) { setExportStatus('No Total Points data found in workbook.', 'error'); return; }
+        drawStandingsCanvas(players, setting, 'Season Standings', 'standings');
+
+      } else if (exportMode === 'round') {
+        // Pick round
+        var roundSel = document.getElementById('exportRoundSelect');
+        var roundNum = roundSel ? parseInt(roundSel.value, 10) : 1;
+        // Find column for that round
+        var headerRow = null;
+        var roundCol = -1;
+        for (var hi = 0; hi < Math.min(rows.length, 20); hi++) {
+          var rowArr = rows[hi];
+          for (var hj = 0; hj < rowArr.length; hj++) {
+            var cell = String(rowArr[hj] || '').trim().toLowerCase();
+            if (cell === 'r' + roundNum || cell === 'round ' + roundNum || cell === 'round' + roundNum) {
+              headerRow = hi; roundCol = hj; break;
+            }
+          }
+          if (roundCol >= 0) break;
+        }
+        // Fallback: use startIdx+1 data, col = roundNum
+        var startIdx2 = -1;
+        for (var ri2 = 0; ri2 < rows.length; ri2++) {
+          if (String(rows[ri2][0] || '').trim().toLowerCase() === 'total points') { startIdx2 = ri2; break; }
+        }
+        var seen2 = new Set();
+        if (startIdx2 >= 0) {
+          for (var rj2 = startIdx2 + 1; rj2 < rows.length && players.length < maxRows; rj2++) {
+            var r2 = rows[rj2];
+            var pname2 = String(r2[0] || '').trim();
+            if (!pname2 || seen2.has(pname2.toLowerCase())) continue;
+            if (pname2.toLowerCase() === 'player' || pname2.toLowerCase() === 'name') continue;
+            seen2.add(pname2.toLowerCase());
+            // Use roundCol if found, else column index = roundNum
+            var colIdx = roundCol >= 0 ? roundCol : roundNum;
+            var score2 = r2[colIdx];
+            if (score2 === '' || score2 === null || score2 === undefined) continue;
+            var scoreStr = String(score2).trim();
+            if (!scoreStr || scoreStr === '0') continue;
+            players.push({ name: pname2, value: isNaN(Number(scoreStr)) ? 0 : Number(scoreStr), label: scoreStr });
+          }
+          players.sort(function(a, b) { return b.value - a.value; });
+        }
+        if (!players.length) { setExportStatus('No data found for Round ' + roundNum + '.', 'error'); return; }
+        drawStandingsCanvas(players, setting, 'Round ' + roundNum + ' Results', 'round');
+      }
+
+      logAction('standings_exported', seasonKey + ' ' + exportMode);
+    });
+
+
+    // ── On load ───────────────────────────────────────────────
+
+    // ── Brilliant Moves ──────────────────────────────────────────────────────
+
+    // Feature D: track which brilliant is being edited
+    var editingBrilliantId = null;
+
+    function setBrilliantStatus(message, type) {
+      var el = document.getElementById('brilliantStatus');
+      if (el) { el.textContent = message; el.className = type ? 'status ' + type : 'status'; }
+    }
+
+    function resetBrilliantForm() {
+      editingBrilliantId = null;
+      var submitBtn = document.getElementById('postBrilliantBtn');
+      if (submitBtn) submitBtn.textContent = '\u2728 Submit brilliant';
+      ['brillPlayerName','brillUsername','brillMatch','brillGameLink','brillCaption'].forEach(function(id) {
+        var el = document.getElementById(id); if (el) el.value = '';
+      });
+      var sf = document.getElementById('brillScreenshotFile'); if (sf) sf.value = '';
+      var preview = document.getElementById('brillScreenshotPreview');
+      if (preview) preview.style.display = 'none';
+    }
+
+    async function loadBrilliantsList() {
+      var wrap = document.getElementById('brilliantListWrap');
+      if (!wrap) return;
+      var result = await supabaseClient
+        .from('brilliant_moves')
+        .select('*')
+        .order('round_number', { ascending: true })
+        .order('created_at', { ascending: false });
+      var data = result.data;
+      var error = result.error;
+      if (error) {
+        wrap.innerHTML = '<p style="color:var(--danger); font-size:13px;">Load error: ' + escapeHtml(error.message) + '</p>';
+        return;
+      }
+      var items = Array.isArray(data) ? data : [];
+      if (!items.length) {
+        wrap.innerHTML = '<p style="color:var(--muted); font-size:13px;">No brilliant moves recorded yet.</p>';
+        return;
+      }
+      wrap.innerHTML = '<div style="overflow-x:auto; margin-top:8px; border:1px solid var(--line); border-radius:14px; background:#fff;"><table class="settings-table"><thead><tr><th>Season</th><th>Round</th><th>Player</th><th>Match</th><th>Bonus pts</th><th>Actions</th></tr></thead><tbody>' +
+        items.map(function(item) {
+          return '<tr data-brill-row="' + escapeHtml(item.id) + '">' +
+            '<td>' + escapeHtml(item.season_key || '') + '</td>' +
+            '<td>' + escapeHtml(String(item.round_number || '')) + '</td>' +
+            '<td>' + escapeHtml(item.player_name || '') + ' <span style="color:var(--muted); font-size:12px;">@' + escapeHtml(item.chess_username || '') + '</span></td>' +
+            '<td>' + escapeHtml(item.match_desc || '') + '</td>' +
+            '<td style="font-weight:700; color:var(--primary);">+4</td>' +
+            '<td>' +
+              '<button class="reg-action-btn" style="background:#eef3fb;color:var(--primary);" data-brill-edit="' + escapeHtml(item.id) + '" ' +
+                'data-brill-season="' + escapeHtml(item.season_key || '') + '" ' +
+                'data-brill-round="' + escapeHtml(String(item.round_number || '1')) + '" ' +
+                'data-brill-player="' + escapeHtml(item.player_name || '') + '" ' +
+                'data-brill-username="' + escapeHtml(item.chess_username || '') + '" ' +
+                'data-brill-match="' + escapeHtml(item.match_desc || '') + '" ' +
+                'data-brill-gamelink="' + escapeHtml(item.game_link || '') + '" ' +
+                'data-brill-caption="' + escapeHtml(item.caption || '') + '" ' +
+                'data-brill-screenshot="' + escapeHtml(item.screenshot_url || '') + '">&#9999;&#65039; Edit</button> ' +
+              '<button class="reg-action-btn reject" data-brill-id="' + escapeHtml(item.id) + '">Delete</button>' +
+            '</td>' +
+          '</tr>';
+        }).join('') + '</tbody></table></div>';
+
+      // Delete handler
+      wrap.querySelectorAll('[data-brill-id]').forEach(function(btn) {
+        btn.addEventListener('click', async function() {
+          if (!confirm('Delete this brilliant move record?')) return;
+          var delResult = await supabaseClient.from('brilliant_moves').delete().eq('id', btn.dataset.brillId);
+          if (delResult.error) { setBrilliantStatus('Delete failed: ' + delResult.error.message, 'error'); return; }
+          setBrilliantStatus('Brilliant move deleted.', 'success');
+          logAction('brilliant_deleted', btn.dataset.brillId);
+          await loadBrilliantsList();
+        });
+      });
+
+      // Feature D: Edit handler — populate form
+      wrap.querySelectorAll('[data-brill-edit]').forEach(function(btn) {
+        btn.addEventListener('click', function() {
+          editingBrilliantId = btn.dataset.brillEdit;
+          // Populate form fields
+          var brillSeasonEl = document.getElementById('brillSeasonSelect');
+          if (brillSeasonEl) brillSeasonEl.value = btn.dataset.brillSeason;
+          var brillRoundEl = document.getElementById('brillRoundSelect');
+          if (brillRoundEl) brillRoundEl.value = btn.dataset.brillRound;
+          var brillPlayerEl = document.getElementById('brillPlayerName');
+          if (brillPlayerEl) brillPlayerEl.value = btn.dataset.brillPlayer;
+          var brillUserEl = document.getElementById('brillUsername');
+          if (brillUserEl) brillUserEl.value = btn.dataset.brillUsername;
+          var brillMatchEl = document.getElementById('brillMatch');
+          if (brillMatchEl) brillMatchEl.value = btn.dataset.brillMatch;
+          var brillGameEl = document.getElementById('brillGameLink');
+          if (brillGameEl) brillGameEl.value = btn.dataset.brillGamelink;
+          var brillCapEl = document.getElementById('brillCaption');
+          if (brillCapEl) brillCapEl.value = btn.dataset.brillCaption;
+          // Change submit button text
+          var submitBtn = document.getElementById('postBrilliantBtn');
+          if (submitBtn) submitBtn.textContent = '\u270f\ufe0f Update brilliant';
+          // Scroll to form
+          var formSection = document.querySelector('.card:has(#postBrilliantBtn)');
+          if (formSection) formSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+          else if (submitBtn) submitBtn.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          setBrilliantStatus('Editing record. Make changes above and click "✏️ Update brilliant".', '');
+        });
+      });
+    }
+
+    document.getElementById('brillScreenshotFile').addEventListener('change', function() {
+      var file = this.files[0];
+      var preview = document.getElementById('brillScreenshotPreview');
+      var previewImg = document.getElementById('brillScreenshotPreviewImg');
+      var previewName = document.getElementById('brillScreenshotPreviewName');
+      if (file) {
+        var reader = new FileReader();
+        reader.onload = function(e) {
+          previewImg.src = e.target.result;
+          previewName.textContent = file.name + ' (' + (file.size / 1024).toFixed(1) + ' KB)';
+          preview.style.display = 'block';
+        };
+        reader.readAsDataURL(file);
+      } else {
+        preview.style.display = 'none';
+      }
+    });
+
+    document.getElementById('postBrilliantBtn').addEventListener('click', async function() {
+      var session = await refreshSessionStatus();
+      if (!session || !currentUser) { setBrilliantStatus('Log in first.', 'error'); return; }
+      var season_key = (document.getElementById('brillSeasonSelect') || {}).value || '';
+      var round_number = parseInt((document.getElementById('brillRoundSelect') || {}).value || '1', 10);
+      var player_name = ((document.getElementById('brillPlayerName') || {}).value || '').trim();
+      var chess_username = ((document.getElementById('brillUsername') || {}).value || '').trim();
+      var match_desc = ((document.getElementById('brillMatch') || {}).value || '').trim() || null;
+      var game_link = ((document.getElementById('brillGameLink') || {}).value || '').trim() || null;
+      var caption = ((document.getElementById('brillCaption') || {}).value || '').trim() || null;
+      if (!season_key) { setBrilliantStatus('Choose a season first.', 'error'); return; }
+      if (!player_name) { setBrilliantStatus('Player name is required.', 'error'); return; }
+      if (!chess_username) { setBrilliantStatus('Chess.com username is required.', 'error'); return; }
+
+      // Upload screenshot file if provided
+      var screenshot_url = null;
+      var screenshotFile = (document.getElementById('brillScreenshotFile') || {}).files;
+      if (screenshotFile && screenshotFile[0]) {
+        setBrilliantStatus('Uploading screenshot...');
+        var imgFile = screenshotFile[0];
+        var ext = imgFile.name.split('.').pop().toLowerCase() || 'jpg';
+        var safeName = chess_username.replace(/[^a-zA-Z0-9_-]/g, '') + '_s' + season_key.replace(/[^a-zA-Z0-9_-]/g, '') + '_r' + round_number + '_' + Date.now() + '.' + ext;
+        var uploadPath = 'screenshots/' + safeName;
+        var { error: uploadErr } = await supabaseClient.storage.from(BUCKET).upload(uploadPath, imgFile, { upsert: true, contentType: imgFile.type });
+        if (uploadErr) { setBrilliantStatus('Screenshot upload failed: ' + uploadErr.message, 'error'); return; }
+        // Get a long-lived signed URL (10 years)
+        var { data: signedData, error: signedErr } = await supabaseClient.storage.from(BUCKET).createSignedUrl(uploadPath, 315360000);
+        if (signedErr || !signedData) { setBrilliantStatus('Could not get screenshot URL: ' + (signedErr ? signedErr.message : 'unknown'), 'error'); return; }
+        screenshot_url = signedData.signedUrl;
+      }
+
+      setBrilliantStatus(editingBrilliantId ? 'Updating brilliant move...' : 'Submitting brilliant move...');
+
+      var payload = { season_key: season_key, round_number: round_number, player_name: player_name, chess_username: chess_username, match_desc: match_desc, game_link: game_link, caption: caption };
+
+      if (editingBrilliantId) {
+        // Feature D: UPDATE mode — only update screenshot if a new file was chosen
+        if (screenshot_url !== null) payload.screenshot_url = screenshot_url;
+        var updResult = await supabaseClient.from('brilliant_moves').update(payload).eq('id', editingBrilliantId);
+        if (updResult.error) { setBrilliantStatus('Update failed: ' + updResult.error.message, 'error'); return; }
+        setBrilliantStatus('Brilliant move updated successfully! ✨', 'success');
+        logAction('brilliant_added', player_name + ' R' + round_number + ' (edit)');
+        resetBrilliantForm();
+      } else {
+        // INSERT mode
+        payload.screenshot_url = screenshot_url;
+        var insResult = await supabaseClient.from('brilliant_moves').insert([payload]);
+        if (insResult.error) { setBrilliantStatus('Submit failed: ' + insResult.error.message, 'error'); return; }
+        setBrilliantStatus('Brilliant move recorded successfully! ✨', 'success');
+        logAction('brilliant_added', player_name + ' R' + round_number);
+        resetBrilliantForm();
+      }
+
+      await loadBrilliantsList();
+    });
+
+    document.getElementById('loadBrilliants').addEventListener('click', async function() {
+      var session = await refreshSessionStatus();
+      if (!session) { setBrilliantStatus('Log in first.', 'error'); return; }
+      await loadBrilliantsList();
+    });
+
+        refreshSessionStatus();
+    loadSeasonSettings();
+    loadSeasonDatesConfig();
+    loadAnnouncements();
+
+    // Feature F: wire up Activity Log refresh button
+    var refreshLogBtn = document.getElementById('refreshLogBtn');
+    if (refreshLogBtn) {
+      refreshLogBtn.addEventListener('click', async function() {
+        var session = await refreshSessionStatus();
+        if (!session) {
+          var logStatus = document.getElementById('activityLogStatus');
+          if (logStatus) { logStatus.textContent = 'Log in first.'; logStatus.className = 'status error'; }
+          return;
+        }
+        await loadActivityLog();
+      });
+    }
+
+    // ─────────────────────────────────────────────────────────────
+    // ── RULES EDITOR ───────────────────────────────────────────────
+    // ─────────────────────────────────────────────────────────────
+
+    var rulesEditorData = {   // { id, version, sections, updated_at }
+      id: null,
+      version: '9.7',
+      sections: [],
+      updated_at: null
+    };
+
+    function setRulesStatus(msg, type) {
+      var el = document.getElementById('rulesEditorStatus');
+      if (el) { el.textContent = msg; el.className = type ? 'status ' + type : 'status'; }
+    }
+
+    // ── Version auto-increment ────────────────────────────────
+    // e.g. "9.7" → "9.8", "9.9" → "10.0", "10.2" → "10.3"
+    function incrementVersion(ver) {
+      if (!ver) return '9.8';
+      var parts = String(ver).split('.');
+      if (parts.length < 2) return String(Number(ver) + 1) + '.0';
+      var major = parseInt(parts[0], 10);
+      var minor = parseInt(parts[1], 10);
+      if (isNaN(major) || isNaN(minor)) return ver;
+      minor += 1;
+      if (minor >= 10) { major += 1; minor = 0; }
+      return major + '.' + minor;
+    }
+
+    // ── Build editor DOM from data ────────────────────────────
+    function buildRulesEditor(sections) {
+      var body = document.getElementById('rulesEditorBody');
+      if (!body) return;
+      body.innerHTML = '';
+
+      if (!sections.length) {
+        body.innerHTML = '<p style="color:var(--muted);font-size:13px;">No sections yet. Click "+ Add section" to get started.</p>';
+        return;
+      }
+
+      sections.forEach(function(sec, secIdx) {
+        var el = createSectionEl(sec, secIdx);
+        body.appendChild(el);
+      });
+    }
+
+    function createSectionEl(sec, secIdx) {
+      var wrap = document.createElement('div');
+      wrap.className = 're-section';
+      wrap.dataset.secIdx = secIdx;
+
+      // Header
+      var header = document.createElement('div');
+      header.className = 're-section-header';
+      header.innerHTML =
+        '<input class="re-section-num-input" type="text" value="' + escapeHtml(String(sec.num || (secIdx + 1))) + '" placeholder="#" title="Section number" />' +
+        '<input class="re-section-title-input" type="text" value="' + escapeHtml(sec.title || '') + '" placeholder="Section title" />' +
+        '<div class="re-section-actions">' +
+          '<button class="re-btn-section-del" title="Delete section" type="button">✕ Delete</button>' +
+        '</div>' +
+        '<span class="re-chevron">▼</span>';
+
+      // Stop header click from firing when clicking inputs / buttons
+      header.addEventListener('click', function(e) {
+        if (e.target.tagName === 'INPUT' || e.target.tagName === 'BUTTON') return;
+        wrap.classList.toggle('open');
+      });
+
+      // Delete section
+      header.querySelector('.re-btn-section-del').addEventListener('click', function(e) {
+        e.stopPropagation();
+        if (!confirm('Delete section "' + (sec.title || 'Section ' + sec.num) + '"? All its rules will also be removed.')) return;
+        rulesEditorData.sections.splice(secIdx, 1);
+        buildRulesEditor(rulesEditorData.sections);
+      });
+
+      // Body
+      var body = document.createElement('div');
+      body.className = 're-section-body';
+
+      // Rules list
+      var rulesList = document.createElement('div');
+      rulesList.className = 're-rules-list';
+
+      (sec.rules || []).forEach(function(rule, ruleIdx) {
+        rulesList.appendChild(createRuleRow(secIdx, ruleIdx, rule));
+      });
+
+      // Add rule button
+      var addRuleBtn = document.createElement('button');
+      addRuleBtn.className = 're-btn-add-rule';
+      addRuleBtn.type = 'button';
+      addRuleBtn.textContent = '+ Add rule';
+      addRuleBtn.addEventListener('click', function() {
+        // Sync current DOM state back to data first
+        syncEditorToData();
+        var sec2 = rulesEditorData.sections[secIdx];
+        if (!sec2) return;
+        if (!sec2.rules) sec2.rules = [];
+        // Auto-number new rule
+        var nextNum = sec2.num + '.' + (sec2.rules.length + 1);
+        sec2.rules.push({ num: nextNum, text: '' });
+        buildRulesEditor(rulesEditorData.sections);
+        // Open this section and focus the new rule
+        var sections = document.querySelectorAll('.re-section');
+        if (sections[secIdx]) {
+          sections[secIdx].classList.add('open');
+          var rows = sections[secIdx].querySelectorAll('.re-rule-text');
+          if (rows.length) rows[rows.length - 1].focus();
+        }
+      });
+
+      body.appendChild(rulesList);
+      body.appendChild(addRuleBtn);
+      wrap.appendChild(header);
+      wrap.appendChild(body);
+      return wrap;
+    }
+
+    function createRuleRow(secIdx, ruleIdx, rule) {
+      var row = document.createElement('div');
+      row.className = 're-rule-row';
+      row.dataset.secIdx = secIdx;
+      row.dataset.ruleIdx = ruleIdx;
+
+      var numInput = document.createElement('input');
+      numInput.className = 're-rule-num';
+      numInput.type = 'text';
+      numInput.value = rule.num || '';
+      numInput.placeholder = 'e.g. 1.1';
+      numInput.title = 'Rule number';
+
+      var textArea = document.createElement('textarea');
+      textArea.className = 're-rule-text';
+      textArea.value = rule.text || '';
+      textArea.placeholder = 'Rule text…';
+
+      // Auto-resize textarea
+      textArea.addEventListener('input', function() {
+        textArea.style.height = 'auto';
+        textArea.style.height = textArea.scrollHeight + 'px';
+      });
+
+      var delBtn = document.createElement('button');
+      delBtn.className = 're-btn-icon';
+      delBtn.type = 'button';
+      delBtn.title = 'Delete rule';
+      delBtn.innerHTML = '✕';
+      delBtn.addEventListener('click', function() {
+        if (!confirm('Delete rule ' + (rule.num || (ruleIdx + 1)) + '?')) return;
+        syncEditorToData();
+        var sec = rulesEditorData.sections[secIdx];
+        if (sec && sec.rules) {
+          sec.rules.splice(ruleIdx, 1);
+        }
+        buildRulesEditor(rulesEditorData.sections);
+        // Re-open the section
+        var sections = document.querySelectorAll('.re-section');
+        if (sections[secIdx]) sections[secIdx].classList.add('open');
+      });
+
+      row.appendChild(numInput);
+      row.appendChild(textArea);
+      row.appendChild(delBtn);
+      return row;
+    }
+
+    // ── Sync DOM inputs back to rulesEditorData ─────────────────
+    function syncEditorToData() {
+      var sectionEls = document.querySelectorAll('#rulesEditorBody .re-section');
+      rulesEditorData.sections = [];
+
+      sectionEls.forEach(function(secEl) {
+        var numInput   = secEl.querySelector('.re-section-num-input');
+        var titleInput = secEl.querySelector('.re-section-title-input');
+        var secNum     = (numInput ? numInput.value.trim() : '') || '';
+        var secTitle   = (titleInput ? titleInput.value.trim() : '') || '';
+
+        var rules = [];
+        secEl.querySelectorAll('.re-rule-row').forEach(function(ruleRow) {
+          var rNum  = ruleRow.querySelector('.re-rule-num');
+          var rText = ruleRow.querySelector('.re-rule-text');
+          var num   = rNum  ? rNum.value.trim()  : '';
+          var text  = rText ? rText.value.trim() : '';
+          if (num || text) {
+            rules.push({ num: num, text: text });
+          }
+        });
+
+        rulesEditorData.sections.push({
+          num: isNaN(Number(secNum)) ? secNum : Number(secNum),
+          title: secTitle,
+          rules: rules
+        });
+      });
+    }
+
+    // ── Load rules from Supabase ─────────────────────────────
+    async function loadRulesForEditor() {
+      setRulesStatus('Loading rules from database…');
+
+      var result = await supabaseClient
+        .from('rules_content')
+        .select('id, version, sections, updated_at')
+        .order('updated_at', { ascending: false })
+        .limit(1);
+
+      if (result.error) {
+        setRulesStatus('Load failed: ' + result.error.message + '. The rules_content table may not exist yet — run migration.sql first.', 'error');
+        return;
+      }
+
+      var rows = Array.isArray(result.data) ? result.data : [];
+
+      if (!rows.length) {
+        // No rows yet — seed from fallback v9.7
+        setRulesStatus('No rules in database yet. Showing v9.7 defaults — click “Save & publish” to push to DB.', '');
+        rulesEditorData.id = null;
+        rulesEditorData.version = '9.7';
+        rulesEditorData.sections = JSON.parse(JSON.stringify(RULES_FALLBACK_FOR_SEED));
+        rulesEditorData.updated_at = null;
+      } else {
+        var row = rows[0];
+        rulesEditorData.id = row.id;
+        rulesEditorData.version = row.version || '9.7';
+        rulesEditorData.sections = Array.isArray(row.sections) ? row.sections : [];
+        rulesEditorData.updated_at = row.updated_at;
+        setRulesStatus('Loaded v' + rulesEditorData.version + ' (' + rulesEditorData.sections.length + ' sections).', 'success');
+      }
+
+      // Update version display
+      var verEl = document.getElementById('rulesCurrentVersion');
+      if (verEl) verEl.textContent = 'v' + rulesEditorData.version;
+      var updEl = document.getElementById('rulesLastUpdated');
+      if (updEl && rulesEditorData.updated_at) {
+        updEl.textContent = 'Last updated: ' + new Date(rulesEditorData.updated_at).toLocaleString();
+      } else if (updEl) {
+        updEl.textContent = 'No saved version yet';
+      }
+
+      buildRulesEditor(rulesEditorData.sections);
+    }
+
+    // ── Save rules to Supabase ──────────────────────────────
+    async function saveRules() {
+      var session = await refreshSessionStatus();
+      if (!session || !currentUser) {
+        setRulesStatus('Log in first.', 'error');
+        return;
+      }
+
+      // Sync DOM → data
+      syncEditorToData();
+
+      if (!rulesEditorData.sections.length) {
+        setRulesStatus('No sections to save.', 'error');
+        return;
+      }
+
+      // Auto-increment version
+      var newVersion = incrementVersion(rulesEditorData.version);
+      var confirmed = confirm(
+        'Save and publish rules?\n\nThis will update rules.html for all visitors.\nVersion: v' +
+        rulesEditorData.version + ' → v' + newVersion +
+        '\nSections: ' + rulesEditorData.sections.length
+      );
+      if (!confirmed) return;
+
+      setRulesStatus('Saving…');
+
+      var now = new Date().toISOString();
+      var payload = {
+        version: newVersion,
+        sections: rulesEditorData.sections,
+        updated_at: now,
+        updated_by: currentUser.email
+      };
+
+      var result;
+      if (rulesEditorData.id) {
+        // Update existing row
+        result = await supabaseClient
+          .from('rules_content')
+          .update(payload)
+          .eq('id', rulesEditorData.id);
+      } else {
+        // Insert new row
+        result = await supabaseClient
+          .from('rules_content')
+          .insert([payload])
+          .select('id')
+          .single();
+      }
+
+      if (result.error) {
+        setRulesStatus('Save failed: ' + result.error.message, 'error');
+        return;
+      }
+
+      // Update local state
+      if (!rulesEditorData.id && result.data && result.data.id) {
+        rulesEditorData.id = result.data.id;
+      }
+      rulesEditorData.version = newVersion;
+      rulesEditorData.updated_at = now;
+
+      var verEl = document.getElementById('rulesCurrentVersion');
+      if (verEl) verEl.textContent = 'v' + newVersion;
+      var updEl = document.getElementById('rulesLastUpdated');
+      if (updEl) updEl.textContent = 'Last updated: ' + new Date(now).toLocaleString();
+
+      setRulesStatus('✅ Rules published as v' + newVersion + '. rules.html will update immediately.', 'success');
+      logAction('rules_saved', 'v' + newVersion + ' (' + rulesEditorData.sections.length + ' sections)');
+    }
+
+    // ── Add section ───────────────────────────────────────────
+    document.getElementById('addSectionBtn').addEventListener('click', function() {
+      syncEditorToData();
+      var nextNum = rulesEditorData.sections.length + 1;
+      rulesEditorData.sections.push({
+        num: nextNum,
+        title: '',
+        rules: []
+      });
+      buildRulesEditor(rulesEditorData.sections);
+      // Open the new section
+      var sections = document.querySelectorAll('.re-section');
+      if (sections.length) {
+        var last = sections[sections.length - 1];
+        last.classList.add('open');
+        var titleIn = last.querySelector('.re-section-title-input');
+        if (titleIn) titleIn.focus();
+      }
+    });
+
+    document.getElementById('loadRulesBtn').addEventListener('click', async function() {
+      var session = await refreshSessionStatus();
+      if (!session) { setRulesStatus('Log in first.', 'error'); return; }
+      await loadRulesForEditor();
+    });
+
+    document.getElementById('saveRulesBtn').addEventListener('click', saveRules);
+
+    // ── Fallback seed data (v9.7 snapshot for first-time load) ──
+    var RULES_FALLBACK_FOR_SEED = [
+      { num: 1, title: 'Platform & Schedule', rules: [
+        { num: '1.1', text: 'All official season rounds are played as separate Chess.com club tournaments within the SPKC International Chess Club.' },
+        { num: '1.2', text: 'Rounds are held on Sundays at 20:00 HKT (UTC+8) unless otherwise announced.' },
+        { num: '1.3', text: 'Players must be in the tournament lobby and ready at least 5 minutes before the scheduled start time.' },
+        { num: '1.4', text: 'A season consists of 6 official rounds.' },
+        { num: '1.5', text: 'Each round uses a different time control following a repeating cycle: Bullet → Blitz → Rapid → Bullet → Blitz → Rapid.' },
+        { num: '1.6', text: 'Round announcements are made in the official SPKC Chess Club WhatsApp group.' },
+        { num: '1.7', text: 'The organiser may adjust the schedule for public holidays or unforeseen circumstances with prior notice.' },
+        { num: '1.8', text: 'Players are responsible for checking the round schedule and joining on time. No grace period is guaranteed.' },
+        { num: '1.9', text: 'The season start and end dates are announced at the beginning of each season.' }
+      ]},
+      { num: 2, title: 'Eligibility', rules: [
+        { num: '2.1', text: 'The season is open exclusively to current students of SPKC.' },
+        { num: '2.2', text: 'Players must register separately for each season. Club membership on Chess.com alone does not grant entry to official season tournaments.' },
+        { num: '2.3', text: 'Each player may only register once per season with one Chess.com username.' },
+        { num: '2.4', text: 'A player may not use multiple accounts across different rounds of the same season.' },
+        { num: '2.5', text: 'Players must have a valid Chess.com account in good standing to participate.' },
+        { num: '2.6', text: 'Late registration (after the season has started) may be accepted or rejected at the organiser\'s discretion. Points are only awarded from the first round after the player\'s registration is confirmed.' },
+        { num: '2.7', text: 'The late application window is 4 days from the start of the season. Applications received after this window require explicit organiser approval.' }
+      ]},
+      { num: 3, title: 'Format', rules: [
+        { num: '3.1', text: 'Each round uses a Swiss-system format. Players are paired against opponents with a similar record within that round\'s tournament.' },
+        { num: '3.2', text: 'Season standings are determined by total season points accumulated across all completed (non-cancelled) rounds using the points table in Section 6.' },
+        { num: '3.3', text: 'Within a single Chess.com tournament, game results (Win/Draw/Loss) determine a player\'s finishing position, which maps to season points.' }
+      ]},
+      { num: 4, title: 'Time Controls', rules: [
+        { num: '4.1', text: 'Rounds follow a repeating cycle: Round 1 — Bullet, Round 2 — Blitz, Round 3 — Rapid, Round 4 — Bullet, Round 5 — Blitz, Round 6 — Rapid.' },
+        { num: '4.2', text: 'Specific time control settings (e.g. minutes + increment) for each format are set by the organiser and announced before the round.' },
+        { num: '4.3', text: 'Players are expected to be familiar with the time control for each round type. No allowance is made for running out of time due to unfamiliarity with the time control.' }
+      ]},
+      { num: 5, title: 'Accounts & Identity', rules: [
+        { num: '5.1', text: 'Players must participate using the Chess.com username registered for the season. Playing under a different account is not permitted.' },
+        { num: '5.2', text: 'Username changes must be notified to the organiser before the next round. Failure to notify may result in the round not being counted.' },
+        { num: '5.3', text: 'Players are responsible for their own account security. Results will not be reversed due to account compromise unless evidence is provided.' },
+        { num: '5.4', text: 'Account sharing is strictly prohibited. Any round played on another player\'s account will result in disqualification for both parties.' }
+      ]},
+      { num: 6, title: 'Season Points', rules: [
+        { num: '6.1', text: 'Season points are awarded based on finishing position: 1st: 25 pts | 2nd: 18 pts | 3rd: 15 pts | 4th: 12 pts | 5th: 10 pts | 6th: 8 pts | 7th: 6 pts | 8th: 4 pts | 9th: 2 pts | 10th: 1 pt' },
+        { num: '6.2', text: 'Positions outside the top 10 receive 0 season points from standings, but may still earn bonus points (e.g. Brilliant Move bonuses).' },
+        { num: '6.3', text: 'Points from all completed rounds are summed to produce each player\'s Total Season Score, which determines the final standings.' },
+        { num: '6.4', text: 'Brilliant Move bonuses (+4 per verified !!) are added to the Total Season Score on top of round standings points (see Section 7).' },
+        { num: '6.5', text: 'Cancelled rounds are not counted in standings calculations. When a round is cancelled due to lack of players, ATT attendance bonuses (+5 pts) are awarded separately to players who attended (see Section 9).' }
+      ]},
+      { num: 7, title: 'Brilliant Move Bonus ✨', rules: [
+        { num: '7.1', text: 'What counts. A Brilliant Move is a move annotated !! by Chess.com\'s analysis engine in a game played during an official season round.' },
+        { num: '7.2', text: 'Bonus points. Each verified brilliant move awards the player +4 season points, added on top of their regular round finishing score. There is no cap on the number of brilliants per season.' },
+        { num: '7.3', text: 'No game result restriction. A Brilliant Move bonus is awarded regardless of the game\'s outcome. A brilliant move in a loss counts just as much as one in a win — a brilliant is a brilliant.' },
+        { num: '7.4', text: 'Submission window. Players must submit their claim to the organiser within 24 hours of the round ending. The submission must include the Chess.com game link and move number.' },
+        { num: '7.5', text: 'Verification. The organiser reviews each submission. If the !! annotation is confirmed in the game analysis, the bonus is awarded. The organiser\'s decision is final.' },
+        { num: '7.6', text: 'Recording. All verified brilliant moves are displayed on the Brilliants page of this website.' }
+      ]},
+      { num: 8, title: 'Tournament Standings', rules: [
+        { num: '8.1', text: 'Standings after each round are updated in the official standings workbook and published on this website.' },
+        { num: '8.2', text: 'The standings reflect cumulative season points including all round scores and Brilliant Move bonuses.' },
+        { num: '8.3', text: 'Standings are final once the workbook is published after each round. Errors in standings must be reported to the organiser within 48 hours.' },
+        { num: '8.4', text: 'The workbook is the authoritative record. In the event of a discrepancy between the website display and the workbook, the workbook takes precedence.' },
+        { num: '8.5', text: 'Final season standings are locked after the last round of the season. No retroactive adjustments are made after standings are finalised, except for verified errors.' }
+      ]},
+      { num: 9, title: 'Cancelled Rounds & ATT Attendance Bonus', rules: [
+        { num: '9.1', text: 'A round may be cancelled for any reason at the organiser\'s discretion, including insufficient player attendance, technical issues, or scheduling conflicts.' },
+        { num: '9.2', text: 'Cancelled rounds do not count toward a player\'s round score or the season\'s official round count.' },
+        { num: '9.3', text: 'ATT status. When a round is cancelled specifically due to lack of players, players who were present and ready to play are marked ATT (Attended) in the standings workbook.' },
+        { num: '9.4', text: 'ATT bonus points. Players marked ATT receive an Attendance Bonus of +5 season points for that cancelled round. Players not marked ATT receive 0 points.' },
+        { num: '9.5', text: 'To qualify for ATT status, a player must have been online in the tournament lobby at the scheduled round start time. The organiser will verify attendance records. The organiser\'s decision is final.' },
+        { num: '9.6', text: 'ATT bonuses are recorded in the standings workbook separately from round scores and are included in the player\'s Total Season Score.' },
+        { num: '9.7', text: 'Exception: 2026 Season Round 2. The ATT rule described in 9.3–9.6 does not apply to Round 2 of the 2026 Season. That round is treated under previous rules and no ATT bonus is awarded for it regardless of attendance.' }
+      ]},
+      { num: 10, title: 'No-Shows, DNF, Planned Bye & Repeated Absence', rules: [
+        { num: '10.1', text: 'A player who does not join a round they are registered for is recorded as a No-Show (DNS — Did Not Start) and receives 0 season points for that round.' },
+        { num: '10.2', text: 'A player who joins but does not complete the round (e.g. disconnects without finishing) may be recorded as DNF (Did Not Finish) at the organiser\'s discretion.' },
+        { num: '10.3', text: 'Players may notify the organiser in advance of a planned absence (Planned Bye). This does not change the score outcome but is noted in the workbook.' },
+        { num: '10.4', text: 'A Planned Bye counts as a missed round for participation purposes but does not trigger the repeated absence warning process.' },
+        { num: '10.5', text: 'A player with 3 or more consecutive unexcused No-Shows may be warned by the organiser.' },
+        { num: '10.6', text: 'A player with 4 or more total unexcused No-Shows in a season may be removed from the season standings at the organiser\'s discretion.' },
+        { num: '10.7', text: 'Removed players\' past scores remain in the workbook but they are excluded from the final champion and prize calculations.' },
+        { num: '10.8', text: 'The organiser may make exceptions to these rules on a case-by-case basis with appropriate justification.' }
+      ]},
+      { num: 11, title: 'Season Champion', rules: [
+        { num: '11.1', text: 'The Season Champion is the registered player with the highest Total Season Score at the end of all 6 rounds, subject to the 80% participation floor (Rule 11.3).' },
+        { num: '11.2', text: 'Tiebreakers. (a) Most 1st-place finishes across all rounds. (b) Head-to-head record between the tied players. (c) A playoff round at the organiser\'s discretion.' },
+        { num: '11.3', text: 'Participation floor. A player must have participated in at least 80% of official rounds (i.e. at least 5 of 6 rounds) to be eligible for the Season Champion title.' }
+      ]},
+      { num: 12, title: 'Fair Play & Behaviour', rules: [
+        { num: '12.1', text: 'The use of chess engines, databases, or any computer-assisted analysis during live games is strictly prohibited.' },
+        { num: '12.2', text: 'All Chess.com community guidelines and fair play policies are in effect for all season games.' },
+        { num: '12.3', text: 'Players must not consult other people for move suggestions during a live game.' },
+        { num: '12.4', text: 'Players must not intentionally lose games or collude with opponents to manipulate standings.' },
+        { num: '12.5', text: 'Unsportsmanlike behaviour in the WhatsApp group, on Chess.com, or in relation to the season may result in warnings or disqualification.' },
+        { num: '12.6', text: 'Players found in violation of fair play rules may be disqualified from the season at the organiser\'s discretion.' },
+        { num: '12.7', text: 'Chess.com account bans or fair play violations detected by Chess.com will be treated as season disqualifications.' },
+        { num: '12.8', text: 'All players are expected to treat fellow players and the organiser with respect at all times.' }
+      ]},
+      { num: 13, title: 'Cheating Accusations', rules: [
+        { num: '13.1', text: 'Cheating accusations must be submitted to the organiser privately. Public accusations in group chats are not permitted.' },
+        { num: '13.2', text: 'Accusations must include specific evidence or reasoning. Accusations based solely on a player\'s rating or game outcome will not be investigated.' },
+        { num: '13.3', text: 'The organiser will review the evidence and may consult Chess.com\'s fair play team if necessary.' },
+        { num: '13.4', text: 'The outcome of a cheating investigation is final. False accusations submitted in bad faith may result in disciplinary action against the accuser.' }
+      ]},
+      { num: 14, title: 'Technical Issues', rules: [
+        { num: '14.1', text: 'Technical issues (internet disconnection, device failure, platform outage) are the player\'s responsibility unless the entire platform (Chess.com) is down.' },
+        { num: '14.2', text: 'No reschedules or result reversals will be granted due to personal technical issues.' },
+        { num: '14.3', text: 'If a player disconnects during a game, the standard Chess.com timeout rules apply.' },
+        { num: '14.4', text: 'If Chess.com experiences a platform-wide outage that affects a round, the organiser will decide whether to reschedule or cancel the round.' },
+        { num: '14.5', text: 'Tournament creation errors (wrong time control, wrong settings) reported before the round starts may be corrected at the organiser\'s discretion.' },
+        { num: '14.6', text: 'Tournament errors discovered mid-round will be handled on a case-by-case basis. The organiser\'s decision is final.' },
+        { num: '14.7', text: 'Players experiencing technical issues should notify the organiser as soon as possible.' },
+        { num: '14.8', text: 'For Chess.com-specific technical issues, players should contact Chess.com support directly.' }
+      ]},
+      { num: 15, title: 'Cheating Investigations', rules: [
+        { num: '15.1', text: 'The organiser may initiate a cheating investigation based on gameplay evidence, Chess.com notifications, or player reports.' },
+        { num: '15.2', text: 'During an active investigation, the player\'s results for the relevant round(s) may be placed on hold pending the outcome.' },
+        { num: '15.3', text: 'If a player is found guilty of cheating, their results for the affected round(s) will be forfeited and they may be disqualified from the season.' },
+        { num: '15.4', text: 'Investigation outcomes are final and communicated to the player privately. Details are not shared publicly.' }
+      ]},
+      { num: 16, title: 'Spectators & Outside Advice', rules: [
+        { num: '16.1', text: 'Players must not receive move advice or engine assistance from spectators or other players during a live game.' }
+      ]},
+      { num: 17, title: 'Appeals', rules: [
+        { num: '17.1', text: 'A player may appeal a ruling by contacting the organiser directly within 48 hours of the decision being communicated.' },
+        { num: '17.2', text: 'Appeals must include clear reasoning and supporting evidence. Appeals without evidence will not be considered.' },
+        { num: '17.3', text: 'The organiser\'s decision on appeal is final. There is no further appeals process.' }
+      ]},
+      { num: 18, title: 'Organiser Discretion & Uncovered Situations', rules: [
+        { num: '18.1', text: 'For any situation not explicitly covered by these rules, the organiser\'s decision is final and binding.' },
+        { num: '18.2', text: 'The organiser reserves the right to amend these rules at any time. Amendments will be announced in the official WhatsApp group and reflected in an updated version of this document.' }
+      ]},
+      { num: 19, title: 'Data & Privacy', rules: [
+        { num: '19.1', text: 'Player names, class names, and Chess.com usernames are collected for season administration purposes only.' },
+        { num: '19.2', text: 'Season standings, round results, and brilliant move records are published publicly on this website. By registering for the season, players consent to their name and Chess.com username being displayed in public standings.' }
+      ]}
+    ];
+
+  </script>
+</body>
+</html>
