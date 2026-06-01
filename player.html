@@ -542,50 +542,49 @@
     async function loadSparkline(username) {
       const wrap = document.getElementById('sparklineWrap');
       try {
-        const types = ['chess_bullet','chess_blitz','chess_rapid'];
-        const results = await Promise.all(types.map(t =>
-          fetch(`https://api.chess.com/pub/player/${encodeURIComponent(username)}/games/${new Date().getFullYear()}/${String(new Date().getMonth()+1).padStart(2,'0')}`)
-            .then(r => r.ok ? r.json() : null).catch(() => null)
-        ));
-        // Chess.com doesn't have separate per-type history; use stats best/last as two points
-        // Instead parse recent games for rating progression
+        // Fetch last 3 months of games for a rich sparkline
+        const monthUrls = [];
+        const now = new Date();
+        for (let i = 0; i < 3; i++) {
+          const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+          monthUrls.push(`https://api.chess.com/pub/player/${encodeURIComponent(username)}/games/${d.getFullYear()}/${String(d.getMonth()+1).padStart(2,'0')}`);
+        }
+        const monthResults = await Promise.all(
+          monthUrls.map(url => fetch(url).then(r => r.ok ? r.json() : null).catch(() => null))
+        );
+        // Merge all games from all months
+        const allGames = monthResults.flatMap(res => (res && Array.isArray(res.games)) ? res.games : []);
+        _sparklineData = {};
+        ['chess_bullet','chess_blitz','chess_rapid'].forEach((t, ti) => {
+          const shortType = ['bullet','blitz','rapid'][ti];
+          const pts = allGames
+            .filter(g => g.time_class === shortType)
+            .map(g => {
+              const isWhite = (g.white?.username||'').toLowerCase() === username.toLowerCase();
+              const me = isWhite ? g.white : g.black;
+              return { rating: me?.rating, date: g.end_time };
+            })
+            .filter(g => g.rating)
+            .sort((a, b) => a.date - b.date);
+          _sparklineData[t] = pts;
+        });
+        // Fallback to stats best/last if no games found for a type
         const statsRes = await fetch(`https://api.chess.com/pub/player/${encodeURIComponent(username)}/stats`);
         const stats = statsRes.ok ? await statsRes.json() : {};
-        _sparklineData = {};
         ['chess_bullet','chess_blitz','chess_rapid'].forEach(t => {
+          if (_sparklineData[t] && _sparklineData[t].length >= 2) return;
           const s = stats[t];
           if (!s) return;
           const pts = [];
-          if (s.record) {
-            // Build from best + last + current as minimal points
-          }
-          // Use best/last/current to draw minimal 2-point line
           if (s.best && s.last) {
             pts.push({ rating: s.best.rating, date: s.best.date });
             pts.push({ rating: s.last.rating, date: s.last.date });
-            pts.sort((a,b) => a.date - b.date);
+            pts.sort((a, b) => a.date - b.date);
           } else if (s.last) {
             pts.push({ rating: s.last.rating, date: s.last.date });
           }
           _sparklineData[t] = pts;
         });
-        // Try to get richer data from recent games
-        const thisMonth = results[0];
-        if (thisMonth && Array.isArray(thisMonth.games)) {
-          ['chess_bullet','chess_blitz','chess_rapid'].forEach((t, ti) => {
-            const shortType = ['bullet','blitz','rapid'][ti];
-            const filtered = thisMonth.games
-              .filter(g => g.time_class === shortType)
-              .map(g => {
-                const isWhite = (g.white?.username||'').toLowerCase() === username.toLowerCase();
-                const me = isWhite ? g.white : g.black;
-                return { rating: me?.rating, date: g.end_time };
-              })
-              .filter(g => g.rating)
-              .sort((a,b) => a.date - b.date);
-            if (filtered.length >= 2) _sparklineData[t] = filtered;
-          });
-        }
         drawSparkline(_activeSparkType);
         document.querySelectorAll('.rating-type-tab').forEach(btn => {
           btn.addEventListener('click', function() {
