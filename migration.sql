@@ -168,38 +168,63 @@ END $$;
 -- ── registrations ────────────────────────────────────────────────────────────
 -- register.html inserts rows (status='pending').
 -- admin.html reads, updates status, bulk-accepts/rejects, exports CSV.
--- IMPORTANT: contact_text column required — register.html and admin.html both use it.
+--
+-- Privacy design:
+--   - contact_text (WhatsApp etc.) is stored in registration_contacts (auth-only)
+--   - registrations itself stores only non-sensitive fields
+--   - anon users can read ONLY their own row via lookup_token (given at signup)
+--   - removing anon full-table SELECT prevents scraping all player data
 CREATE TABLE IF NOT EXISTS registrations (
   id             uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   season_key     text NOT NULL,
   full_name      text NOT NULL,
   class_name     text,
   chess_username text NOT NULL,
-  contact_text   text,   -- ← WhatsApp / contact info from signup form
+  lookup_token   text NOT NULL DEFAULT encode(gen_random_bytes(16), 'hex'),  -- shown to user at signup for status checks
   status         text NOT NULL DEFAULT 'pending', -- 'pending' | 'accepted' | 'rejected'
   notes          text,
   created_at     timestamptz DEFAULT now()
 );
+-- Add lookup_token to existing deployments
+DO $$ BEGIN
+  IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='registrations' AND column_name='lookup_token') THEN
+    ALTER TABLE registrations ADD COLUMN lookup_token text NOT NULL DEFAULT encode(gen_random_bytes(16), 'hex');
+  END IF;
+END $$;
 ALTER TABLE registrations ENABLE ROW LEVEL SECURITY;
 DO $$ BEGIN
   -- Anyone can submit the signup form
   IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE tablename='registrations' AND policyname='anon_insert_registrations') THEN
     CREATE POLICY "anon_insert_registrations" ON registrations FOR INSERT TO anon WITH CHECK (true);
   END IF;
-  -- Anyone can check their own registration status by chess_username
-  IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE tablename='registrations' AND policyname='anon_read_registrations') THEN
-    CREATE POLICY "anon_read_registrations" ON registrations FOR SELECT TO anon USING (true);
+  -- Remove old unrestricted anon read policy if it exists
+  IF EXISTS (SELECT 1 FROM pg_policies WHERE tablename='registrations' AND policyname='anon_read_registrations') THEN
+    DROP POLICY "anon_read_registrations" ON registrations;
   END IF;
+  -- Remove old header-based policy if it exists (replaced by RPC below)
+  IF EXISTS (SELECT 1 FROM pg_policies WHERE tablename='registrations' AND policyname='anon_read_own_registration') THEN
+    DROP POLICY "anon_read_own_registration" ON registrations;
+  END IF;
+  -- No anon SELECT on registrations at all — status checks go through get_registration_status() RPC
   -- Admin can read all, update status, delete
   IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE tablename='registrations' AND policyname='auth_all_registrations') THEN
     CREATE POLICY "auth_all_registrations" ON registrations FOR ALL TO authenticated USING (true) WITH CHECK (true);
   END IF;
 END $$;
 
--- Add contact_text if table already existed without it
+-- ── registration_contacts ─────────────────────────────────────────────────────
+-- Stores sensitive contact info (WhatsApp etc.) separately from registrations.
+-- Only authenticated (admin) users can read this.
+CREATE TABLE IF NOT EXISTS registration_contacts (
+  registration_id uuid PRIMARY KEY REFERENCES registrations(id) ON DELETE CASCADE,
+  contact_text    text,
+  created_at      timestamptz DEFAULT now()
+);
+ALTER TABLE registration_contacts ENABLE ROW LEVEL SECURITY;
 DO $$ BEGIN
-  IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='registrations' AND column_name='contact_text') THEN
-    ALTER TABLE registrations ADD COLUMN contact_text text;
+  -- Only admin (authenticated) can read or write contact info
+  IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE tablename='registration_contacts' AND policyname='auth_all_contacts') THEN
+    CREATE POLICY "auth_all_contacts" ON registration_contacts FOR ALL TO authenticated USING (true) WITH CHECK (true);
   END IF;
 END $$;
 
@@ -315,8 +340,16 @@ DO $$ BEGIN
     CREATE POLICY "anon_read_chat" ON live_chat FOR SELECT USING (true);
   END IF;
   IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE tablename='live_chat' AND policyname='anon_insert_chat') THEN
-    CREATE POLICY "anon_insert_chat" ON live_chat FOR INSERT TO anon WITH CHECK (true);
+    CREATE POLICY "anon_insert_chat" ON live_chat FOR INSERT TO anon
+      WITH CHECK (
+        char_length(trim(username)) BETWEEN 1 AND 50
+        AND char_length(trim(message)) BETWEEN 1 AND 300
+      );
   END IF;
+  -- Replace old unbounded policy if it exists (idempotent upgrade)
+  -- Run this once manually if the old policy was already created:
+  -- DROP POLICY "anon_insert_chat" ON live_chat;
+  -- Then re-run this migration to recreate it with bounds.
 END $$;
 
 -- ── hall_of_fame ──────────────────────────────────────────────────────────────
@@ -344,3 +377,28 @@ DO $$ BEGIN
     CREATE POLICY "auth_write_hof" ON hall_of_fame FOR ALL USING (auth.role() = 'authenticated');
   END IF;
 END $$;
+
+-- ── get_registration_status (RPC) ────────────────────────────────────────────
+-- Safe token-based status lookup for register.html.
+-- Callable by anon via supabaseClient.rpc('get_registration_status', { token }).
+-- Returns only non-sensitive fields: season_key, full_name, status, created_at.
+-- Never exposes contact_text, notes, or other private columns.
+CREATE OR REPLACE FUNCTION get_registration_status(token text)
+RETURNS TABLE (
+  season_key  text,
+  full_name   text,
+  status      text,
+  created_at  timestamptz
+)
+LANGUAGE sql
+SECURITY DEFINER  -- runs as DB owner, bypasses RLS for this query only
+STABLE
+AS $$
+  SELECT season_key, full_name, status, created_at
+  FROM registrations
+  WHERE lookup_token = token
+  ORDER BY created_at DESC;
+$$;
+
+-- Allow anon to call this function
+GRANT EXECUTE ON FUNCTION get_registration_status(text) TO anon;

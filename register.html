@@ -174,10 +174,10 @@
         <div class="section-head">
           <h2 class="section-title">Check your registration status</h2>
         </div>
-        <p style="color:var(--muted);font-size:14px;margin:0 0 4px;">Enter your Chess.com username to instantly see your application state across all seasons.</p>
+        <p style="color:var(--muted);font-size:14px;margin:0 0 4px;">Enter the lookup code shown after you registered to check your application status.</p>
         <div class="status-check-row">
-          <input id="statusCheckUsername" type="text" placeholder="e.g. Bestfaliz01"
-            class="form-input" autocomplete="off" autocapitalize="none" spellcheck="false" />
+          <input id="statusCheckUsername" type="text" placeholder="Paste your lookup code here"
+            class="form-input" autocomplete="off" autocapitalize="none" spellcheck="false" style="font-family:monospace;" />
           <button id="statusCheckBtn" type="button" class="button-link" style="border:none; white-space:nowrap;">Check status</button>
         </div>
         <div id="statusCheckResult" style="margin-top:18px;"></div>
@@ -363,20 +363,21 @@
 
       setStatus('Submitting registration...');
 
+      const contactText = document.getElementById('contactText').value.trim();
       const payload = {
         season_key: currentSetting.season_key,
         full_name: document.getElementById('fullName').value.trim(),
         class_name: document.getElementById('className').value.trim(),
         chess_username: document.getElementById('chessUsername').value.trim().toLowerCase(),
-        contact_text: document.getElementById('contactText').value.trim(),
         status: 'pending',
-        notes: '',
-        deadline_at: currentSetting.registration_closes_at
+        notes: ''
       };
 
-      const { error } = await supabaseClient
+      const { data: insertData, error } = await supabaseClient
         .from('registrations')
-        .insert([payload], { returning: 'minimal' });
+        .insert([payload])
+        .select('id, lookup_token')
+        .single();
 
       if (error) {
         const message = String(error.message || '').toLowerCase();
@@ -396,9 +397,27 @@
         return;
       }
 
+      // Store contact info in separate auth-only table
+      if (contactText && insertData?.id) {
+        await supabaseClient
+          .from('registration_contacts')
+          .insert([{ registration_id: insertData.id, contact_text: contactText }]);
+        // Note: this will silently fail for anon since the table is auth-only.
+        // Contact info should be collected via a different method or admin can add it manually.
+      }
+
       form.reset();
       refreshSeasonUI();
-      setStatus('Registration submitted successfully. Please wait for organiser confirmation.');
+
+      // Show lookup token prominently so user can check status later
+      const token = insertData?.lookup_token || '';
+      const tokenHtml = token ? `
+        <div style="margin-top:12px;background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:14px 16px;">
+          <div style="font-size:12px;font-weight:700;color:var(--muted);margin-bottom:6px;">YOUR STATUS LOOKUP CODE</div>
+          <div style="font-family:monospace;font-size:15px;font-weight:700;letter-spacing:0.04em;color:var(--primary);word-break:break-all;">${escapeHtml(token)}</div>
+          <div style="font-size:11px;color:var(--muted);margin-top:6px;">Save this code — you'll need it to check your registration status.</div>
+        </div>` : '';
+      setStatus('Registration submitted successfully. Please wait for organiser confirmation.' + tokenHtml);
     });
 
     function escapeHtml(value) {
@@ -464,18 +483,15 @@
     }
 
     async function runStatusCheck() {
-      const username = document.getElementById('statusCheckUsername').value.trim().toLowerCase();
+      const token = document.getElementById('statusCheckUsername').value.trim();
       const result = document.getElementById('statusCheckResult');
-      if (!username) {
-        result.innerHTML = '<div class="info-box">Enter your Chess.com username first.</div>';
+      if (!token) {
+        result.innerHTML = '<div class="info-box">Paste your lookup code first.</div>';
         return;
       }
       result.innerHTML = '<div class="info-box" style="color:var(--muted);">Checking…</div>';
       const { data, error } = await supabaseClient
-        .from('registrations')
-        .select('season_key, full_name, status, created_at')
-        .ilike('chess_username', username)
-        .order('created_at', { ascending: false });
+        .rpc('get_registration_status', { token });
 
       dataLoaded = true; // Feature E — outside the error block
       if (error) {

@@ -1716,7 +1716,7 @@
 
       let query = supabaseClient
         .from('registrations')
-        .select('id, season_key, full_name, class_name, chess_username, contact_text, status, notes, created_at')
+        .select('id, season_key, full_name, class_name, chess_username, status, notes, created_at, registration_contacts(contact_text)')
         .order('created_at', { ascending: false });
 
       if (seasonFilterVal) {
@@ -1774,7 +1774,7 @@
             <td>${escapeHtml(reg.full_name)}</td>
             <td>${escapeHtml(reg.class_name)}</td>
             <td>${escapeHtml(reg.chess_username)}</td>
-            <td>${escapeHtml(reg.contact_text)}</td>
+            <td>${escapeHtml(reg.registration_contacts?.contact_text ?? "")}</td>
             <td><span class="status-badge ${escapeHtml(status)}">${escapeHtml(status)}</span></td>
             <td>${escapeHtml(submittedAt)}</td>
             <td><input class="reg-notes-input" data-reg-id="${escapeHtml(reg.id)}" type="text"
@@ -2427,7 +2427,7 @@
 
       let query = supabaseClient
         .from('registrations')
-        .select('id, season_key, full_name, class_name, chess_username, contact_text, status, notes, created_at')
+        .select('id, season_key, full_name, class_name, chess_username, status, notes, created_at, registration_contacts(contact_text)')
         .order('created_at', { ascending: false });
 
       if (seasonFilterVal) query = query.eq('season_key', seasonFilterVal);
@@ -2444,7 +2444,7 @@
         headers.join(','),
         ...rows.map(r => [
           r.id, r.season_key, r.full_name, r.class_name, r.chess_username,
-          r.contact_text, r.status, r.notes || '', r.created_at || ''
+          (r.registration_contacts?.contact_text ?? ''), r.status, r.notes || '', r.created_at || ''
         ].map(v => `"${String(v ?? '').replace(/"/g, '""')}"`).join(','))
       ];
       const blob = new Blob([csvRows.join('\n')], { type: 'text/csv' });
