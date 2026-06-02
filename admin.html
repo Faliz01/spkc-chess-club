@@ -1048,6 +1048,12 @@
 
     // ── Feature F: Activity log helper ─────────────────────────────────
 
+    function getContactText(reg) {
+      var rel = reg && reg.registration_contacts;
+      if (Array.isArray(rel)) return (rel[0] && rel[0].contact_text) || '';
+      return (rel && rel.contact_text) || '';
+    }
+
     function logAction(action, detail) {
       // Fire-and-forget — never blocks UI
       try {
@@ -1649,7 +1655,13 @@
       }
 
       const text = await data.text();
-      seasonDatesConfig = JSON.parse(text || '{}');
+      try {
+        seasonDatesConfig = JSON.parse(text || '{}');
+      } catch (parseErr) {
+        seasonDatesConfig = {};
+        setDatesStatus('Season dates file contains invalid JSON — could not load round dates.', 'error');
+        return;
+      }
 
       populateDateSeasonSelectFromSettings();
       fillDateForm();
@@ -1774,7 +1786,7 @@
             <td>${escapeHtml(reg.full_name)}</td>
             <td>${escapeHtml(reg.class_name)}</td>
             <td>${escapeHtml(reg.chess_username)}</td>
-            <td>${escapeHtml(reg.registration_contacts?.contact_text ?? "")}</td>
+            <td>${escapeHtml(getContactText(reg))}</td>
             <td><span class="status-badge ${escapeHtml(status)}">${escapeHtml(status)}</span></td>
             <td>${escapeHtml(submittedAt)}</td>
             <td><input class="reg-notes-input" data-reg-id="${escapeHtml(reg.id)}" type="text"
@@ -2142,6 +2154,7 @@
           const { error } = await supabaseClient.from('announcements').delete().eq('id', btn.dataset.annId);
           if (error) { setAnnStatus('Delete failed: ' + error.message, 'error'); return; }
           setAnnStatus('Announcement deleted.', 'success');
+          logAction('announcement_deleted', btn.dataset.annId);
           await loadAnnouncements();
         });
       });
@@ -2152,6 +2165,8 @@
       if (!session) { setAnnStatus('Log in first.', 'error'); return; }
       const title = annTitle.value.trim();
       if (!title) { setAnnStatus('Title is required.', 'error'); return; }
+      if (title.length > 120) { setAnnStatus('Title must be 120 characters or fewer.', 'error'); return; }
+      if (annBody.value.trim().length > 5000) { setAnnStatus('Body must be 5000 characters or fewer.', 'error'); return; }
       setAnnStatus('Posting...');
       const { error } = await supabaseClient.from('announcements').insert([{
         title,
@@ -2444,7 +2459,7 @@
         headers.join(','),
         ...rows.map(r => [
           r.id, r.season_key, r.full_name, r.class_name, r.chess_username,
-          (r.registration_contacts?.contact_text ?? ''), r.status, r.notes || '', r.created_at || ''
+          getContactText(r), r.status, r.notes || '', r.created_at || ''
         ].map(v => `"${String(v ?? '').replace(/"/g, '""')}"`).join(','))
       ];
       const blob = new Blob([csvRows.join('\n')], { type: 'text/csv' });
@@ -2467,6 +2482,7 @@
       const { error } = await supabaseClient.from('registrations').update({ status: 'accepted' }).in('id', ids);
       if (error) { setRegsStatus('Bulk accept failed: ' + error.message, 'error'); return; }
       setRegsStatus(`${ids.length} registration(s) accepted.`, 'success');
+      logAction('regs_bulk_accepted', ids.length + ' registrations: ' + ids.join(','));
       await loadRegistrations();
     });
 
@@ -2476,6 +2492,7 @@
       const { error } = await supabaseClient.from('registrations').update({ status: 'rejected' }).in('id', ids);
       if (error) { setRegsStatus('Bulk reject failed: ' + error.message, 'error'); return; }
       setRegsStatus(`${ids.length} registration(s) rejected.`, 'success');
+      logAction('regs_bulk_rejected', ids.length + ' registrations: ' + ids.join(','));
       await loadRegistrations();
     });
 
@@ -2936,7 +2953,8 @@
           var submitBtn = document.getElementById('postBrilliantBtn');
           if (submitBtn) submitBtn.textContent = '\u270f\ufe0f Update brilliant';
           // Scroll to form
-          var formSection = document.querySelector('.card:has(#postBrilliantBtn)');
+          var submitBtnRef = document.getElementById('postBrilliantBtn');
+          var formSection = submitBtnRef ? submitBtnRef.closest('.card') : null;
           if (formSection) formSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
           else if (submitBtn) submitBtn.scrollIntoView({ behavior: 'smooth', block: 'center' });
           setBrilliantStatus('Editing record. Make changes above and click "✏️ Update brilliant".', '');
@@ -2974,10 +2992,13 @@
       var caption = ((document.getElementById('brillCaption') || {}).value || '').trim() || null;
       if (!season_key) { setBrilliantStatus('Choose a season first.', 'error'); return; }
       if (!player_name) { setBrilliantStatus('Player name is required.', 'error'); return; }
+      if (player_name.length > 100) { setBrilliantStatus('Player name must be 100 characters or fewer.', 'error'); return; }
       if (!chess_username) { setBrilliantStatus('Chess.com username is required.', 'error'); return; }
+      if (chess_username.length > 50) { setBrilliantStatus('Chess.com username must be 50 characters or fewer.', 'error'); return; }
+      if (match_desc && match_desc.length > 200) { setBrilliantStatus('Match description must be 200 characters or fewer.', 'error'); return; }
 
       // Upload screenshot file if provided
-      var screenshot_url = null;
+      var screenshot_url = null; // stores storage path, not a signed URL
       var screenshotFile = (document.getElementById('brillScreenshotFile') || {}).files;
       if (screenshotFile && screenshotFile[0]) {
         setBrilliantStatus('Uploading screenshot...');
@@ -2987,10 +3008,8 @@
         var uploadPath = 'screenshots/' + safeName;
         var { error: uploadErr } = await supabaseClient.storage.from(BUCKET).upload(uploadPath, imgFile, { upsert: true, contentType: imgFile.type });
         if (uploadErr) { setBrilliantStatus('Screenshot upload failed: ' + uploadErr.message, 'error'); return; }
-        // Get a long-lived signed URL (10 years)
-        var { data: signedData, error: signedErr } = await supabaseClient.storage.from(BUCKET).createSignedUrl(uploadPath, 315360000);
-        if (signedErr || !signedData) { setBrilliantStatus('Could not get screenshot URL: ' + (signedErr ? signedErr.message : 'unknown'), 'error'); return; }
-        screenshot_url = signedData.signedUrl;
+        // Store the path only — generate short-lived URLs when displaying
+        screenshot_url = uploadPath;
       }
 
       setBrilliantStatus(editingBrilliantId ? 'Updating brilliant move...' : 'Submitting brilliant move...');
@@ -3003,7 +3022,7 @@
         var updResult = await supabaseClient.from('brilliant_moves').update(payload).eq('id', editingBrilliantId);
         if (updResult.error) { setBrilliantStatus('Update failed: ' + updResult.error.message, 'error'); return; }
         setBrilliantStatus('Brilliant move updated successfully! ✨', 'success');
-        logAction('brilliant_added', player_name + ' R' + round_number + ' (edit)');
+        logAction('brilliant_updated', player_name + ' R' + round_number);
         resetBrilliantForm();
       } else {
         // INSERT mode
@@ -3024,10 +3043,13 @@
       await loadBrilliantsList();
     });
 
-        refreshSessionStatus();
-    loadSeasonSettings();
-    loadSeasonDatesConfig();
-    loadAnnouncements();
+        (async function init() {
+      var session = await refreshSessionStatus();
+      if (!session) return;
+      await loadSeasonSettings();
+      await loadSeasonDatesConfig();
+      await loadAnnouncements();
+    })();
 
     // Feature F: wire up Activity Log refresh button
     var refreshLogBtn = document.getElementById('refreshLogBtn');
