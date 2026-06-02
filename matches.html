@@ -232,6 +232,7 @@
     const supabaseClient = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
     let totalGamesLoaded = 0;
+    const roundGameCounts = {}; // track per-round so re-clicking doesn't double-count
     let roundsWithData = 0;
     let currentSeasonRoundLinks = [];
     let activeSeasonRoundIndex = 0;
@@ -320,7 +321,7 @@
       const tabsWrap = document.getElementById('roundTabsWrap');
       content.innerHTML = buildShimmer(3);
       tabsWrap.innerHTML = '';
-      totalGamesLoaded = 0; roundsWithData = 0; updateHeroStats();
+      totalGamesLoaded = 0; roundsWithData = 0; Object.keys(roundGameCounts).forEach(k => delete roundGameCounts[k]); updateHeroStats();
       try {
         const { data, error } = await supabaseClient.from('round_tournament_links').select('*').eq('season_key', seasonKey).order('round_number', { ascending: true });
         if (error) { content.innerHTML = `<div class="info-box">Error loading tournament links: ${escapeHtml(error.message)}</div>`; return; }
@@ -397,7 +398,10 @@
 
         let newGames = 0, newRounds = 0;
         results.forEach(r => { if ((r.games||[]).length) { newGames += r.games.length; newRounds++; } });
-        totalGamesLoaded += newGames; roundsWithData = newRounds; updateHeroStats();
+        // Store per-round count and recompute total to avoid double-counting on re-click
+        roundGameCounts[roundLink.round_number] = newGames;
+        totalGamesLoaded = Object.values(roundGameCounts).reduce((a, b) => a + b, 0);
+        roundsWithData = newRounds; updateHeroStats();
 
         const tabsWrap2 = document.getElementById('matchTabsWrap');
         if (tabsWrap2) {
