@@ -3302,6 +3302,139 @@
       });
     }
 
+    var RULES_FALLBACK_FOR_SEED = [
+      { num: 1, title: 'Platform & Schedule', rules: [
+        { num: '1.1', text: 'All official season rounds are played as separate Chess.com club tournaments within the SPKC International Chess Club.' },
+        { num: '1.2', text: 'Rounds are held on Sundays at 20:00 HKT (UTC+8) unless otherwise announced.' },
+        { num: '1.3', text: 'Players must be in the tournament lobby and ready at least 5 minutes before the scheduled start time.' },
+        { num: '1.4', text: 'A season consists of 6 official rounds.' },
+        { num: '1.5', text: 'Each round uses a different time control following a repeating cycle: Bullet → Blitz → Rapid → Bullet → Blitz → Rapid.' },
+        { num: '1.6', text: 'Round announcements are made in the official SPKC Chess Club WhatsApp group.' },
+        { num: '1.7', text: 'The organiser may adjust the schedule for public holidays or unforeseen circumstances with prior notice.' },
+        { num: '1.8', text: 'Players are responsible for checking the round schedule and joining on time. No grace period is guaranteed.' },
+        { num: '1.9', text: 'The season start and end dates are announced at the beginning of each season.' }
+      ]},
+      { num: 2, title: 'Eligibility', rules: [
+        { num: '2.1', text: 'The season is open exclusively to current students of SPKC.' },
+        { num: '2.2', text: 'Players must register separately for each season. Club membership on Chess.com alone does not grant entry to official season tournaments.' },
+        { num: '2.3', text: 'Each player may only register once per season with one Chess.com username.' },
+        { num: '2.4', text: 'A player may not use multiple accounts across different rounds of the same season.' },
+        { num: '2.5', text: 'Players must have a valid Chess.com account in good standing to participate.' },
+        { num: '2.6', text: 'Late registration (after the season has started) may be accepted or rejected at the organiser\'s discretion. Points are only awarded from the first round after the player\'s registration is confirmed.' },
+        { num: '2.7', text: 'The late application window is 4 days from the start of the season. Applications received after this window require explicit organiser approval.' }
+      ]},
+      { num: 3, title: 'Format', rules: [
+        { num: '3.1', text: 'Each round uses a Swiss-system format. Players are paired against opponents with a similar record within that round\'s tournament.' },
+        { num: '3.2', text: 'Season standings are determined by total season points accumulated across all completed (non-cancelled) rounds using the points table in Section 6.' },
+        { num: '3.3', text: 'Within a single Chess.com tournament, game results (Win/Draw/Loss) determine a player\'s finishing position, which maps to season points.' }
+      ]},
+      { num: 4, title: 'Time Controls', rules: [
+        { num: '4.1', text: 'Rounds follow a repeating cycle: Round 1 — Bullet, Round 2 — Blitz, Round 3 — Rapid, Round 4 — Bullet, Round 5 — Blitz, Round 6 — Rapid.' },
+        { num: '4.2', text: 'Specific time control settings (e.g. minutes + increment) for each format are set by the organiser and announced before the round.' },
+        { num: '4.3', text: 'Players are expected to be familiar with the time control for each round type. No allowance is made for running out of time due to unfamiliarity with the time control.' }
+      ]},
+      { num: 5, title: 'Accounts & Identity', rules: [
+        { num: '5.1', text: 'Players must participate using the Chess.com username registered for the season. Playing under a different account is not permitted.' },
+        { num: '5.2', text: 'Username changes must be notified to the organiser before the next round. Failure to notify may result in the round not being counted.' },
+        { num: '5.3', text: 'Players are responsible for their own account security. Results will not be reversed due to account compromise unless evidence is provided.' },
+        { num: '5.4', text: 'Account sharing is strictly prohibited. Any round played on another player\'s account will result in disqualification for both parties.' }
+      ]},
+      { num: 6, title: 'Season Points', rules: [
+        { num: '6.1', text: 'Season points are awarded based on finishing position: 1st: 25 pts | 2nd: 18 pts | 3rd: 15 pts | 4th: 12 pts | 5th: 10 pts | 6th: 8 pts | 7th: 6 pts | 8th: 4 pts | 9th: 2 pts | 10th: 1 pt' },
+        { num: '6.2', text: 'Positions outside the top 10 receive 0 season points from standings, but may still earn bonus points (e.g. Brilliant Move bonuses).' },
+        { num: '6.3', text: 'Points from all completed rounds are summed to produce each player\'s Total Season Score, which determines the final standings.' },
+        { num: '6.4', text: 'Brilliant Move bonuses (+4 per verified !!) are added to the Total Season Score on top of round standings points (see Section 7).' },
+        { num: '6.5', text: 'Cancelled rounds are not counted in standings calculations. When a round is cancelled due to lack of players, ATT attendance bonuses (+5 pts) are awarded separately to players who attended (see Section 9).' }
+      ]},
+      { num: 7, title: 'Brilliant Move Bonus ✨', rules: [
+        { num: '7.1', text: 'What counts. A Brilliant Move is a move annotated !! by Chess.com\'s analysis engine in a game played during an official season round.' },
+        { num: '7.2', text: 'Bonus points. Each verified brilliant move awards the player +4 season points, added on top of their regular round finishing score. There is no cap on the number of brilliants per season.' },
+        { num: '7.3', text: 'No game result restriction. A Brilliant Move bonus is awarded regardless of the game\'s outcome. A brilliant move in a loss counts just as much as one in a win — a brilliant is a brilliant.' },
+        { num: '7.4', text: 'Submission window. Players must submit their claim to the organiser within 24 hours of the round ending. The submission must include the Chess.com game link and move number.' },
+        { num: '7.5', text: 'Verification. The organiser reviews each submission. If the !! annotation is confirmed in the game analysis, the bonus is awarded. The organiser\'s decision is final.' },
+        { num: '7.6', text: 'Recording. All verified brilliant moves are displayed on the Brilliants page of this website.' }
+      ]},
+      { num: 8, title: 'Tournament Standings', rules: [
+        { num: '8.1', text: 'Standings after each round are updated in the official standings workbook and published on this website.' },
+        { num: '8.2', text: 'The standings reflect cumulative season points including all round scores and Brilliant Move bonuses.' },
+        { num: '8.3', text: 'Standings are final once the workbook is published after each round. Errors in standings must be reported to the organiser within 48 hours.' },
+        { num: '8.4', text: 'The workbook is the authoritative record. In the event of a discrepancy between the website display and the workbook, the workbook takes precedence.' },
+        { num: '8.5', text: 'Final season standings are locked after the last round of the season. No retroactive adjustments are made after standings are finalised, except for verified errors.' }
+      ]},
+      { num: 9, title: 'Cancelled Rounds & ATT Attendance Bonus', rules: [
+        { num: '9.1', text: 'A round may be cancelled for any reason at the organiser\'s discretion, including insufficient player attendance, technical issues, or scheduling conflicts.' },
+        { num: '9.2', text: 'Cancelled rounds do not count toward a player\'s round score or the season\'s official round count.' },
+        { num: '9.3', text: 'ATT status. When a round is cancelled specifically due to lack of players, players who were present and ready to play are marked ATT (Attended) in the standings workbook.' },
+        { num: '9.4', text: 'ATT bonus points. Players marked ATT receive an Attendance Bonus of +5 season points for that cancelled round. Players not marked ATT receive 0 points.' },
+        { num: '9.5', text: 'To qualify for ATT status, a player must have been online in the tournament lobby at the scheduled round start time. The organiser will verify attendance records. The organiser\'s decision is final.' },
+        { num: '9.6', text: 'ATT bonuses are recorded in the standings workbook separately from round scores and are included in the player\'s Total Season Score.' },
+        { num: '9.7', text: 'Exception: 2026 Season Round 2. The ATT rule described in 9.3–9.6 does not apply to Round 2 of the 2026 Season. That round is treated under previous rules and no ATT bonus is awarded for it regardless of attendance.' }
+      ]},
+      { num: 10, title: 'No-Shows, DNF, Planned Bye & Repeated Absence', rules: [
+        { num: '10.1', text: 'A player who does not join a round they are registered for is recorded as a No-Show (DNS — Did Not Start) and receives 0 season points for that round.' },
+        { num: '10.2', text: 'A player who joins but does not complete the round (e.g. disconnects without finishing) may be recorded as DNF (Did Not Finish) at the organiser\'s discretion.' },
+        { num: '10.3', text: 'Players may notify the organiser in advance of a planned absence (Planned Bye). This does not change the score outcome but is noted in the workbook.' },
+        { num: '10.4', text: 'A Planned Bye counts as a missed round for participation purposes but does not trigger the repeated absence warning process.' },
+        { num: '10.5', text: 'A player with 3 or more consecutive unexcused No-Shows may be warned by the organiser.' },
+        { num: '10.6', text: 'A player with 4 or more total unexcused No-Shows in a season may be removed from the season standings at the organiser\'s discretion.' },
+        { num: '10.7', text: 'Removed players\' past scores remain in the workbook but they are excluded from the final champion and prize calculations.' },
+        { num: '10.8', text: 'The organiser may make exceptions to these rules on a case-by-case basis with appropriate justification.' }
+      ]},
+      { num: 11, title: 'Season Champion', rules: [
+        { num: '11.1', text: 'The Season Champion is the registered player with the highest Total Season Score at the end of all 6 rounds, subject to the 80% participation floor (Rule 11.3).' },
+        { num: '11.2', text: 'Tiebreakers. (a) Most 1st-place finishes across all rounds. (b) Head-to-head record between the tied players. (c) A playoff round at the organiser\'s discretion.' },
+        { num: '11.3', text: 'Participation floor. A player must have participated in at least 80% of official rounds (i.e. at least 5 of 6 rounds) to be eligible for the Season Champion title.' }
+      ]},
+      { num: 12, title: 'Fair Play & Behaviour', rules: [
+        { num: '12.1', text: 'The use of chess engines, databases, or any computer-assisted analysis during live games is strictly prohibited.' },
+        { num: '12.2', text: 'All Chess.com community guidelines and fair play policies are in effect for all season games.' },
+        { num: '12.3', text: 'Players must not consult other people for move suggestions during a live game.' },
+        { num: '12.4', text: 'Players must not intentionally lose games or collude with opponents to manipulate standings.' },
+        { num: '12.5', text: 'Unsportsmanlike behaviour in the WhatsApp group, on Chess.com, or in relation to the season may result in warnings or disqualification.' },
+        { num: '12.6', text: 'Players found in violation of fair play rules may be disqualified from the season at the organiser\'s discretion.' },
+        { num: '12.7', text: 'Chess.com account bans or fair play violations detected by Chess.com will be treated as season disqualifications.' },
+        { num: '12.8', text: 'All players are expected to treat fellow players and the organiser with respect at all times.' }
+      ]},
+      { num: 13, title: 'Cheating Accusations', rules: [
+        { num: '13.1', text: 'Cheating accusations must be submitted to the organiser privately. Public accusations in group chats are not permitted.' },
+        { num: '13.2', text: 'Accusations must include specific evidence or reasoning. Accusations based solely on a player\'s rating or game outcome will not be investigated.' },
+        { num: '13.3', text: 'The organiser will review the evidence and may consult Chess.com\'s fair play team if necessary.' },
+        { num: '13.4', text: 'The outcome of a cheating investigation is final. False accusations submitted in bad faith may result in disciplinary action against the accuser.' }
+      ]},
+      { num: 14, title: 'Technical Issues', rules: [
+        { num: '14.1', text: 'Technical issues (internet disconnection, device failure, platform outage) are the player\'s responsibility unless the entire platform (Chess.com) is down.' },
+        { num: '14.2', text: 'No reschedules or result reversals will be granted due to personal technical issues.' },
+        { num: '14.3', text: 'If a player disconnects during a game, the standard Chess.com timeout rules apply.' },
+        { num: '14.4', text: 'If Chess.com experiences a platform-wide outage that affects a round, the organiser will decide whether to reschedule or cancel the round.' },
+        { num: '14.5', text: 'Tournament creation errors (wrong time control, wrong settings) reported before the round starts may be corrected at the organiser\'s discretion.' },
+        { num: '14.6', text: 'Tournament errors discovered mid-round will be handled on a case-by-case basis. The organiser\'s decision is final.' },
+        { num: '14.7', text: 'Players experiencing technical issues should notify the organiser as soon as possible.' },
+        { num: '14.8', text: 'For Chess.com-specific technical issues, players should contact Chess.com support directly.' }
+      ]},
+      { num: 15, title: 'Cheating Investigations', rules: [
+        { num: '15.1', text: 'The organiser may initiate a cheating investigation based on gameplay evidence, Chess.com notifications, or player reports.' },
+        { num: '15.2', text: 'During an active investigation, the player\'s results for the relevant round(s) may be placed on hold pending the outcome.' },
+        { num: '15.3', text: 'If a player is found guilty of cheating, their results for the affected round(s) will be forfeited and they may be disqualified from the season.' },
+        { num: '15.4', text: 'Investigation outcomes are final and communicated to the player privately. Details are not shared publicly.' }
+      ]},
+      { num: 16, title: 'Spectators & Outside Advice', rules: [
+        { num: '16.1', text: 'Players must not receive move advice or engine assistance from spectators or other players during a live game.' }
+      ]},
+      { num: 17, title: 'Appeals', rules: [
+        { num: '17.1', text: 'A player may appeal a ruling by contacting the organiser directly within 48 hours of the decision being communicated.' },
+        { num: '17.2', text: 'Appeals must include clear reasoning and supporting evidence. Appeals without evidence will not be considered.' },
+        { num: '17.3', text: 'The organiser\'s decision on appeal is final. There is no further appeals process.' }
+      ]},
+      { num: 18, title: 'Organiser Discretion & Uncovered Situations', rules: [
+        { num: '18.1', text: 'For any situation not explicitly covered by these rules, the organiser\'s decision is final and binding.' },
+        { num: '18.2', text: 'The organiser reserves the right to amend these rules at any time. Amendments will be announced in the official WhatsApp group and reflected in an updated version of this document.' }
+      ]},
+      { num: 19, title: 'Data & Privacy', rules: [
+        { num: '19.1', text: 'Player names, class names, and Chess.com usernames are collected for season administration purposes only.' },
+        { num: '19.2', text: 'Season standings, round results, and brilliant move records are published publicly on this website. By registering for the season, players consent to their name and Chess.com username being displayed in public standings.' }
+      ]}
+    ];
+
     // ── Load rules from Supabase ─────────────────────────────
     async function loadRulesForEditor() {
       setRulesStatus('Loading rules from database…');
@@ -3449,138 +3582,7 @@
     document.getElementById('saveRulesBtn').addEventListener('click', saveRules);
 
     // ── Fallback seed data (v9.7 snapshot for first-time load) ──
-    var RULES_FALLBACK_FOR_SEED = [
-      { num: 1, title: 'Platform & Schedule', rules: [
-        { num: '1.1', text: 'All official season rounds are played as separate Chess.com club tournaments within the SPKC International Chess Club.' },
-        { num: '1.2', text: 'Rounds are held on Sundays at 20:00 HKT (UTC+8) unless otherwise announced.' },
-        { num: '1.3', text: 'Players must be in the tournament lobby and ready at least 5 minutes before the scheduled start time.' },
-        { num: '1.4', text: 'A season consists of 6 official rounds.' },
-        { num: '1.5', text: 'Each round uses a different time control following a repeating cycle: Bullet → Blitz → Rapid → Bullet → Blitz → Rapid.' },
-        { num: '1.6', text: 'Round announcements are made in the official SPKC Chess Club WhatsApp group.' },
-        { num: '1.7', text: 'The organiser may adjust the schedule for public holidays or unforeseen circumstances with prior notice.' },
-        { num: '1.8', text: 'Players are responsible for checking the round schedule and joining on time. No grace period is guaranteed.' },
-        { num: '1.9', text: 'The season start and end dates are announced at the beginning of each season.' }
-      ]},
-      { num: 2, title: 'Eligibility', rules: [
-        { num: '2.1', text: 'The season is open exclusively to current students of SPKC.' },
-        { num: '2.2', text: 'Players must register separately for each season. Club membership on Chess.com alone does not grant entry to official season tournaments.' },
-        { num: '2.3', text: 'Each player may only register once per season with one Chess.com username.' },
-        { num: '2.4', text: 'A player may not use multiple accounts across different rounds of the same season.' },
-        { num: '2.5', text: 'Players must have a valid Chess.com account in good standing to participate.' },
-        { num: '2.6', text: 'Late registration (after the season has started) may be accepted or rejected at the organiser\'s discretion. Points are only awarded from the first round after the player\'s registration is confirmed.' },
-        { num: '2.7', text: 'The late application window is 4 days from the start of the season. Applications received after this window require explicit organiser approval.' }
-      ]},
-      { num: 3, title: 'Format', rules: [
-        { num: '3.1', text: 'Each round uses a Swiss-system format. Players are paired against opponents with a similar record within that round\'s tournament.' },
-        { num: '3.2', text: 'Season standings are determined by total season points accumulated across all completed (non-cancelled) rounds using the points table in Section 6.' },
-        { num: '3.3', text: 'Within a single Chess.com tournament, game results (Win/Draw/Loss) determine a player\'s finishing position, which maps to season points.' }
-      ]},
-      { num: 4, title: 'Time Controls', rules: [
-        { num: '4.1', text: 'Rounds follow a repeating cycle: Round 1 — Bullet, Round 2 — Blitz, Round 3 — Rapid, Round 4 — Bullet, Round 5 — Blitz, Round 6 — Rapid.' },
-        { num: '4.2', text: 'Specific time control settings (e.g. minutes + increment) for each format are set by the organiser and announced before the round.' },
-        { num: '4.3', text: 'Players are expected to be familiar with the time control for each round type. No allowance is made for running out of time due to unfamiliarity with the time control.' }
-      ]},
-      { num: 5, title: 'Accounts & Identity', rules: [
-        { num: '5.1', text: 'Players must participate using the Chess.com username registered for the season. Playing under a different account is not permitted.' },
-        { num: '5.2', text: 'Username changes must be notified to the organiser before the next round. Failure to notify may result in the round not being counted.' },
-        { num: '5.3', text: 'Players are responsible for their own account security. Results will not be reversed due to account compromise unless evidence is provided.' },
-        { num: '5.4', text: 'Account sharing is strictly prohibited. Any round played on another player\'s account will result in disqualification for both parties.' }
-      ]},
-      { num: 6, title: 'Season Points', rules: [
-        { num: '6.1', text: 'Season points are awarded based on finishing position: 1st: 25 pts | 2nd: 18 pts | 3rd: 15 pts | 4th: 12 pts | 5th: 10 pts | 6th: 8 pts | 7th: 6 pts | 8th: 4 pts | 9th: 2 pts | 10th: 1 pt' },
-        { num: '6.2', text: 'Positions outside the top 10 receive 0 season points from standings, but may still earn bonus points (e.g. Brilliant Move bonuses).' },
-        { num: '6.3', text: 'Points from all completed rounds are summed to produce each player\'s Total Season Score, which determines the final standings.' },
-        { num: '6.4', text: 'Brilliant Move bonuses (+4 per verified !!) are added to the Total Season Score on top of round standings points (see Section 7).' },
-        { num: '6.5', text: 'Cancelled rounds are not counted in standings calculations. When a round is cancelled due to lack of players, ATT attendance bonuses (+5 pts) are awarded separately to players who attended (see Section 9).' }
-      ]},
-      { num: 7, title: 'Brilliant Move Bonus ✨', rules: [
-        { num: '7.1', text: 'What counts. A Brilliant Move is a move annotated !! by Chess.com\'s analysis engine in a game played during an official season round.' },
-        { num: '7.2', text: 'Bonus points. Each verified brilliant move awards the player +4 season points, added on top of their regular round finishing score. There is no cap on the number of brilliants per season.' },
-        { num: '7.3', text: 'No game result restriction. A Brilliant Move bonus is awarded regardless of the game\'s outcome. A brilliant move in a loss counts just as much as one in a win — a brilliant is a brilliant.' },
-        { num: '7.4', text: 'Submission window. Players must submit their claim to the organiser within 24 hours of the round ending. The submission must include the Chess.com game link and move number.' },
-        { num: '7.5', text: 'Verification. The organiser reviews each submission. If the !! annotation is confirmed in the game analysis, the bonus is awarded. The organiser\'s decision is final.' },
-        { num: '7.6', text: 'Recording. All verified brilliant moves are displayed on the Brilliants page of this website.' }
-      ]},
-      { num: 8, title: 'Tournament Standings', rules: [
-        { num: '8.1', text: 'Standings after each round are updated in the official standings workbook and published on this website.' },
-        { num: '8.2', text: 'The standings reflect cumulative season points including all round scores and Brilliant Move bonuses.' },
-        { num: '8.3', text: 'Standings are final once the workbook is published after each round. Errors in standings must be reported to the organiser within 48 hours.' },
-        { num: '8.4', text: 'The workbook is the authoritative record. In the event of a discrepancy between the website display and the workbook, the workbook takes precedence.' },
-        { num: '8.5', text: 'Final season standings are locked after the last round of the season. No retroactive adjustments are made after standings are finalised, except for verified errors.' }
-      ]},
-      { num: 9, title: 'Cancelled Rounds & ATT Attendance Bonus', rules: [
-        { num: '9.1', text: 'A round may be cancelled for any reason at the organiser\'s discretion, including insufficient player attendance, technical issues, or scheduling conflicts.' },
-        { num: '9.2', text: 'Cancelled rounds do not count toward a player\'s round score or the season\'s official round count.' },
-        { num: '9.3', text: 'ATT status. When a round is cancelled specifically due to lack of players, players who were present and ready to play are marked ATT (Attended) in the standings workbook.' },
-        { num: '9.4', text: 'ATT bonus points. Players marked ATT receive an Attendance Bonus of +5 season points for that cancelled round. Players not marked ATT receive 0 points.' },
-        { num: '9.5', text: 'To qualify for ATT status, a player must have been online in the tournament lobby at the scheduled round start time. The organiser will verify attendance records. The organiser\'s decision is final.' },
-        { num: '9.6', text: 'ATT bonuses are recorded in the standings workbook separately from round scores and are included in the player\'s Total Season Score.' },
-        { num: '9.7', text: 'Exception: 2026 Season Round 2. The ATT rule described in 9.3–9.6 does not apply to Round 2 of the 2026 Season. That round is treated under previous rules and no ATT bonus is awarded for it regardless of attendance.' }
-      ]},
-      { num: 10, title: 'No-Shows, DNF, Planned Bye & Repeated Absence', rules: [
-        { num: '10.1', text: 'A player who does not join a round they are registered for is recorded as a No-Show (DNS — Did Not Start) and receives 0 season points for that round.' },
-        { num: '10.2', text: 'A player who joins but does not complete the round (e.g. disconnects without finishing) may be recorded as DNF (Did Not Finish) at the organiser\'s discretion.' },
-        { num: '10.3', text: 'Players may notify the organiser in advance of a planned absence (Planned Bye). This does not change the score outcome but is noted in the workbook.' },
-        { num: '10.4', text: 'A Planned Bye counts as a missed round for participation purposes but does not trigger the repeated absence warning process.' },
-        { num: '10.5', text: 'A player with 3 or more consecutive unexcused No-Shows may be warned by the organiser.' },
-        { num: '10.6', text: 'A player with 4 or more total unexcused No-Shows in a season may be removed from the season standings at the organiser\'s discretion.' },
-        { num: '10.7', text: 'Removed players\' past scores remain in the workbook but they are excluded from the final champion and prize calculations.' },
-        { num: '10.8', text: 'The organiser may make exceptions to these rules on a case-by-case basis with appropriate justification.' }
-      ]},
-      { num: 11, title: 'Season Champion', rules: [
-        { num: '11.1', text: 'The Season Champion is the registered player with the highest Total Season Score at the end of all 6 rounds, subject to the 80% participation floor (Rule 11.3).' },
-        { num: '11.2', text: 'Tiebreakers. (a) Most 1st-place finishes across all rounds. (b) Head-to-head record between the tied players. (c) A playoff round at the organiser\'s discretion.' },
-        { num: '11.3', text: 'Participation floor. A player must have participated in at least 80% of official rounds (i.e. at least 5 of 6 rounds) to be eligible for the Season Champion title.' }
-      ]},
-      { num: 12, title: 'Fair Play & Behaviour', rules: [
-        { num: '12.1', text: 'The use of chess engines, databases, or any computer-assisted analysis during live games is strictly prohibited.' },
-        { num: '12.2', text: 'All Chess.com community guidelines and fair play policies are in effect for all season games.' },
-        { num: '12.3', text: 'Players must not consult other people for move suggestions during a live game.' },
-        { num: '12.4', text: 'Players must not intentionally lose games or collude with opponents to manipulate standings.' },
-        { num: '12.5', text: 'Unsportsmanlike behaviour in the WhatsApp group, on Chess.com, or in relation to the season may result in warnings or disqualification.' },
-        { num: '12.6', text: 'Players found in violation of fair play rules may be disqualified from the season at the organiser\'s discretion.' },
-        { num: '12.7', text: 'Chess.com account bans or fair play violations detected by Chess.com will be treated as season disqualifications.' },
-        { num: '12.8', text: 'All players are expected to treat fellow players and the organiser with respect at all times.' }
-      ]},
-      { num: 13, title: 'Cheating Accusations', rules: [
-        { num: '13.1', text: 'Cheating accusations must be submitted to the organiser privately. Public accusations in group chats are not permitted.' },
-        { num: '13.2', text: 'Accusations must include specific evidence or reasoning. Accusations based solely on a player\'s rating or game outcome will not be investigated.' },
-        { num: '13.3', text: 'The organiser will review the evidence and may consult Chess.com\'s fair play team if necessary.' },
-        { num: '13.4', text: 'The outcome of a cheating investigation is final. False accusations submitted in bad faith may result in disciplinary action against the accuser.' }
-      ]},
-      { num: 14, title: 'Technical Issues', rules: [
-        { num: '14.1', text: 'Technical issues (internet disconnection, device failure, platform outage) are the player\'s responsibility unless the entire platform (Chess.com) is down.' },
-        { num: '14.2', text: 'No reschedules or result reversals will be granted due to personal technical issues.' },
-        { num: '14.3', text: 'If a player disconnects during a game, the standard Chess.com timeout rules apply.' },
-        { num: '14.4', text: 'If Chess.com experiences a platform-wide outage that affects a round, the organiser will decide whether to reschedule or cancel the round.' },
-        { num: '14.5', text: 'Tournament creation errors (wrong time control, wrong settings) reported before the round starts may be corrected at the organiser\'s discretion.' },
-        { num: '14.6', text: 'Tournament errors discovered mid-round will be handled on a case-by-case basis. The organiser\'s decision is final.' },
-        { num: '14.7', text: 'Players experiencing technical issues should notify the organiser as soon as possible.' },
-        { num: '14.8', text: 'For Chess.com-specific technical issues, players should contact Chess.com support directly.' }
-      ]},
-      { num: 15, title: 'Cheating Investigations', rules: [
-        { num: '15.1', text: 'The organiser may initiate a cheating investigation based on gameplay evidence, Chess.com notifications, or player reports.' },
-        { num: '15.2', text: 'During an active investigation, the player\'s results for the relevant round(s) may be placed on hold pending the outcome.' },
-        { num: '15.3', text: 'If a player is found guilty of cheating, their results for the affected round(s) will be forfeited and they may be disqualified from the season.' },
-        { num: '15.4', text: 'Investigation outcomes are final and communicated to the player privately. Details are not shared publicly.' }
-      ]},
-      { num: 16, title: 'Spectators & Outside Advice', rules: [
-        { num: '16.1', text: 'Players must not receive move advice or engine assistance from spectators or other players during a live game.' }
-      ]},
-      { num: 17, title: 'Appeals', rules: [
-        { num: '17.1', text: 'A player may appeal a ruling by contacting the organiser directly within 48 hours of the decision being communicated.' },
-        { num: '17.2', text: 'Appeals must include clear reasoning and supporting evidence. Appeals without evidence will not be considered.' },
-        { num: '17.3', text: 'The organiser\'s decision on appeal is final. There is no further appeals process.' }
-      ]},
-      { num: 18, title: 'Organiser Discretion & Uncovered Situations', rules: [
-        { num: '18.1', text: 'For any situation not explicitly covered by these rules, the organiser\'s decision is final and binding.' },
-        { num: '18.2', text: 'The organiser reserves the right to amend these rules at any time. Amendments will be announced in the official WhatsApp group and reflected in an updated version of this document.' }
-      ]},
-      { num: 19, title: 'Data & Privacy', rules: [
-        { num: '19.1', text: 'Player names, class names, and Chess.com usernames are collected for season administration purposes only.' },
-        { num: '19.2', text: 'Season standings, round results, and brilliant move records are published publicly on this website. By registering for the season, players consent to their name and Chess.com username being displayed in public standings.' }
-      ]}
-    ];
+
 
   </script>
 </body>
