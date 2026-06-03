@@ -277,11 +277,11 @@
       flex: 1;
       font-weight: 700;
       font-size: 15px;
-      color: var(--primary);
+      color: #1a3a6e;
       border: 1px solid transparent;
       border-radius: 8px;
       padding: 4px 8px;
-      font: inherit;
+      font-family: inherit;
       font-weight: 700;
       background: transparent;
       cursor: text;
@@ -297,10 +297,11 @@
       width: 50px;
       text-align: center;
       font-weight: 700;
+      color: #1a3a6e;
       border: 1px solid var(--line);
       border-radius: 8px;
       padding: 4px 6px;
-      font: inherit;
+      font-family: inherit;
       font-size: 14px;
     }
 
@@ -326,9 +327,10 @@
       padding: 8px 10px;
       border: 1px solid var(--line);
       border-radius: 10px;
-      font: inherit;
+      font-family: inherit;
       font-size: 13px;
       font-weight: 700;
+      color: #1a3a6e;
       background: #f8fbff;
     }
 
@@ -337,10 +339,13 @@
       padding: 8px 12px;
       border: 1px solid var(--line);
       border-radius: 10px;
-      font: inherit;
+      font-family: inherit;
       font-size: 13px;
+      color: #1a2a3a;
       resize: vertical;
       min-height: 60px;
+      line-height: 1.5;
+      overflow: visible;
     }
 
     .re-rule-text:focus,
@@ -3239,13 +3244,19 @@
 
       var textArea = document.createElement('textarea');
       textArea.className = 're-rule-text';
+      textArea.rows = 3;
       textArea.value = rule.text || '';
       textArea.placeholder = 'Rule text…';
 
-      // Auto-resize textarea
+      // Auto-resize textarea on input
       textArea.addEventListener('input', function() {
         textArea.style.height = 'auto';
         textArea.style.height = textArea.scrollHeight + 'px';
+      });
+      // Trigger initial resize after DOM insertion
+      requestAnimationFrame(function() {
+        textArea.style.height = 'auto';
+        textArea.style.height = (textArea.scrollHeight || 60) + 'px';
       });
 
       var delBtn = document.createElement('button');
