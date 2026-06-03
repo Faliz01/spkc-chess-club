@@ -625,8 +625,12 @@
         if (error) throw error;
 
         const now = new Date();
-        // Only show seasons that have started
-        const allSeasons = (seasons || []).filter(s => s.registration_opens_at && new Date(s.registration_opens_at) <= now);
+        // Only show seasons that have started AND have a real workbook file path
+        const allSeasons = (seasons || []).filter(s =>
+          s.registration_opens_at &&
+          new Date(s.registration_opens_at) <= now &&
+          s.file_path && String(s.file_path).trim().endsWith('.xlsx')
+        );
 
         if (!allSeasons.length) {
           podiumVisual.innerHTML = '<p class="history-no-data">No seasons have started yet.</p>';
