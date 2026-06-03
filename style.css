@@ -2715,3 +2715,140 @@ html.dark .acc-good  { color: #70c060; }
 html.dark .acc-ok    { color: #c0b030; }
 html.dark .acc-low   { color: #e08040; }
 html.dark .acc-poor  { color: #e05050; }
+
+/* ── Mobile nav — horizontal scroll capsule ─────────────────────────── */
+@media (max-width: 700px) {
+  .nav-wrap {
+    /* let the nav scroll horizontally without the wrapper clipping it */
+    overflow-x: auto;
+    overflow-y: visible;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;          /* Firefox */
+    padding: 0 4px;                 /* slight side breathing room */
+    /* stop it from centering so it starts at the left edge on small phones */
+    justify-content: flex-start;
+    margin-bottom: var(--space-6);
+  }
+  .nav-wrap::-webkit-scrollbar { display: none; }
+
+  .nav {
+    /* Don't let items wrap — scroll instead */
+    flex-wrap: nowrap;
+    /* shrink padding slightly */
+    padding: 4px 5px;
+    gap: 1px;
+  }
+
+  .nav a {
+    /* tighter padding on mobile */
+    padding: 7px 9px;
+    font-size: 0.75rem;
+  }
+
+  /* Hide text labels on very small screens (< 480px), show icons only */
+  @media (max-width: 480px) {
+    .nav a {
+      padding: 8px 10px;
+      gap: 0;
+    }
+    /* Hide the text node after the icon — achieved by wrapping text in a span */
+    /* Since the nav text nodes aren't wrapped, we hide the link text with font-size 0
+       and restore the icon-only display */
+    .nav a .nav-icon {
+      font-size: 1.05rem;
+    }
+    /* Hide the text (everything after the icon) on very small phones */
+    .nav a {
+      font-size: 0;   /* hides plain text nodes */
+    }
+    .nav a .nav-icon,
+    .nav-live-dot {
+      font-size: 1.1rem;   /* restore icon size */
+    }
+    /* Keep "Live" text hidden too — just show the dot */
+    .nav a[href="live-hub.html"] {
+      padding: 8px 12px;
+    }
+    /* dark toggle */
+    .dark-toggle {
+      font-size: 1rem;
+      padding: 7px 10px;
+    }
+  }
+}
+
+/* ── General phone layout fixes (≤ 600px) ───────────────────────────── */
+@media (max-width: 600px) {
+  .page-shell {
+    padding: 14px 14px 28px;
+  }
+
+  h1 {
+    font-size: clamp(28px, 7vw, 42px);
+  }
+
+  .hero-text {
+    font-size: 15px;
+  }
+
+  .hero-stats {
+    grid-template-columns: 1fr 1fr;
+  }
+  .hero-stats .stat-card {
+    grid-column: span 1;
+  }
+
+  /* Card grid — stack to single column on phone */
+  .card-grid,
+  .event-grid,
+  .standings-grid {
+    grid-template-columns: 1fr;
+  }
+  .quick-card,
+  .event-card,
+  .standing-card {
+    grid-column: 1 / -1;
+  }
+
+  /* Content grid — always full width */
+  .content-grid {
+    grid-template-columns: 1fr;
+  }
+  .panel.span-5,
+  .panel.span-7,
+  .panel.span-12 {
+    grid-column: 1 / -1;
+  }
+
+  .section-title {
+    font-size: 20px;
+  }
+
+  /* Leaderboard grid — 1 col on phone */
+  .ratings-lb-grid {
+    grid-template-columns: 1fr;
+  }
+
+  /* Match archive selector bar — stack vertically */
+  .ma-selector-bar {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+    padding: 14px;
+  }
+
+  /* Brilliants grid — 1 col */
+  .brilliants-grid {
+    grid-template-columns: 1fr;
+  }
+
+  /* List view brilliants — stack on phone */
+  .brilliants-list .brilliant-card {
+    flex-direction: column;
+  }
+  .brilliants-list .brilliant-img,
+  .brilliants-list .brilliant-img-placeholder {
+    width: 100%;
+    min-width: unset;
+  }
+}

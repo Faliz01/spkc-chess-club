@@ -2479,6 +2479,7 @@
     document.getElementById('bulkAcceptBtn').addEventListener('click', async () => {
       const ids = [...regsTableWrap.querySelectorAll('.reg-checkbox:checked')].map(cb => cb.dataset.regId);
       if (!ids.length) return;
+      if (!confirm(`Accept ${ids.length} registration(s)? This cannot be undone.`)) return;
       const { error } = await supabaseClient.from('registrations').update({ status: 'accepted' }).in('id', ids);
       if (error) { setRegsStatus('Bulk accept failed: ' + error.message, 'error'); return; }
       setRegsStatus(`${ids.length} registration(s) accepted.`, 'success');
@@ -2489,6 +2490,7 @@
     document.getElementById('bulkRejectBtn').addEventListener('click', async () => {
       const ids = [...regsTableWrap.querySelectorAll('.reg-checkbox:checked')].map(cb => cb.dataset.regId);
       if (!ids.length) return;
+      if (!confirm(`Reject ${ids.length} registration(s)? This cannot be undone.`)) return;
       const { error } = await supabaseClient.from('registrations').update({ status: 'rejected' }).in('id', ids);
       if (error) { setRegsStatus('Bulk reject failed: ' + error.message, 'error'); return; }
       setRegsStatus(`${ids.length} registration(s) rejected.`, 'success');
@@ -2564,7 +2566,7 @@
         'Attended: ' + attendees.map(function(a) { return a.name; }).join(', '),
         'success'
       );
-      logAction('att_marked', 'R' + roundNum + ' x' + attendees.length + ' players');
+      // Note: the direct insert above is the canonical log entry; no duplicate logAction() call here
     });
 
     // Export standings as image JS
@@ -2922,8 +2924,16 @@
       wrap.querySelectorAll('[data-brill-id]').forEach(function(btn) {
         btn.addEventListener('click', async function() {
           if (!confirm('Delete this brilliant move record?')) return;
+          // Fetch screenshot path before deleting so we can remove the storage file too
+          var { data: _brow } = await supabaseClient
+            .from('brilliant_moves').select('screenshot_url').eq('id', btn.dataset.brillId).single();
+          var _oldPath = (_brow && _brow.screenshot_url) || null;
           var delResult = await supabaseClient.from('brilliant_moves').delete().eq('id', btn.dataset.brillId);
           if (delResult.error) { setBrilliantStatus('Delete failed: ' + delResult.error.message, 'error'); return; }
+          // Remove orphaned screenshot file from storage
+          if (_oldPath) {
+            await supabaseClient.storage.from(BUCKET).remove([_oldPath]);
+          }
           setBrilliantStatus('Brilliant move deleted.', 'success');
           logAction('brilliant_deleted', btn.dataset.brillId);
           await loadBrilliantsList();
@@ -2996,6 +3006,15 @@
       if (!chess_username) { setBrilliantStatus('Chess.com username is required.', 'error'); return; }
       if (chess_username.length > 50) { setBrilliantStatus('Chess.com username must be 50 characters or fewer.', 'error'); return; }
       if (match_desc && match_desc.length > 200) { setBrilliantStatus('Match description must be 200 characters or fewer.', 'error'); return; }
+      if (game_link) {
+        try {
+          var _u = new URL(game_link);
+          if (!/^https?:$/.test(_u.protocol)) throw new Error();
+        } catch (_e) {
+          setBrilliantStatus('Game link must be a valid http/https URL.', 'error');
+          return;
+        }
+      }
 
       // Upload screenshot file if provided
       var screenshot_url = null; // stores storage path, not a signed URL
@@ -3003,6 +3022,15 @@
       if (screenshotFile && screenshotFile[0]) {
         setBrilliantStatus('Uploading screenshot...');
         var imgFile = screenshotFile[0];
+        var allowedMime = ['image/png', 'image/jpeg', 'image/webp', 'image/gif'];
+        if (!allowedMime.includes(imgFile.type)) {
+          setBrilliantStatus('Screenshot must be PNG, JPEG, WebP, or GIF.', 'error');
+          return;
+        }
+        if (imgFile.size > 2 * 1024 * 1024) {
+          setBrilliantStatus('Screenshot must be 2 MB or smaller.', 'error');
+          return;
+        }
         var ext = imgFile.name.split('.').pop().toLowerCase() || 'jpg';
         var safeName = chess_username.replace(/[^a-zA-Z0-9_-]/g, '') + '_s' + season_key.replace(/[^a-zA-Z0-9_-]/g, '') + '_r' + round_number + '_' + Date.now() + '.' + ext;
         var uploadPath = 'screenshots/' + safeName;
@@ -3018,9 +3046,20 @@
 
       if (editingBrilliantId) {
         // Feature D: UPDATE mode — only update screenshot if a new file was chosen
-        if (screenshot_url !== null) payload.screenshot_url = screenshot_url;
+        // Fetch the old path so we can remove the orphaned file after update
+        var oldScreenshotPath = null;
+        if (screenshot_url !== null) {
+          var { data: _oldRow } = await supabaseClient
+            .from('brilliant_moves').select('screenshot_url').eq('id', editingBrilliantId).single();
+          if (_oldRow) oldScreenshotPath = _oldRow.screenshot_url || null;
+          payload.screenshot_url = screenshot_url;
+        }
         var updResult = await supabaseClient.from('brilliant_moves').update(payload).eq('id', editingBrilliantId);
         if (updResult.error) { setBrilliantStatus('Update failed: ' + updResult.error.message, 'error'); return; }
+        // Delete old storage file if it was replaced
+        if (oldScreenshotPath && oldScreenshotPath !== screenshot_url) {
+          await supabaseClient.storage.from(BUCKET).remove([oldScreenshotPath]);
+        }
         setBrilliantStatus('Brilliant move updated successfully! ✨', 'success');
         logAction('brilliant_updated', player_name + ' R' + round_number);
         resetBrilliantForm();
