@@ -7,7 +7,6 @@
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
-  <!-- Feature A: Live round status banner -->
   <div id="liveBanner" class="live-banner" style="display:none;" role="status" aria-live="polite">
     <span class="live-banner-dot"></span>
     <span id="liveBannerText">Round is live now — <a id="liveBannerLink" href="https://www.chess.com/club/spkc-international-chess-club-1" target="_blank" rel="noopener noreferrer" class="live-banner-link">watch on Chess.com →</a></span>
@@ -193,8 +192,6 @@
   </script>
   <script>
     const SUPABASE_URL = 'https://qoczwxslhygakivfgxdy.supabase.co';
-    // NOTE: The anon key is safe to expose in client-side code — it only has the permissions
-    // you set in Supabase RLS policies. Never expose your service_role key here.
     const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFvY3p3eHNsaHlnYWtpdmZneGR5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk2MTAwNzMsImV4cCI6MjA5NTE4NjA3M30.J5I0IR5Ra_JePDzJYHpzstbNRCo667B201iVhjbDZjs';
     const BUCKET = 'private_uploads';
     const ROUND_DATES_PATH = 'latest/season-dates.json';
@@ -220,7 +217,6 @@
 
     // ── Workbook parsing helpers (same logic as tournaments.html) ──────────
 
-    // fuzzy=true: match any cell that CONTAINS blockName (e.g. "2026 Season Total Points")
     function parseNamedBlock(rows, blockName, fuzzy) {
       var labelIndex  = -1;
       var headerIndex = -1;
@@ -254,7 +250,6 @@
       for (var k = headerIndex + 1; k < rows.length; k++) {
         var rawRow = rows[k].map(function(v){ return String(v).trim(); });
         if (rawRow.every(function(c){ return c === ''; })) continue;
-        // Stop on any new block label that isn't our own
         var hitNew = BLOCK_LABELS.some(function(lbl) {
           if (lbl === blockNameLower) return false;
           return rawRow.some(function(cell){ return cell.toLowerCase() === lbl; });
@@ -315,7 +310,6 @@
     function buildSnapshot(pointsPlayers, rankPlayers, roundKeys, season, roundDates) {
       const items = [];
 
-      // Round status items
       roundKeys.forEach((roundKey, index) => {
         const roundNumberMatch = roundKey.match(/R\s*(\d+)/i);
         const roundNumber = roundNumberMatch ? Number(roundNumberMatch[1]) : index + 1;
@@ -333,7 +327,6 @@
           return s !== '' && s !== '0' && s !== 'CXL';
         });
 
-        // Get the date — check string and numeric keys for both sources
         const overrideDates = roundDates || {};
         const dateText =
           overrideDates[String(roundNumber)] ||
@@ -349,14 +342,12 @@
             ? `Round ${roundNumber} completed on ${dateText}.`
             : `Round ${roundNumber} has been completed.`);
         } else {
-          // Scheduled / upcoming
           items.push(dateText
             ? `Round ${roundNumber} scheduled for ${dateText}.`
             : `Round ${roundNumber} is scheduled.`);
         }
       });
 
-      // Leader item
       if (pointsPlayers.length) {
         const sorted = [...pointsPlayers].sort((a, b) =>
           Number(b['Total Score'] || 0) - Number(a['Total Score'] || 0)
@@ -377,13 +368,11 @@
     async function initHomePage() {
       loadAnnouncements();
 
-      // Show admin controls if ?admin=1 is in the URL
       if (window.location.search.includes('admin=1')) {
         const editBtn = document.getElementById('snapshotEditBtn');
         if (editBtn) editBtn.style.display = 'inline-block';
       }
 
-      // Wire up snapshot edit panel
       const snapshotEditBtn = document.getElementById('snapshotEditBtn');
       const snapshotEditPanel = document.getElementById('snapshotEditPanel');
       const snapshotEditArea = document.getElementById('snapshotEditArea');
@@ -393,7 +382,6 @@
 
       if (snapshotEditBtn) {
         snapshotEditBtn.addEventListener('click', () => {
-          // Populate textarea with current snapshot items (one per line)
           const currentItems = Array.from(snapshotList.querySelectorAll('li')).map(li => li.textContent.trim());
           snapshotEditArea.value = currentItems.join('\n');
           snapshotEditPanel.style.display = 'block';
@@ -429,7 +417,6 @@
       let snapshotOverridden = false;
 
       try {
-        // Check for snapshot override from Supabase
         const { data: overrideRow } = await supabaseClient
           .from('snapshot_overrides')
           .select('items')
@@ -440,46 +427,32 @@
           snapshotList.innerHTML = overrideRow.items.map(item => `<li>${escapeHtml(item)}</li>`).join('');
           snapshotOverridden = true;
         }
-      } catch (_e) {
-        // Override check failed — continue with workbook snapshot
-      }
+      } catch (_e) {}
 
       try {
-        // 1. Fetch latest season from season_settings
-        // Order by created_at desc so we always get the most recently created season,
-        // not just alphabetically last (which could be a future empty season)
-        // Order: prefer seasons with an actual registration window (real seasons),
-        // then fall back to most recently updated. This avoids picking test/dummy seasons.
         const { data: seasons, error: seasonsError } = await supabaseClient
           .from('season_settings')
           .select('*')
           .order('registration_opens_at', { ascending: false, nullsFirst: false })
-          .limit(10);  // get a few then pick the best one below
+          .limit(10);
 
         let season = null;
 
         if (!seasonsError && seasons && seasons.length > 0) {
-          // Pick the season that has already started (registration_opens_at <= now).
-          // This ensures 2026 wins over future placeholder seasons like 2027.
           const now = new Date();
           const started = seasons.filter(s => s.registration_opens_at && new Date(s.registration_opens_at) <= now);
-          // started is already sorted by registration_opens_at DESC from Supabase, so first = most recent
           if (started.length > 0) {
             season = started[0];
           } else {
-            // No started season — fall back to any with a date, else first row
             const hasDates = seasons.filter(s => s.registration_opens_at);
             season = hasDates.length > 0 ? hasDates[0] : seasons[0];
           }
         }
 
-        // 2. Set hero stat cards
-        // Show cleaned round time (or raw if it includes day info)
         heroRoundTime.textContent = (season && season.round_time) || 'TBA';
         heroSeasonWindow.textContent = (season && (season.season_window || season.season_label)) || '-';
         heroFormatCycle.textContent = (season && season.format_cycle) || 'Bullet / Blitz / Rapid';
 
-        // Feature 8: Count accepted registrations for latest season
         if (season) {
           try {
             const { count } = await supabaseClient
@@ -498,7 +471,6 @@
           if (heroRegCount) heroRegCount.textContent = '0';
         }
 
-        // 3. Load round dates from storage
         let roundDatesForSeason = {};
 
         try {
@@ -512,42 +484,29 @@
             if (resp.ok) {
               const json = await resp.json();
               if (json && typeof json === 'object') {
-                // Helper: does this object have at least one non-empty string value?
                 const hasRealDates = obj => obj && typeof obj === 'object' &&
                   Object.values(obj).some(v => v && String(v).trim().length > 0);
 
-                // Step 1: try exact season_key match
                 const exactKey = season && (season.season_key || season.label || season.season_label);
                 const exactEntry = exactKey ? (json[exactKey] || null) : null;
                 if (exactEntry && exactEntry.roundDates && hasRealDates(exactEntry.roundDates)) {
                   roundDatesForSeason = exactEntry.roundDates;
                 }
-
-                // Step 2 removed: do NOT fall back to another season's dates.
-                // If the active season has no round dates configured, show TBA.
               }
             }
           }
-        } catch (_e) {
-          // round dates unavailable — gracefully continue
-        }
+        } catch (_e) {}
 
-        dataLoaded = true; // Feature E: mark data as loaded after round dates resolved
+        dataLoaded = true;
 
-        // Start countdown using actual round dates now that we have them
-        // Extract HH:MM from round_time (strips prefixes like 'Sundays ')
         const _rtRaw = (season && season.round_time) || '';
         const _rtMatch = _rtRaw.match(/(\d{1,2}:\d{2})/);
         const _roundTimeStr = _rtMatch ? _rtMatch[1] : '20:00';
+        
         startCountdown('countdownDisplay', roundDatesForSeason, _roundTimeStr);
-
-        // Feature A: start live round banner check
         startLiveBanner(roundDatesForSeason, _roundTimeStr, season);
-
-        // Feature B: Next round info card
         updateNextRoundCard(roundDatesForSeason, season, _roundTimeStr);
 
-        // 4. Load workbook (still needed for hero stats even if snapshot overridden)
         if (!season) {
           if (!snapshotOverridden) snapshotList.innerHTML = '<li>No season data available yet.</li>';
           return;
@@ -560,7 +519,7 @@
           try {
             const parsed = JSON.parse(season.sheet_hints);
             if (Array.isArray(parsed)) sheetHints = parsed;
-          } catch (_e) { /* use default */ }
+          } catch (_e) {}
         }
 
         const seasonObj = {
@@ -618,7 +577,6 @@
             return num >= 1 && num <= allowedRoundCount;
           });
 
-        // 5. Build and render snapshot (only if not already overridden)
         if (!snapshotOverridden) {
           const snapshotItems = buildSnapshot(
             pointsBlock.players,
@@ -683,7 +641,7 @@
     }
 
     // ── Feature B: Next round info card ──────────────────────────────────
-    async function updateNextRoundCard(roundDates, season) {
+    async function updateNextRoundCard(roundDates, season, roundTimeStr) {
       const card = document.getElementById('nextRoundCard');
       const formatPill = document.getElementById('nextRoundFormatPill');
       const titleEl = document.getElementById('nextRoundTitle');
@@ -701,12 +659,11 @@
         return null;
       }
 
-      const roundTime = (season && season.round_time) || '20:00';
+      const roundTime = roundTimeStr || (season && season.round_time) || '20:00';
       const timeParts = roundTime.match(/(\d{1,2}):(\d{2})/);
       const rh = timeParts ? +timeParts[1] : 20, rm = timeParts ? +timeParts[2] : 0;
       const nowMs = Date.now();
 
-      // Find next upcoming round
       let next = null;
       Object.entries(roundDates||{}).forEach(([key, dateStr]) => {
         if (!dateStr || String(dateStr).toLowerCase() === 'tbc') return;
@@ -722,7 +679,6 @@
 
       if (!next) { card.style.display = 'none'; return; }
 
-      // Determine format from cycle (R1=Bullet, R2=Blitz, R3=Rapid, repeating)
       const formatCycle = (season && season.format_cycle) ? season.format_cycle.split('/').map(s=>s.trim()) : ['Bullet','Blitz','Rapid'];
       const formatIcons = { bullet:'\uD83D\uDCA8', blitz:'\u26A1', rapid:'\uD83D\uDD50' };
       const fmt = formatCycle[(next.num - 1) % formatCycle.length] || 'Round';
@@ -733,7 +689,6 @@
       if (titleEl) titleEl.textContent = 'Round ' + next.num;
       if (dateEl) dateEl.textContent = next.dateStr + ' at ' + String(rh).padStart(2,'0') + ':' + String(rm).padStart(2,'0') + ' HKT';
 
-      // Always show lobby button if tournament_url_id exists for this round
       const diffMs = next.utcMs - nowMs;
       if (lobbyBtn) {
         let tournamentUrlId = null;
@@ -752,7 +707,6 @@
           lobbyBtn.href = 'https://www.chess.com/club/spkc-international-chess-club-1';
         }
 
-        // Styling: pre-round (outlined) vs active/in-progress (solid green)
         const isActive = diffMs <= 60*60*1000 && diffMs > -90*60*1000;
         if (isActive) {
           lobbyBtn.classList.remove('pre-round');
@@ -765,49 +719,39 @@
       }
     }
 
-    // startCountdown: pass roundDates obj {"R1":"2026-04-26",...} and optional round time string e.g. "20:00".
-    // Finds the next upcoming round and counts down to it at the given HKT time.
-    // Falls back to next Sunday 20:00 HKT if no round dates available.
     function startCountdown(displayId, roundDates, roundTimeStr) {
       const el = document.getElementById(displayId);
       const labelEl = document.getElementById('countdownLabel');
       if (!el) return;
 
-      // Parse "HH:MM" → { h, m }
       function parseTime(str) {
         if (!str) return { h: 20, m: 0 };
         const parts = String(str).match(/(\d{1,2}):(\d{2})/);
         return parts ? { h: parseInt(parts[1], 10), m: parseInt(parts[2], 10) } : { h: 20, m: 0 };
       }
 
-      // Parse a date string in any reasonable format into { yr, mo, dy }
-      // Handles: "2026-04-26", "26 April 2026", "April 26, 2026", "26/04/2026"
-      const MONTHS = ['jan','feb','mar','apr','may','jun','jul','aug','sep','oct','nov','dec'];
+      // Safe isolated month naming scope
+      const MONTHS3 = ['jan','feb','mar','apr','may','jun','jul','aug','sep','oct','nov','dec'];
       function parseDateStr(dateStr) {
         const s = String(dateStr).trim();
         if (!s) return null;
-        // ISO: 2026-04-26
         const iso = s.match(/^(\d{4})-(\d{1,2})-(\d{1,2})$/);
         if (iso) return { yr: +iso[1], mo: +iso[2], dy: +iso[3] };
-        // "26 April 2026" or "26 Apr 2026"
         const dmy = s.match(/^(\d{1,2})\s+([A-Za-z]+)\s+(\d{4})$/);
         if (dmy) {
-          const mi = MONTHS.indexOf(dmy[2].slice(0,3).toLowerCase());
+          const mi = MONTHS3.indexOf(dmy[2].slice(0,3).toLowerCase());
           if (mi >= 0) return { yr: +dmy[3], mo: mi + 1, dy: +dmy[1] };
         }
-        // "April 26, 2026"
         const mdy = s.match(/^([A-Za-z]+)\s+(\d{1,2}),?\s+(\d{4})$/);
         if (mdy) {
-          const mi = MONTHS.indexOf(mdy[1].slice(0,3).toLowerCase());
+          const mi = MONTHS3.indexOf(mdy[1].slice(0,3).toLowerCase());
           if (mi >= 0) return { yr: +mdy[3], mo: mi + 1, dy: +mdy[2] };
         }
-        // Slash: 26/04/2026 or 04/26/2026
         const slash = s.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
         if (slash) return { yr: +slash[3], mo: +slash[2], dy: +slash[1] };
         return null;
       }
 
-      // Build sorted list of future round targets from roundDates
       function getNextRoundTarget(nowUtcMs) {
         if (!roundDates || !Object.keys(roundDates).length) return null;
         const { h, m } = parseTime(roundTimeStr);
@@ -816,10 +760,8 @@
           if (!dateStr) return;
           const parsed = parseDateStr(dateStr);
           if (!parsed) return;
-          // Build UTC ms: HKT = UTC+8, so UTC = HKT - 8h
           const hktMs = Date.UTC(parsed.yr, parsed.mo - 1, parsed.dy, h, m, 0, 0);
           const utcMs = hktMs - 8 * 3600 * 1000;
-          // Only include rounds that haven't fully finished (allow 90 min window)
           if (utcMs + 90 * 60 * 1000 > nowUtcMs) {
             const num = parseInt((key.match(/\d+/) || ['0'])[0], 10);
             candidates.push({ key, utcMs, num, dateStr });
@@ -856,7 +798,6 @@
             return;
           }
           if (diff <= 0) {
-            // Round is over but still the closest — show "Round N complete"
             el.textContent = `Round ${next.num} complete`;
             if (labelEl) labelEl.textContent = `Round ${next.num} has ended`;
             return;
@@ -868,7 +809,6 @@
           const mm = Math.floor((totalSec % 3600) / 60);
           const ss = totalSec % 60;
 
-          // Warning mode: last 30 minutes
           const isWarning = diff <= 30 * 60 * 1000 && diff > 0;
           el.classList.toggle('warning', isWarning);
           const panel = document.getElementById('countdownPanel');
@@ -884,7 +824,6 @@
             el.textContent = `${String(mm).padStart(2,'0')}m ${String(ss).padStart(2,'0')}s`;
           }
         } else {
-          // No round dates configured — show placeholder, don't guess
           if (labelEl) labelEl.textContent = 'Next round';
           el.textContent = 'TBA — check announcements';
           clearInterval(intervalId);
@@ -908,7 +847,6 @@
       const bannerClose = document.getElementById('liveBannerClose');
       if (!banner) return;
 
-      // Dismiss button
       if (bannerClose) {
         bannerClose.addEventListener('click', () => {
           banner.style.display = 'none';
@@ -916,7 +854,6 @@
         });
       }
 
-      // Parse same helpers from startCountdown scope
       const MONTHS2 = ['jan','feb','mar','apr','may','jun','jul','aug','sep','oct','nov','dec'];
       function parseTime2(str) {
         if (!str) return { h: 20, m: 0 };
@@ -937,7 +874,6 @@
         return null;
       }
 
-      // Fetch tournament URL for a round from round_tournament_links
       let tourneyLinks = {};
       try {
         if (season && season.season_key) {
@@ -949,7 +885,7 @@
             linkData.forEach(row => { tourneyLinks[row.round_number] = row.tournament_url_id || ''; });
           }
         }
-      } catch (_e) { /* continue without links */ }
+      } catch (_e) {}
 
       function getLiveRound(nowUtcMs) {
         if (!roundDates || !Object.keys(roundDates).length) return null;
@@ -961,8 +897,12 @@
           if (!parsed) return;
           const hktMs = Date.UTC(parsed.yr, parsed.mo - 1, parsed.dy, h, m, 0, 0);
           const utcMs = hktMs - 8 * 3600 * 1000;
+          
+          // Open banner 60 minutes early to align with lobby buttons
+          const startEarlyMs = utcMs - 60 * 60 * 1000;
           const endMs = utcMs + 90 * 60 * 1000;
-          if (nowUtcMs >= utcMs && nowUtcMs < endMs) {
+          
+          if (nowUtcMs >= startEarlyMs && nowUtcMs < endMs) {
             const num = parseInt((key.match(/\d+/) || ['0'])[0], 10);
             candidates.push({ key, utcMs, endMs, num });
           }
@@ -978,13 +918,12 @@
         const live = getLiveRound(nowMs);
         if (live) {
           const urlId = tourneyLinks[live.num] || '';
-          
-          // 1. Build the correct play/tournament URL path
           const url = urlId
             ? `https://www.chess.com/play/tournament/${urlId}`
             : 'https://www.chess.com/club/spkc-international-chess-club-1';
           
-          // 2. Overwrite the inner HTML completely. This forces the true link to update!
+          if (bannerLink) bannerLink.href = url;
+          
           if (bannerText) {
             bannerText.innerHTML = `Round ${live.num} is live now — <a id="liveBannerLink" href="${url}" target="_blank" rel="noopener noreferrer" class="live-banner-link">watch on Chess.com →</a>`;
           }
@@ -1004,21 +943,16 @@
     } else {
       initHomePage();
     }
-
-    // countdown started after round dates load — see initHomePage
   </script>
 
   <script>
-    
-    // Safe localStorage wrapper (crashes on school tablets with strict privacy settings)
     function safeGetStorage(key, fallback) {
       try { return localStorage.getItem(key); } catch(e) { return fallback || null; }
     }
     function safeSetStorage(key, value) {
-      try { localStorage.setItem(key, value); } catch(e) { /* storage blocked */ }
+      try { localStorage.setItem(key, value); } catch(e) {}
     }
 
-    // Dark mode toggle
     (function() {
       const btn = document.getElementById('darkToggle');
       const stored = safeGetStorage('spkc-dark');
@@ -1034,7 +968,6 @@
     })();
   </script>
   <script>
-    /* Nav glider — animate to clicked link, then navigate */
     (function() {
       function initGlider() {
         var nav = document.querySelector('.nav');
@@ -1053,7 +986,7 @@
             glider.style.transition = 'none';
             glider.style.width = w + 'px';
             glider.style.transform = 'translateX(' + x + 'px)';
-            glider.getBoundingClientRect(); /* force reflow */
+            glider.getBoundingClientRect();
             glider.style.transition = '';
           } else {
             glider.style.width = w + 'px';
@@ -1065,16 +998,14 @@
         if (!active) { glider.style.width = '0'; return; }
 
         var dest = positionOf(active);
-
-        /* On load: snap to stored position (where user came from), then animate to active */
         var stored = sessionStorage.getItem('navGlider');
         if (stored) {
           try {
             var prev = JSON.parse(stored);
-            moveGlider(prev.x, prev.w, true);   /* instant snap to origin */
+            moveGlider(prev.x, prev.w, true);
             requestAnimationFrame(function() {
               requestAnimationFrame(function() {
-                moveGlider(dest.x, dest.w, false); /* animate to active */
+                moveGlider(dest.x, dest.w, false);
               });
             });
           } catch(e) { moveGlider(dest.x, dest.w, true); }
@@ -1082,7 +1013,6 @@
           moveGlider(dest.x, dest.w, true);
         }
 
-        /* On click: slide glider to target, then navigate after animation */
         nav.querySelectorAll('a').forEach(function(a) {
           a.addEventListener('click', function(e) {
             e.preventDefault();
