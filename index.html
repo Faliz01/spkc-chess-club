@@ -10,7 +10,7 @@
   <!-- Feature A: Live round status banner -->
   <div id="liveBanner" class="live-banner" style="display:none;" role="status" aria-live="polite">
     <span class="live-banner-dot"></span>
-    <span id="liveBannerText">🟢 Round is live now — <a id="liveBannerLink" href="https://www.chess.com/club/spkc-international-chess-club-1" target="_blank" rel="noopener noreferrer" class="live-banner-link">watch on Chess.com →</a></span>
+    <span id="liveBannerText">Round is live now — <a id="liveBannerLink" href="https://www.chess.com/club/spkc-international-chess-club-1" target="_blank" rel="noopener noreferrer" class="live-banner-link">watch on Chess.com →</a></span>
     <button class="live-banner-close" id="liveBannerClose" aria-label="Dismiss live banner">×</button>
   </div>
 
@@ -34,7 +34,7 @@
       <div class="hero-layout">
         <div class="hero-copy">
           <p class="eyebrow">SPKC Chess Club</p>
-          <h1>Play for fun, train seriously, and represent SPKC in a real school chess season.</h1>
+          <h1>Play for fun, train seriously, and climb the club leaderboard this season.</h1>
           <p class="hero-text">
             SPKC International Chess Club brings together casual play, structured competition, and school team preparation in one cleaner hub. Official season tournaments are run through the Chess.com club and follow the published season rules.
           </p>
@@ -978,15 +978,17 @@
         const live = getLiveRound(nowMs);
         if (live) {
           const urlId = tourneyLinks[live.num] || '';
+          
+          // 1. Build the correct play/tournament URL path
           const url = urlId
-            ? `https://www.chess.com/tournament/live/${urlId}`
+            ? `https://www.chess.com/play/tournament/${urlId}`
             : 'https://www.chess.com/club/spkc-international-chess-club-1';
-          if (bannerLink) bannerLink.href = url;
-          const textNode = banner.querySelector('#liveBannerText');
-          if (textNode) {
-            // Update round number in text
-            textNode.childNodes[0].textContent = `\uD83D\uDFE2 Round ${live.num} is live now \u2014 `;
+          
+          // 2. Overwrite the inner HTML completely. This forces the true link to update!
+          if (bannerText) {
+            bannerText.innerHTML = `Round ${live.num} is live now — <a id="liveBannerLink" href="${url}" target="_blank" rel="noopener noreferrer" class="live-banner-link">watch on Chess.com →</a>`;
           }
+          
           banner.style.display = 'flex';
         } else {
           banner.style.display = 'none';
